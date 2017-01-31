@@ -35,6 +35,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.net.Inet4Address;
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
@@ -88,6 +89,11 @@ public class Terminal extends JFrame implements KeyListener, ActionListener, Run
 	private JMenuItem mntmClose;
 
 	
+	//generic name constructor
+	public Terminal()
+	{
+		this(TERMINAL_NAME + " " + VERSION);
+	}
 	//generic constructor
 	public Terminal(String title)
 	{
@@ -191,7 +197,7 @@ public class Terminal extends JFrame implements KeyListener, ActionListener, Run
 		try 
 		{
 			this.setVisible(true);
-			this.println("Starting terminal on Thread <" + Thread.currentThread() + ">...");
+			this.println("Starting terminal on Thread <" + Thread.currentThread().getId() + ">...");
 		} 
 		catch (Exception e) 
 		{
@@ -720,7 +726,7 @@ public class Terminal extends JFrame implements KeyListener, ActionListener, Run
 	public static void main(String[] e)
 	{
 		//start terminal
-		Terminal t = new Terminal("AVA Terminal " + VERSION);
-		t.run();
+		Thread thread = new Thread(new Terminal());
+		thread.start();
 	}
 }

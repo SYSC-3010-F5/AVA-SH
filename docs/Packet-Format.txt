@@ -1,0 +1,109 @@
+
+ABSTRACT
+===============================
+	More or less a slightly different flavor of UDP.
+
+	Designed to allow 2-way point to point communication between the main AVA server and
+	either a UI or a module. More generally, thought, communication between any 2 DataChannel objects.
+	The DataChannel, once constructed, is paired with another DataChannel.
+	The DataChannel cannot send or receive packets until it is successfully paired
+	
+	Each peripheral that wants to communicate with the server must create a DataChannel.
+	The DataChannel must then attempt to pair with the server's MasterReceiver.
+	The MasterReceiver will then generate a new DataChannel object, which will then complete the handshake.
+	The DataChannel is now paired and can send/receive packets.
+	
+	Once paired, all packets from the non-paired IP/Port will be ignored.
+	All packets sent will be sent to the paired DataChannel.
+	
+
+
+JAVA IMPLEMENTATION
+===============================
+	Two classes are used in order to transmit data:
+		DataChannel.java
+		MasterReceiver.java
+		
+	The DataChannel allows 2 way communication between two threads,
+	so that bytes can be sent from A-->B, and similarly from B-->A.
+	However, the DataChannel can ONLY send to its respective paired channel.
+	
+	For example, if there is a system of 3 DataChannels, {A, B, C}, and A
+	is paired with B, B is implicitly paired with A. C is a non-paired DataChannel,
+	and thus cannot send or receive.
+	A can send data to B, and B will listen. Similarly, B can send data to A, and A 
+	will listen. A or B, however, cannot send data to C. A or B will also ignore
+	any packets sent from an IP/Port the differs from their paired partner, such that
+	any packets sent from C to A or C to B will be ignored by A or B.
+	
+	The MasterReceiver is how the main AVA server establishes links to all the modules/UIs.
+	A DataChannel begins the 1st half of the handshake with the MasterReceiver, which is running
+	on a well known IP and port. The MasterReceiver, upon receiving ANY packet which follows
+	the handshake protocol, will start a new DataChannel to be paired.
+	
+	An interaction between establishing a DataChannel between a client and the main AVA server
+	is as follows:
+						Client creates a new DataChannel object on new Port
+						Client.DataChannel starts handshake to known IP/Port
+							|
+							|
+						Server.MasterReceiver receives handshake
+						Server.MasterReceiver checks handshake
+						Server.MasterReceiver creates new DataChannel on new Port
+						Server.DataChannel responds to original handshake
+							|
+						Client.DataChannel receives handshake response
+						Client.DataChannel checks handshake response
+						Client.DataChannel saves the IP/Port response came from
+							|
+						Client.DataChannel and Server.DataChannel are now paired
+	
+
+
+GENERAL FORMAT
+===============================
+	Each packet is a maximum of 1024 Bytes
+	Each packet receives an acknowledgement
+	Multiple packets is not supported or necessary
+	Each packet can be divided into 3 sections, as follows:
+
+		1Byte		4Bytes				max 1019Bytes
+	|-----------|---------------|---------------------------|
+	|	TYPE	|	CHECKSUM	|			DATA			|
+	|-----------|---------------|---------------------------|
+
+
+	The TYPE denotes what is being sent.
+	The CHECKSUM denotes the value of the data sent.
+	The DATA is the data that is sent, normally encoded as 8bit ASCII characters.
+
+
+
+TYPE CLASSIFICATIONS
+===============================
+	There are 5 types of packets that can be sent.
+	Listed as follows:
+
+		Type 0:		Handshake 
+		Type 1:		Start Transfer
+		Type 2:		End Transfer
+		Type 3:		Command
+		Type 4:		Info
+		Type 5:		Acknowledgement
+		Type 6:		Error
+	
+	
+	
+CHECKSUMS
+===============================
+	The checksum exists to determine if data corruption has occurred. In order to
+	keep both implementation simple and overhead low, there is no way to determine
+	where the data is corrupt, just that it is corrupt.
+	
+	In the case of corruption, the packet is ignored, and no acknowledgement is sent.
+	The DataChannel will then wait for the retransmitted packet.
+	
+	
+	
+	
+	
