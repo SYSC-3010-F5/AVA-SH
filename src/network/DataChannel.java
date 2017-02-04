@@ -23,7 +23,7 @@ import java.net.InetAddress;
 
 public class DataChannel extends Thread 
 {
-	//delcaring static class constants
+	//declaring static class constants
 	public static final int TIMEOUT_MS = 5000;
 	public static final int TYPE_HANDSHAKE = 0;
 	public static final int TYPE_START = 1;
@@ -57,12 +57,65 @@ public class DataChannel extends Thread
 			System.out.println("An unexpected error has occured");
 			System.exit(0);
 		}
+	}
+	
+	
+	//convert 4 Byte integer to byte array
+	public byte[] toByteArray(int value)
+	{
+		return new byte[] 
+			{
+	            (byte)(value >>> 24),
+	            (byte)(value >>> 16),
+	            (byte)(value >>> 8),
+	            (byte)value
+	        };
+	}
+	
+	
+	//convert 4 Byte array to integer
+	public int toInteger(byte[] bytes)				//TODO fix this
+	{
+		//bit shift each index
+		//low index holds most significant byte		(big Endian)
+		int[] val = {0,0,0,0};
+		val[0] = (int)(bytes[0] << 8*3);
+		val[1] = (int)(bytes[1] << 8*2);
+		val[2] = (int)(bytes[2] << 8*1);
+		val[3] = (int)(bytes[3] << 8*0);
+		System.out.println(val[0]+"");
+		System.out.println(val[1]+"");
+		System.out.println(val[2]+"");
+		System.out.println(val[3]+"");
 		
+		return (val[0] + val[1] + val[2] + val[3]);
 	}
 	
 	
 	//generic send
-	private void sendPacket(byte[] toSend)
+	private void sendPacket(byte opcode, byte[] toSend)
+	{
+		//construct the byte array to send, add opcode
+		byte[] data = new byte[toSend.length + 5];
+		data[0] = opcode;
+		
+		//add 4 Byte checksum
+		int checksum = toSend.hashCode();
+		
+		//construct the datagram
+		//DatagramPacket packet = new DatagramPacket();
+	}
+	
+	
+	//send the start packet
+	private void sendStart()
+	{
+		//TODO
+	}
+	
+	
+	//send the end packet
+	private void sendEnd()
 	{
 		//TODO
 	}
@@ -108,20 +161,24 @@ public class DataChannel extends Thread
 	}
 	
 	
-	//send the start packet
-	public void sendStart()
+	//send an info packet
+	public void sendInfo(String info)
 	{
-		//TODO
+		sendInfo(info.getBytes());
 	}
-	//send the end packet
-	public void sendEnd()
+	//send info packet bytes
+	public void sendInfo(byte[] info)
 	{
 		//TODO
 	}
 	
 	
 	//send an error packet
-	public void sendErr(String msg)
+	public void sendErr(String errMsg)
+	{
+		sendErr(errMsg.getBytes());
+	}
+	public void sendErr(byte[] errMsg)
 	{
 		//TODO
 	}
