@@ -1,9 +1,27 @@
+/**
+*Class:             DataChannelTestBench.java
+*Project:          	AVA Smart Home
+*Author:            Jason Van Kerkhoven                                             
+*Date of Update:    04/02/2017                                              
+*Version:           1.0.0                                         
+*                                                                                   
+*Purpose:           Master test bench all other test benchs should inherit from.
+*					Makes use of JUnitTests for regression tests, as well as printing out detailed 
+*					information for manual debugging of programs and detailed test information.
+*					More or less a collection of common methods.
+*					
+* 
+*Update Log			v1.0.0
+*						- some methods added
+*/
+
 package testbench;
 
 import junit.framework.TestCase;
 
 public abstract class TestBench extends TestCase
 {
+	//declaring public class constants
 	public static final String DIV = "\n==================================================================================================================";
 	
 	//generic constructor

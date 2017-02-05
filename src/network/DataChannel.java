@@ -2,20 +2,27 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    31/01/2016                                              
-*Version:           0.1.0                                         
+*Date of Update:    04/02/2017                                              
+*Version:           0.2.0                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
 *					Send and receive data to/from paired DataChannel.
 *					
 * 
-*Update Log			v0.1.0
+*Update Log			v0.2.0
+*						- toInt(byte[]) method implemented (and bedugged)
+*						- toByteArr(int) method implemented 
+*						- handshake values assigned (Asimov), retry quantum specified
+*						- basic send packet implementation (no retransmit)
+*					v0.1.0
 *						- general design added
 */
 package network;
 
 
+import java.io.IOException;
+import java.net.DatagramPacket;
 //imports
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -24,7 +31,6 @@ import java.net.InetAddress;
 public class DataChannel extends Thread 
 {
 	//declaring static class constants
-	public static final int TIMEOUT_MS = 5000;
 	public static final int TYPE_HANDSHAKE = 0;
 	public static final int TYPE_START = 1;
 	public static final int TYPE_END = 2;
@@ -32,11 +38,15 @@ public class DataChannel extends Thread
 	public static final int TYPE_INFO = 4;
 	public static final int TYPE_ACK = 5;
 	public static final int TYPE_ERR = 6;
+	private static final int RETRY_QUANTUM = 5;
+	private static final int TIMEOUT_MS = 5000;
+	private static final byte[] HANDSHAKE_INIT = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
+	private static final byte[] HANDSHAKE_RESPONSE = "2: A robot must obey the orders given it by human beings except where such orders would conflict with the First Law.".getBytes();
 	
 	//declaring local instance variables
 	private DatagramSocket gpSocket;
 	private InetAddress pairedAddress;
-	private int serverMasterPort;
+	private int pairedPort;
 	
 	
 	//generic constructor
@@ -50,7 +60,7 @@ public class DataChannel extends Thread
 			
 			//set IP and master port to default
 			this.pairedAddress = null;
-			this.serverMasterPort = 0;
+			this.pairedPort = 0;
 		}
 		catch (Exception e)
 		{
@@ -74,36 +84,51 @@ public class DataChannel extends Thread
 	
 	
 	//convert 4 Byte array to integer
-	public int toInteger(byte[] bytes)				//TODO fix this
+	public int fromByteArray(byte[] bytes)
 	{
 		//bit shift each index
 		//low index holds most significant byte		(big Endian)
 		int[] val = {0,0,0,0};
-		val[0] = (int)(bytes[0] << 8*3);
-		val[1] = (int)(bytes[1] << 8*2);
-		val[2] = (int)(bytes[2] << 8*1);
-		val[3] = (int)(bytes[3] << 8*0);
-		System.out.println(val[0]+"");
-		System.out.println(val[1]+"");
-		System.out.println(val[2]+"");
-		System.out.println(val[3]+"");
-		
-		return (val[0] + val[1] + val[2] + val[3]);
+		val[0] = (int)(bytes[0] << 24);
+		val[1] = (int)(bytes[1] << 16);
+		val[2] = (int)(bytes[2] << 8);
+		val[3] = (int)(bytes[3]);
+
+		return (val[0] & 0xFF000000 | val[1] & 0x00FF0000 | val[2] & 0x0000FF00 | val[3] & 0x000000FF);
 	}
 	
 	
 	//generic send
-	private void sendPacket(byte opcode, byte[] toSend)
+	private void sendPacket(byte opcode, byte[] toSend) throws NetworkException
 	{
 		//construct the byte array to send, add opcode
 		byte[] data = new byte[toSend.length + 5];
 		data[0] = opcode;
 		
 		//add 4 Byte checksum
-		int checksum = toSend.hashCode();
+		byte[] checksum = toByteArray(toSend.hashCode());
+		for(int c=0; c<4; c++)
+		{
+			data[c+1] = checksum[c];
+		}
 		
-		//construct the datagram
-		//DatagramPacket packet = new DatagramPacket();
+		//add all bytes from toSend
+		int i = 5;
+		for(byte b :  toSend)
+		{
+			data[i] = b;
+		}
+		
+		//construct and send datagram
+		DatagramPacket packet = new DatagramPacket(toSend, toSend.length, pairedAddress, pairedPort);
+		try 
+		{
+			gpSocket.send(packet);
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -122,21 +147,21 @@ public class DataChannel extends Thread
 	
 	
 	//receive
-	public void receiveTransfer()
+	public void receiveTransfer() throws NetworkException
 	{
 		//TODO
 	}
 	
 	
 	//contact paired connection via handshake protocol
-	public void sendHandshake(InetAddress toPair, int listeningPort)
+	public void sendHandshake(InetAddress toPair, int listeningPort) throws NetworkException
 	{
 		//TODO
 	}
 	
 	
 	//responds to a handshake, finalizing the connection
-	public void respondHandshake(InetAddress toPair, int listeningPort)
+	public void respondHandshake(InetAddress toPair, int listeningPort) throws NetworkException
 	{
 		//TODO
 	}
@@ -183,32 +208,6 @@ public class DataChannel extends Thread
 		//TODO
 	}
 }
-
-//hashmap test, hash1 == hash2
-/*
-byte[] arr1 = {'h','e','l','l','o'};
-byte[] arr2 = new byte[5];
-
-arr2[0] = 'h';
-arr2[1] = 'e';
-arr2[2] = 'l';
-arr2[3] = 'l';
-arr2[4] = 'o';
-
-
-int hash1 = Arrays.hashCode(arr1);
-int hash2 = Arrays.hashCode(arr2);
-System.out.println(hash1);
-System.out.println(hash2);
-if(hash1 == hash2)
-{
-	System.out.println("true");
-}
-else
-{
-	System.out.println("false");
-}
-*/
 
 
 
