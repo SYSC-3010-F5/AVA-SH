@@ -26,10 +26,6 @@ public class Terminal extends AppCompatActivity {
 
 
 
-
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -46,32 +42,23 @@ public class Terminal extends AppCompatActivity {
         terminalInput = (EditText) findViewById(R.id.terminal_input);
 
 
-        inputTerminalListener = new OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId,
-                                          KeyEvent event) {
-                boolean handled = false;
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    parseInput();
-                    terminalInput.getText().clear();
-                    inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
-                            InputMethodManager.HIDE_NOT_ALWAYS);
-                    handled = true;
-                }
-                return handled;
-            }
-        };
-
+        inputTerminalListener = new TerminalActionListener(this);
         terminalInput.setOnEditorActionListener(inputTerminalListener);
 
-
     }
 
-    private void parseInput(){
-        terminalOutput.append(">"terminalInput.getText().toString()+"\n");
-
+    public TextView getTerminalOutput(){
+        return terminalOutput;
     }
 
+    public EditText getTerminalInput(){
+        return terminalInput;
+    }
+
+    public void closeKeyboard(){
+        inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),
+                InputMethodManager.HIDE_NOT_ALWAYS);
+    }
 
 
 }
