@@ -17,11 +17,11 @@ package testbench;
 
 
 //import external libraries
-import junit.framework.TestCase;
 import java.util.Arrays;
 
 //import packages
 import network.DataChannel;
+
 
 
 public class DataChannelTestBench extends TestBench 

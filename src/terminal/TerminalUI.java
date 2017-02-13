@@ -3,14 +3,21 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    12/02/2017                                              
-*Version:           0.2.2                                         
+*Version:           0.3.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.2.2
+*Update Log			v0.3.0
+*						- getParsedInput() visibility changed to private
+*						- input now gotten from blocking on a new method, getInput()
+*						- ActionEvents from user input handled internally
+*						- UI no longer runs on separate thread than control
+*						- reqClose now returns if the window was closed
+*						- echo framework for voice synthesis added
+*					v0.2.2
 *						- starting size of components actually works now
 *					v0.2.1
 *						- refactored into 2 classes to fit MVC model
@@ -61,7 +68,7 @@ import javax.swing.UIManager;
 
 
 
-public class TerminalUI extends JFrame implements KeyListener, Runnable
+public class TerminalUI extends JFrame implements ActionListener, KeyListener
 {
 	//ASCII art
 	private static final String ASCII_AVA_LOGO = 
@@ -88,8 +95,11 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	
 	//declaring local instance variables
 	private CappedBuffer inputBuffer;
-	private TreeMap<String, String> cmdMap;					//TODO check if there is some way to make this immutable so it compiles to constant
-	private HashMap<String, Color[]> colorMap;				//TODO check if there is some way to make this immutable so it compiles to constant
+	private TreeMap<String, String> cmdMap;					
+	private HashMap<String, Color[]> colorMap;
+	private boolean inputReady;
+	private String[] input;
+	private boolean echo;
 	
 	//declaring local ui elements
 	private JTextField consoleInput;
@@ -112,7 +122,8 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 		TERMINAL_NAME = title;
 		CMD_NOT_FOUND = cmdNotFound;
 		inputBuffer = new CappedBuffer(CMD_HISTORY_SIZE);
-		cmdMap = null;
+		cmdMap = new TreeMap<String, String>();
+		echo = false;
 		initColorMap();
 		
 		
@@ -159,7 +170,7 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 		//set up input text to console pane
 		consoleInput = new JTextField();
 		consoleInput.setActionCommand(CONSOLE_IN);
-		consoleInput.addActionListener(listener);
+		consoleInput.addActionListener(this);
 		consoleInput.addKeyListener(this);
 		consoleInput.setColumns(10);
 		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
@@ -193,13 +204,7 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 		statusOverview.setForeground(DEFAULT_TEXT_COLOR);
 		statusOverview.setCaretColor(DEFAULT_TEXT_COLOR);
 		statusPane.setViewportView(statusOverview);
-	}
-	
-	
-	@Override
-	//called on thread start
-	public void run() 
-	{
+		
 		//set visible
 		try 
 		{
@@ -214,6 +219,20 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	}
 	
 	
+	//generic accessors
+	public boolean getEcho()
+	{
+		return echo;
+	}
+	
+	
+	//generic mutators
+	public void setEcho(boolean echo)
+	{
+		this.echo = echo;
+	}
+	
+
 	//change color scheme
 	//return false if invalid scheme
 	public void colorScheme(String scheme)
@@ -305,12 +324,31 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	}
 	
 	
+	//return the users input if there is any, otherwise block
+	public synchronized String[] getInput()
+	{
+		//check if input is ready
+		while(!inputReady)
+		{
+			//block until notified
+			try
+			{
+				wait();
+			} 
+			catch (InterruptedException e) {e.printStackTrace();}
+		}
+		
+		//set flag and return
+		inputReady = false;
+		return input;
+	}
+	
+	
 	//return user input, parsed at spaces
 	//return null if format error
-	public String[] getParsedInput()
+	private String[] getParsedInput()
 	{	
-		//Prep local method variables
-		//save input and clear input line
+		//Prepare local method variables & save input and clear input line
 		String input =  consoleInput.getText();
 		LinkedList<String> stringList = new LinkedList<>();
 		consoleInput.setText("");
@@ -395,6 +433,10 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	//try not to use -- use println(...)
 	public void print(String printable)
 	{
+		if(echo)
+		{
+			//TODO synthesis
+		}
 		consoleOutput.append(printable);
 		consoleOutput.setCaretPosition(consoleOutput.getDocument().getLength());
 	}
@@ -404,8 +446,7 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	public void println(String printable)
 	{
 		printable = printable.replaceAll("\n", "\n ");
-		consoleOutput.append(" " + printable + "\n");
-		consoleOutput.setCaretPosition(consoleOutput.getDocument().getLength());
+		print(" " + printable + "\n");
 	}
 	public void println()
 	{
@@ -493,20 +534,21 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 	
 	
 	//request to close terminal
-	public void reqClose()
+	public boolean reqClose()
 	{
 		//get user yes or no
 		int i = JOptionPane.showConfirmDialog(this, "Are you sure you wish to exit this terminal\n(The main AVA Server will continue to run)", TERMINAL_NAME, JOptionPane.YES_NO_OPTION);
 		if (i == JOptionPane.YES_OPTION)
 		{
 			this.close();
+			return true;
 		}
+		return false;
 	}
 	//actually close
 	public void close()
 	{
 		this.dispose();
-		System.exit(ABORT);
 	}
 	
 	
@@ -547,4 +589,26 @@ public class TerminalUI extends JFrame implements KeyListener, Runnable
 
 	@Override
 	public void keyTyped(KeyEvent arg0) {}
+
+	
+	//set the state of input and inputReady
+	private synchronized void setInputState(String[] in)
+	{
+		if(input !=  null)
+		{
+			//input is good, set flag and notify
+			inputReady = true;
+			notifyAll();
+		}
+	}
+	
+	
+	@Override
+	//respond to user input
+	public void actionPerformed(ActionEvent arg0) 
+	{
+		//get and parse input
+		input = this.getParsedInput();
+		setInputState(input);
+	}
 }

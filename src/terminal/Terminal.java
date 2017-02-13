@@ -3,14 +3,19 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    12/02/2017                                              
-*Version:           0.2.1                                         
+*Version:           0.3.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.2.1
+*Update Log			v0.3.0
+*						- input method rebuilt to allow for multiple input lines
+*						- echo setting/echoing added
+*						- some new command prototypes added
+*						- exiting repaired (no longer crashes the system)
+*					v0.2.1
 *						- refactored into 2 classes to fit MVC model
 *							\-->  TerminalUI.java	(view)
 *							 \--> Terminal.java		(controller)
@@ -22,7 +27,7 @@
 *						- terminal resizable
 *						- menu bar disappearing fixed
 *						- cmdMap changed from HashMap --> TreeMap in order to print commands in alphabetical order
-*						- help menu + color selection made much more efficent+maintainable from old TFTP Project code
+*						- help menu + color selection made much more efficient+maintainable from old TFTP Project code
 *						- word wrapping fixed
 *					v0.1.0
 *						- general framework
@@ -42,7 +47,7 @@ import javax.swing.JFrame;
 
 
 
-public class Terminal extends JFrame implements ActionListener
+public class Terminal extends JFrame implements ActionListener, Runnable
 {
 	//declaring local class constants
 	private static final String TERMINAL_NAME = "AVA Terminal";
@@ -51,8 +56,10 @@ public class Terminal extends JFrame implements ActionListener
 	private static final int RETRY_QUANTUM = 10;
 	
 	//declaring local instance variables
+	private boolean runFlag;
 	private TerminalUI ui;
 	private Inet4Address serverAddress;
+	private int pairedPort;
 	
 	
 	//generic constructor
@@ -61,11 +68,11 @@ public class Terminal extends JFrame implements ActionListener
 		//init ui
 		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND);
 		ui.initCmdMap(this.initCmdMap());
-		Thread thread = new Thread(ui);
-		thread.start();
 		
 		//init variables
 		serverAddress = null;
+		pairedPort = 0;
+		runFlag = true;
 		
 		//update ui
 		ui.updateStatus(this.statusToString());
@@ -73,7 +80,47 @@ public class Terminal extends JFrame implements ActionListener
 	}
 	
 	
-	//initialize cmdMap
+	@Override
+	//main run-loop of the terminal
+	public void run()
+	{
+		//initial setup
+		if(establishConnection(null))
+		{
+			ui.println("Connection established!");
+		}
+		else
+		{
+			ui.println("Connection FAILED");
+		}
+		
+		
+		//wait before clearing log
+		try 
+		{
+			Thread.sleep(3000);
+		} 
+		catch (InterruptedException e) {e.printStackTrace();}
+		ui.clear();
+		
+		//main input-parse loop
+		ui.println("Waiting for input...");
+		while(runFlag)
+		{
+			String[] in = ui.getInput();
+			handleConsoleInput(in);
+		}
+	}
+	
+	
+	//close the terminal
+	public void close()
+	{
+		//TODO disconnect from server
+		runFlag = false;
+	}
+	
+	
 	//initialize command map
 	private TreeMap<String,String> initCmdMap()
 	{
@@ -113,6 +160,17 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\t                 light, matrix, ocean, prettyinpink, xmas");
 		
 		cmdMap.put("update", "Manually force update for the status overview");
+		
+		cmdMap.put("echo", "Test/toggle the voice synthesis of the system\n"												//TODO implement this
+					+ "\tparam1= na ::     Show the current state of voice echo\n"
+					+ "\tparam1= true ::   Set the terminal to synthesize all text as voice\n"
+					+ "\tparam1= false ::  Set the terminal to stop synthesis of all text as voice\n"
+					+ "\tparam1 = <STR> :: Synthesize the entered String to voice");
+		
+		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															//TODO implement this
+					+ "\tparam1: n/a      ::  Launch dialog to schedual alarm\n"
+					+ "\tparam1: ddd:hh:mm :: Set the alarm to go off on day ddd, hour hh, minute mm\n"
+					+ "\t                     (ddd such that mon, tue, wed, thu, fri, sat, sun)");
 		
 		return cmdMap;
 	}
@@ -154,6 +212,7 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 			
+				
 			//print help menu
 			case("help"):
 				if(length == 1)
@@ -170,17 +229,39 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 			
+				
 			//close
 			case("close"):
 				if (length == 1)
 				{
-					ui.close();
+					//confirm exit
+					ui.println("Are you sure you wish to exit this terminal\nThe main AVA Server will continue to run (y/n)");
+					String[] in = ui.getInput();
+					if(in.length == 1)
+					{
+						if(in[0].equals("y"))
+						{
+							ui.close();
+							this.close();
+							//TODO close
+							break;
+						}
+						else
+						{
+							ui.println("Canceling exit...");
+						}
+					}
+					else
+					{
+						ui.println("Canceling exit...");
+					}
 				}
 				else
 				{
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+				
 				
 			//change color scheme
 			case("color"):
@@ -198,6 +279,7 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 			
+				
 			//force status overview update
 			case("update"):
 				if (length == 1)
@@ -209,6 +291,35 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+			
+			
+			//toggle and/or turn on synthesis
+			case("echo"):
+				if(length == 1)
+				{
+					ui.println("Echo is set: " + ui.getEcho());
+				}
+				else if (length == 2)
+				{
+					if(input[1].equals("true") || input[1].equals("on"))
+					{
+						ui.setEcho(true);
+					}
+					else if (input[1].equals("false") || input[1].equals("off"))
+					{
+						ui.setEcho(false);
+					}
+					else
+					{
+						ui.println(input[1]);
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
 				
 			//cmd not found
 			default:
@@ -227,11 +338,13 @@ public class Terminal extends JFrame implements ActionListener
 		
 		if(serverAddress != null)
 		{
-			status += "Server: CONNECTED";
+			status += "Server: CONNECTED\n"
+					+ "        " + serverAddress.toString()
+					+ "        p: " + pairedPort + "\n\n" ;
 		}
 		else
 		{
-			status += "Server: DISCONNECTED";
+			status += "Server: DISCONNECTED\n\n";
 		}
 		
 		return status;
@@ -249,21 +362,13 @@ public class Terminal extends JFrame implements ActionListener
 		String src = e.getActionCommand();
 		switch(src)
 		{
-			//console input from user
-			case(TerminalUI.CONSOLE_IN):
-				String[] input = ui.getParsedInput();
-				if(input != null)
-				{
-					if(input.length > 0)
-					{
-						this.handleConsoleInput(input);
-					}
-				}
-				break;
-			
 			//"file-close" button pressed
 			case(TerminalUI.MENU_CLOSE):
-				ui.reqClose();
+				boolean closed = ui.reqClose();
+				if(closed)
+				{
+					this.close();
+				}
 				break;
 		}
 	}
@@ -272,7 +377,8 @@ public class Terminal extends JFrame implements ActionListener
 	//instantiate a Terminal
 	public static void main(String[] e)
 	{
-		//start terminal
+		//start terminal, enter main loop
 		Terminal terminal = new Terminal();
+		terminal.run();
 	}
 }
