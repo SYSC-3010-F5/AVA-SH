@@ -14,6 +14,8 @@
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
 *						- help menu format improved
+*						- alarm dialog added
+*						- alarm command added
 *					v0.3.1
 *						- some commands refined and built up
 *						- added DataChannel
@@ -51,12 +53,14 @@ import java.awt.event.ActionListener;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.DateTimeException;
 import java.util.TreeMap;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 //import packages
 import network.DataChannel;
+import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
 
 
@@ -68,7 +72,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.2.0";
+	private static final String VERSION = "v0.4.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 10;
 	
@@ -192,7 +196,7 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= false  || Set the terminal to stop synthesis of all text as voice\n"
 					+ "\tparam1 = <STR> || Synthesize the entered String to voice");
 		
-		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															//TODO implement this
+		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															
 					+ "\tparam1: n/a      || Launch dialog to schedual alarm\n"
 					+ "\tparam1: ddd      || Set the alarm to go off on day ddd\n"
 					+ "\t                    multiple days should be seperated by a comma such that ddd,ddd\n"
@@ -432,8 +436,89 @@ public class Terminal extends JFrame implements ActionListener
 				//no params, launch dialog
 				if(input.length == 1)
 				{
-					DayAndTimeDialog dialog = new DayAndTimeDialog(this, Terminal.TERMINAL_NAME);
+					//get info from dialog
+					Alarm alarm = ui.getAlarm();
+					if(alarm != null)
+					{
+						/*
+						 * TODO send the actual data to server
+						 * For now we just echo it!
+						 */
+						ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+					}
+				}
+				//cmd alarm, generic name
+				else if(input.length == 3 || input.length == 4)
+				{
+					Alarm alarm = new Alarm();
+					//parse day into
+					boolean[] daysArr = new boolean[7];
+					String[] daysInput = input[1].split(",");
+					for(String day : daysInput)
+					{
+						switch(day)
+						{
+							case("mon"):
+								daysArr[0] = true;
+								break;
+							case("tue"):
+								daysArr[1] = true;
+								break;
+							case("wed"):
+								daysArr[2] = true;
+								break;
+							case("thu"):
+								daysArr[3] = true;
+								break;
+							case("fri"):
+								daysArr[4] = true;
+								break;
+							case("sat"):
+								daysArr[5] = true;
+								break;
+							case("sun"):
+								daysArr[6] = true;
+								break;
+							default:
+								ui.printError("Unknown date");
+								return;
+						}
+					}
+					alarm.setDays(daysArr);
+					//parse time info
+					String[] hourMin = input[2].split(":");
+					try
+					{
+						int hour =  Integer.parseInt(hourMin[0]);
+						int min = Integer.parseInt(hourMin[1]);
+						alarm.setHour(hour);
+						alarm.setMinute(min);
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Hour/Minute must be a valid integer");
+						return;
+					}
+					catch (DateTimeException e)
+					{
+						ui.printError(e.getMessage());
+						return;
+					}
+					//parse name info
+					if(input.length == 4)
+					{
+						alarm.setName(input[3]);
+					}
 					
+					/*
+					 * TODO send the actual data to server
+					 * For now we just echo it!
+					 */
+					ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
 				}
 				break;
 				

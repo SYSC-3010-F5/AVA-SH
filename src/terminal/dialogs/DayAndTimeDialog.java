@@ -2,13 +2,18 @@
 *Class:             DayAndTimeDialog.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    18/02/2017                                              
+*Date of Update:    19/02/2017                                              
 *Version:           1.0.0                                         
 *                                                                                   
 *Purpose:           Allow to user to select a time and dates for an alarm.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- bug where using cancel button returned invalid data patched
+*						- state saved in Alarm object instead of separate primitives
+*						- JTextField for alarm name added
+*						- bug where hour spinner could be set to 24 fixed
+*					v1.0.0
 *						- null
 */
 package terminal.dialogs;
@@ -25,14 +30,14 @@ import java.awt.Font;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import java.awt.SystemColor;
+import java.awt.Window.Type;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-import javax.swing.SpinnerDateModel;
-import java.util.Date;
-import java.util.Calendar;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;
+
+//import packages
+import server.datatypes.Alarm;
 
 
 
@@ -55,28 +60,31 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 	private static final int DEFAULT_HEIGHT = 145;
 	
 	//declaring local instance variables
-	private int exitMode;
-	private int hour;
-	private int minute;
+	private int closeMode;
+	private Alarm alarm;
 	
 	private JCheckBox[] days;
 	private JSpinner spHour;
 	private JSpinner spMin;
 	private JButton btnOk;
 	private JButton btnCancel; 
+	private JTextField txtName;
 	
 	
 	//generic constructor
 	public DayAndTimeDialog(JFrame callingFrame, String windowName)
 	{
 		//set up dialog box
-		super(callingFrame, windowName);
+		super(callingFrame, true);
+		this.setTitle(windowName);
 		this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 		this.setResizable(false);
+		this.setType(Type.POPUP);
 		this.getContentPane().setLayout(null);
 		
 		//initalize non-gui elements
-		exitMode = this.WINDOW_CLOSE_OPTION;
+		closeMode = this.WINDOW_CLOSE_OPTION;
+		alarm = null;
 		
 		//set up panel for days
 		JPanel dayPanel = new JPanel();
@@ -94,6 +102,15 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 			dayPanel.add(days[i]);
 		}
 		
+		//add name text field
+		txtName = new JTextField();
+		txtName.setEditable(true);
+		txtName.setText("Generic Alarm");
+		txtName.setFont(spinnerFont);
+		txtName.setBounds(10, 57, 198, 46);
+		getContentPane().add(txtName);
+		txtName.setColumns(10);
+		
 		//add label(s) for spinners
 		JTextField txtTime = new JTextField();
 		JTextField txtDiv = new JTextField();
@@ -102,7 +119,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		txtTime.setBackground(SystemColor.menu);
 		txtTime.setText("Time:");
 		txtTime.setFont(new Font("Tahoma", Font.BOLD, 24));
-		txtTime.setBounds(85, 59, 88, 46);
+		txtTime.setBounds(213, 57, 74, 46);
 		txtTime.setColumns(10);
 		txtDiv.setHorizontalAlignment(SwingConstants.CENTER);
 		txtDiv.setText(":");
@@ -111,39 +128,57 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		txtDiv.setColumns(10);
 		txtDiv.setBorder(null);
 		txtDiv.setBackground(SystemColor.menu);
-		txtDiv.setBounds(312, 57, 13, 48);
+		txtDiv.setBounds(397, 57, 13, 48);
 		this.getContentPane().add(txtTime);
 		getContentPane().add(txtDiv);
 		
 		//add hour spinner
 		spHour = new JSpinner();
-		spHour.setModel(new SpinnerNumberModel(0, 0, 24, 1));
+		spHour.setModel(new SpinnerNumberModel(0, 0, 23, 1));
 		spHour.setFont(spinnerFont);
-		spHour.setBounds(202, 59, 100, 46);
+		spHour.setBounds(287, 57, 100, 46);
 		this.getContentPane().add(spHour);
 		
 		//add minute spinner
 		spMin = new JSpinner();
 		spMin.setModel(new SpinnerNumberModel(0, 0, 59, 1));
 		spMin.setFont(spinnerFont);
-		spMin.setBounds(335, 59, 100, 46);
+		spMin.setBounds(420, 57, 100, 46);
 		this.getContentPane().add(spMin);
 		
 		//add ok button
 		btnOk = new JButton("Ok");
-		btnOk.setBounds(445, 59, 89, 23);
+		btnOk.setBounds(530, 57, 89, 23);
 		btnOk.addActionListener(this);
 		this.getContentPane().add(btnOk);
 		
 		//add cancel button
 		btnCancel = new JButton("Cancel");
-		btnCancel.setBounds(445, 82, 89, 23);
+		btnCancel.setBounds(530, 80, 89, 23);
 		btnCancel.addActionListener(this);
 		this.getContentPane().add(btnCancel);
 		
 		//set visible
 		this.setLocationRelativeTo(callingFrame);
 		this.setVisible(true);
+	}
+	
+	
+	//generic accessors
+	public int getCloseMode()
+	{
+		return closeMode;
+	}
+	public Alarm getAlarm()
+	{
+		if(closeMode == OK_OPTION)
+		{
+			return alarm;
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 
@@ -155,15 +190,24 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		if(src == btnOk)
 		{
 			//set exit mode
-			exitMode = this.OK_OPTION;
+			closeMode = this.OK_OPTION;
 			
 			//save state
-			
+			alarm = new Alarm();
+			alarm.setName(txtName.getText());
+			alarm.setHour((int)spHour.getValue());
+			alarm.setMinute((int)spMin.getValue());
+			boolean[] daysArr = new boolean[7];
+			for(int i=0; i<days.length; i++)
+			{
+				daysArr[i] = days[i].isSelected();
+			}
+			alarm.setDays(daysArr);
 		}
 		else
 		{
 			//set exit mode
-			exitMode = this.CANCEL_OPTION;
+			closeMode = this.CANCEL_OPTION;
 		}
 		
 		//close dialog

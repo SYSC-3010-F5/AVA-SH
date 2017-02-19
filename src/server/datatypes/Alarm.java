@@ -2,14 +2,17 @@
 *Class:             Alarm.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    18/02/2017                                              
-*Version:           1.0.0                                         
+*Date of Update:    19/02/2017                                              
+*Version:           1.0.1                                         
 *                                                                                   
 *Purpose:           Save information on basic alarm.
 *					Occurs once per day, at a certain time.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- toString method added for debugging (quicker to read than the JSON!)
+*						- hashmap-based function added for going between day-->number & number-->day
+*					v1.0.0
 *						- getters/setter added
 *						- each getter checks values to make sure preconditions met
 *						- DateTimeException high-jacked for exception type
@@ -32,6 +35,20 @@ import io.json.ToJSONFile;
 public class Alarm implements ToJSONFile
 {
 	//declaring static class constants
+	public static final String[] DAY_NAMES_FULL = { "Monday",
+													"Tuesday",
+													"Wednesday",
+													"Thursday",
+													"Friday",
+													"Saturday",
+													"Sunday"};
+	public static final String[] DAY_NAMES_SHORT = {"mon",
+													"tue",
+													"wed",
+													"thu",
+													"fri",
+													"sat",
+													"sun"};
 	private static final String DEFAULT_NAME = "Generic Alarm";
 	
 	//declaring local instance variables
@@ -285,5 +302,30 @@ public class Alarm implements ToJSONFile
 		
 		//generate object from json file, now in String form
 		fromJSON(new String(brokenString));
+	}
+	
+	
+	@Override
+	//show as a string
+	public String toString()
+	{
+		String string = "\"" + name + "\" @ " + hour + ":" + minute + " on [";
+		boolean first = true;
+		for(int i=0; i<days.length; i++)
+		{
+			if(days[i])
+			{
+				if(first)
+				{
+					first = false;
+				}
+				else
+				{
+					string += ", ";
+				}
+				string += DAY_NAMES_SHORT[i];
+			}
+		}
+		return (string + "]");
 	}
 }
