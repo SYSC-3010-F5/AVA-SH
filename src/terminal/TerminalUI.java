@@ -2,15 +2,18 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    12/02/2017                                              
-*Version:           0.3.0                                         
+*Date of Update:    19/02/2017                                              
+*Version:           0.3.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.3.0
+*Update Log			v0.3.1
+*						- dialog added to get data for an alarm (day, time, name)
+*						- imports tidied
+*					v0.3.0
 *						- getParsedInput() visibility changed to private
 *						- input now gotten from blocking on a new method, getInput()
 *						- ActionEvents from user input handled internally
@@ -48,9 +51,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.net.Inet4Address;
 import java.awt.Color;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
@@ -64,7 +65,10 @@ import javax.swing.JSplitPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
+
+//import packages
+import server.datatypes.Alarm;
+import terminal.dialogs.DayAndTimeDialog;
 
 
 
@@ -460,7 +464,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		if (msg != null)
 		{
 			this.println("Error: " + msg);
-			JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, msg, TERMINAL_NAME, JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
@@ -549,6 +553,22 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void close()
 	{
 		this.dispose();
+	}
+	
+	
+	//get an alarm for the user via dialog
+	public Alarm getAlarm()
+	{
+		//get info from dialog
+		DayAndTimeDialog dialog = new DayAndTimeDialog(this, this.TERMINAL_NAME);
+		if(dialog.getCloseMode() == DayAndTimeDialog.OK_OPTION)
+		{
+			return dialog.getAlarm();
+		}
+		else
+		{
+			return null;
+		}
 	}
 	
 	

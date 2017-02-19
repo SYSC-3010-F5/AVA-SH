@@ -34,7 +34,7 @@ public abstract class TestBench extends TestCase
 	//print a new test header
 	public void printHeader(String header)
 	{
-		this.println(header + DIV);
+		this.println("\n\n\n" + header + DIV);
 	}
 	
 	

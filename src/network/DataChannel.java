@@ -2,16 +2,18 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    04/02/2017                                              
-*Version:           0.2.0                                         
+*Date of Update:    14/02/2017                                              
+*Version:           0.2.1                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
 *					Send and receive data to/from paired DataChannel.
 *					
 * 
-*Update Log			v0.2.0
-*						- toInt(byte[]) method implemented (and bedugged)
+*Update Log			v0.2.1
+*						- generic accessors added
+*					v0.2.0
+*						- toInt(byte[]) method implemented (and debugged)
 *						- toByteArr(int) method implemented 
 *						- handshake values assigned (Asimov), retry quantum specified
 *						- basic send packet implementation (no retransmit)
@@ -44,6 +46,7 @@ public class DataChannel extends Thread
 	private static final byte[] HANDSHAKE_RESPONSE = "2: A robot must obey the orders given it by human beings except where such orders would conflict with the First Law.".getBytes();
 	
 	//declaring local instance variables
+	private boolean connected;
 	private DatagramSocket gpSocket;
 	private InetAddress pairedAddress;
 	private int pairedPort;
@@ -52,6 +55,9 @@ public class DataChannel extends Thread
 	//generic constructor
 	public DataChannel()
 	{
+		//intialize things
+		connected = false;
+		
 		try
 		{
 			//initialize socket for send/receive
@@ -67,6 +73,21 @@ public class DataChannel extends Thread
 			System.out.println("An unexpected error has occured");
 			System.exit(0);
 		}
+	}
+	
+	
+	//generic accessors
+	public InetAddress getPairedAddress()
+	{
+		return pairedAddress;
+	}
+	public int getPairedPort()
+	{
+		return pairedPort;
+	}
+	public boolean getConnected()
+	{
+		return connected;
 	}
 	
 	
