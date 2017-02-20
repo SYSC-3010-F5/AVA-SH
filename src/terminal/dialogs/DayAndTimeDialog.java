@@ -8,7 +8,9 @@
 *Purpose:           Allow to user to select a time and dates for an alarm.
 *					
 * 
-*Update Log			v1.0.2
+*Update Log			v1.0.3
+*						- hotkeys added to the dialog (alt+1 for mon, alt+2 for tues, etc)
+*					v1.0.2
 *						- bug where user could select no days for valid alarm patched
 *					v1.0.1
 *						- bug where using cancel button returned invalid data patched
@@ -105,6 +107,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		{
 			days[i] = new JCheckBox(DAYS[i]);
 			days[i].setFont(checkBoxFont);
+			days[i].setMnemonic(i+0x31);		//KeyEvent.VK_# is the same as ASCII value for num
 			dayPanel.add(days[i]);
 		}
 		

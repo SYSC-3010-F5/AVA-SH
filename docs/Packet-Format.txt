@@ -2,21 +2,25 @@
 ABSTRACT
 ===============================
 	More or less a slightly different flavor of UDP.
+	This revision of the protocol removes safe-guards and checks for:
+		- data corruption
+		- packets being lost
+		- packets being duplicated
+		- gross packet delays
+		
+	This assumes the packets being sent will arrive with negilable delays. It also assumes no packet duplication, no packet corruption, and not packet loss.
 
-	Designed to allow 2-way point to point communication between the main AVA server and
-	either a UI or a module. More generally, thought, communication between any 2 DataChannel objects.
-	The DataChannel, once constructed, is paired with another DataChannel.
-	The DataChannel cannot send or receive packets until it is successfully paired
+	Designed to allow 2-way point to point communication between the main AVA server and either a UI or a module. More generally, the module/interface will solely send packets to the server. The server will have a master registry of all devices that have paired with it, and can send to any of them.
 	
-	Each peripheral that wants to communicate with the server must create a DataChannel.
-	The DataChannel must then attempt to pair with the server's MasterReceiver.
-	The MasterReceiver will then generate a new DataChannel object, which will then complete the handshake.
-	The DataChannel is now paired and can send/receive packets.
+	This can be seen through:
 	
-	Once paired, all packets from the non-paired IP/Port will be ignored.
-	All packets sent will be sent to the paired DataChannel.
+					interface_1 <------> SERVER <------> module_1
 	
-
+	There are no multi-packet data sent. All packets are of a maximum of 1kB (1024) long. All packets are independant, that is, data is never broken up over multiple packets. The maximum size of 1kB is arbitary, and can be changed easily in future revisons if it proves too small to encapsulate all the data needed. 
+	
+	
+	
+	
 
 JAVA IMPLEMENTATION
 ===============================
@@ -24,42 +28,35 @@ JAVA IMPLEMENTATION
 		DataChannel.java
 		MasterReceiver.java
 		
-	The DataChannel allows 2 way communication between two threads,
-	so that bytes can be sent from A-->B, and similarly from B-->A.
-	However, the DataChannel can ONLY send to its respective paired channel.
+	The DataChannel allows 2 way communication between two threads, so that bytes can be sent from A-->B, and similarly from B-->A. However, the DataChannel can ONLY send to its respective paired channel.
 	
-	For example, if there is a system of 3 DataChannels, {A, B, C}, and A
-	is paired with B, B is implicitly paired with A. C is a non-paired DataChannel,
-	and thus cannot send or receive.
-	A can send data to B, and B will listen. Similarly, B can send data to A, and A 
-	will listen. A or B, however, cannot send data to C. A or B will also ignore
-	any packets sent from an IP/Port the differs from their paired partner, such that
-	any packets sent from C to A or C to B will be ignored by A or B.
+	For example, if there is a system of 3 DataChannels, {A, B, C}, and A is paired with B, B is implicitly paired with A. C is a non-paired DataChannel, and thus cannot send or receive. A can send data to B, and B will listen. Similarly, B can send data to A, and A will listen. A or B, however, cannot send data to C. A or B will also ignore any packets sent from an IP/Port the differs from their paired partner, such that any packets sent from C to A or C to B will be ignored by A or B.
 	
-	The MasterReceiver is how the main AVA server establishes links to all the modules/UIs.
-	A DataChannel begins the 1st half of the handshake with the MasterReceiver, which is running
-	on a well known IP and port. The MasterReceiver, upon receiving ANY packet which follows
-	the handshake protocol, will start a new DataChannel to be paired.
+	The MasterReceiver is how the main AVA server establishes links to all the modules/UIs. A DataChannel begins the 1st half of the handshake with the MasterReceiver, which is running on a well known IP and port. The MasterReceiver, upon receiving ANY packet which follows the handshake protocol, will creat a new DataChannel to be paired.
 	
-	An interaction between establishing a DataChannel between a client and the main AVA server
-	is as follows:
-						Client creates a new DataChannel object on new Port
-						Client.DataChannel starts handshake to known IP/Port
+	An interaction between establishing a DataChannel between a client and the main AVA server is as follows:
+	
+					1.	Client creates a new DataChannel object on new Port
+					2.	Client.DataChannel sends handshake to known IP/Port
 							|
 							|
-						Server.MasterReceiver receives handshake
-						Server.MasterReceiver checks handshake
-						Server.MasterReceiver creates new DataChannel on new Port
-						Server.DataChannel responds to original handshake
+					3.	Server.MasterReceiver receives handshake
+					4.	Server.MasterReceiver checks handshake
+					5.	Server.MasterReceiver creates new DataChannel on new Port
+					6.	Server.DataChannel saves the IP/Port the handshake originated from
+					7.	Server.DataChannel responds to original handshake with empty handshake packet
 							|
-						Client.DataChannel receives handshake response
-						Client.DataChannel checks handshake response
-						Client.DataChannel saves the IP/Port response came from
 							|
-						Client.DataChannel and Server.DataChannel are now paired
+					8.	Client.DataChannel receives handshake response
+					9.	Client.DataChannel saves the IP/Port response came from
+							|
+							|
+					10.	Client.DataChannel and Server.DataChannel are now paired
 	
 
 
+	
+	
 GENERAL FORMAT
 ===============================
 	Each packet is a maximum of 1024 Bytes
@@ -67,43 +64,129 @@ GENERAL FORMAT
 	Multiple packets is not supported or necessary
 	Each packet can be divided into 3 sections, as follows:
 
-		1Byte		4Bytes				max 1019Bytes
-	|-----------|---------------|---------------------------|
-	|	TYPE	|	CHECKSUM	|			DATA			|
-	|-----------|---------------|---------------------------|
+		1Byte					max 1023Bytes
+	|-----------|-------------------------------------------|
+	|	TYPE	|					DATA					|
+	|-----------|-------------------------------------------|
 
 
 	The TYPE denotes what is being sent.
-	The CHECKSUM denotes the value of the data sent.
 	The DATA is the data that is sent, normally encoded as 8bit ASCII characters.
+	
+	To summize, the lead Byte of a packet are always reserved and used by the packet itself.
 
 
 
+	
+	
 TYPE CLASSIFICATIONS
 ===============================
 	There are 5 types of packets that can be sent.
 	Listed as follows:
 
 		Type 0:		Handshake 
-		Type 1:		Start Transfer
-		Type 2:		End Transfer
-		Type 3:		Command
-		Type 4:		Info
-		Type 5:		Acknowledgement
-		Type 6:		Error
+		Type 1:		Command
+		Type 2:		Info
+		Type 3:		Error
+		
+	Type 0 is used to establish an itial connection with the server.
 	
+	Type 1 is used to issue a command to the server (get the server to do something like make coffee, schedual an alarm, play music, etc).
 	
+	Type 2 is sent exclusivly by the server to update the user on the progress of a task, or staus of something in the system (example, the server would return a type 2 packet if the user requests the weather).
 	
-CHECKSUMS
+	Type 3 is sent exclusivly by the server to inform the user some error has occured (either their command, type 1, packet is not recognized as a valid command), or something else has gone midly or catastrophically wrong.
+	
+
+
+	
+
+TYPE-DEPENANT FORMATS
 ===============================
-	The checksum exists to determine if data corruption has occurred. In order to
-	keep both implementation simple and overhead low, there is no way to determine
-	where the data is corrupt, just that it is corrupt.
+	Each different type of packet follows its own format.
 	
-	In the case of corruption, the packet is ignored, and no acknowledgement is sent.
-	The DataChannel will then wait for the retransmitted packet.
+	Type 0: Handshake
+	-------------------------------------
 	
+		   1 Byte        <k> Bytes		  1 Byte       <n> Bytes      1 Byte
+		|----------|-------------------|----------|-----------------|--------|
+		|   0x00   |   HANDSHAKE_KEY   |   0x00   |   DEVICE_NAME   |  0x00  | 
+		|----------|-------------------|----------|-----------------|--------|
+			
+		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Handshake" packet, the TYPE field will always be 0x00.
+		
+		The HANDSHAKE_KEY denotes the well-known byte pattern used to establish an initial connection and registration. As of verion 2.0.0 of this format, the key is a 98 Byte long character string (8bit ASCII), equal to:
+		"1: A robot may not injure a human being or, through inaction, allow a human being to come to harm."
+		It is of worth to note the HANDSHAKE_KEY cannot contain a 0x00 byte (null character in ASCII encoding), as this will result a premature termination of the HANDSHAKE_KEY.
+		The HANDSHAKE_KEY takes up a variable <k> Bytes.
+		
+		The HANDSHAKE_KEY is followed by a terminating zero byte (0x00). The sole purpose of this Byte is to denote a termination of the HANDSHAKE_KEY. This allows the HANDSHAKE_KEY to be freely changed (so long as both client and server are aware of what the active key is), and not be limited to a static Byte size.
+		
+		Following the terminating 0x00 Byte, there is a variable <n> Bytes long DEVICE_NAME field. The DEVICE_NAME is a string identifier for the device being paired. It is encoded as 8bit ASCII characters. Similarly to HANDSHAKE_KEY, it must not contain a 0x00 Byte (null character), as this will result in a premature termination of the DEVICE_NAME. 
+		
+		Following the DEVICE_NAME is a static 1 Byte long terminating 0x00 Byte. This is to denote the end of the DEVICE_NAME field. This is the final Byte in the packet.
+		
+		The server responce to a valid handshake packet is an empty handshake packet, that is, a packet where the first byte is a 0x00, and no other bytes. Such that:
+		
+				|------|
+				| 0x00 |
+				|------|
+		
+		
+	Type 1: Command
+	-------------------------------------
 	
+		   1 Byte        <k> Bytes		1 Byte      <j> Bytes       1 Byte
+		|----------|-----------------|----------|----------------|----------|
+		|   0x01   |   COMMAND_KEY   |   0x00   |   EXTRA_INFO   |   0x00   |
+		|----------|-----------------|----------|----------------|----------|
+			
+		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Command" packet, the TYPE field will always be a 0x01.
+		
+		The COMMAND_KEY denotes what you want the server to do. The COMMAND_KEY is a variable k Bytes long. It must not contain  a 0x00 Byte (null character). The COMMAND_KEY should be a short string of 8bit ASCII character that allow the server to identify what action should be performed. For instance, playing a song could be given the key "play song", turning on a coffee machine could be given the key "make coffee", and so on and so forth.
+		
+		After the COMMAND_KEY, there is a termination 0x00 Byte. This denotes the end of the command key. It is a static size of 1 Byte.
+		
+		Following the first terminating 0x00 Byte, there is an optional field for additional information. This is up to the descretion of the command whether to use or require additional inforation. The EXTRA_INFO field should be a string of 8bit ASCII characters, formated using JSON style.
+		For an example, setting an alarm might have the COMMAND_KEY "new alarm". The EXTRA_INFO field would contain the info needed to create a new alarm such as a time. day, and alarm title.
+		A counter-example would be a COMMAND_KEY "light on". There is no more information needed, as it is all implicitly given through the COMMAND_KEY. Therefore, the EXTRA_INFO field would contain no information.
+		
+		After the EXTRA_INFO field, there is a 2nd terminating 0x00 Byte. This is to denote the end of the EXTRA_INFO field. If the EXTRA_INFO field is left empty, it will be directly after the 1st terminating 0x00, so that the packet will read {0x01, COMMAND_KEY, 0x00, 0x00}. If the EXTRA_INFO field is not left empty, the packet will be read conventionally as the above diagram shows.
+		
+		
+	Type 2: Info
+	-------------------------------------
 	
-	
-	
+		   1 Byte                           <i> Bytes
+		|----------|--------------------------------------------------------|
+		|   0x02   |                         INFO                           |
+		|----------|--------------------------------------------------------|
+		
+		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Info" packet, the TYPE field will always be a 0x02.
+		
+		The rest of the data is encoded as an 8bit ASCII string of characters. It should be formated such that it follows JSON formatting convensions. The INFO field spans to the end of the packet. The INFO field can be a variable <i> Bytes long.
+			
+		
+	Type 3: Error
+	-------------------------------------
+		
+		  1 Byte                           <e> Bytes
+		|----------|--------------------------------------------------------|
+		|   0x03   |                     ERROR_MESSAGE                      |
+		|----------|--------------------------------------------------------|
+		
+		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Error" packet, the TYPE field will always be a 0x03.
+		
+		The rest of the data is encoded as an 8bit ASCII string of characters. It should accuratly describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> Bytes long
+		
+		Essentially, the error packet is exactly the same as a info packet, with the exception that the opcode is labeled as an error instead of regular informaton.
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		

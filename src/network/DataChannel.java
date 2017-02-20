@@ -34,16 +34,12 @@ public class DataChannel extends Thread
 {
 	//declaring static class constants
 	public static final int TYPE_HANDSHAKE = 0;
-	public static final int TYPE_START = 1;
-	public static final int TYPE_END = 2;
-	public static final int TYPE_CMD = 3;
-	public static final int TYPE_INFO = 4;
-	public static final int TYPE_ACK = 5;
-	public static final int TYPE_ERR = 6;
-	private static final int RETRY_QUANTUM = 5;
+	public static final int TYPE_CMD = 1;
+	public static final int TYPE_INFO = 2;
+	public static final int TYPE_ACK = 3;
+	public static final int TYPE_ERR = 4;
 	private static final int TIMEOUT_MS = 5000;
-	private static final byte[] HANDSHAKE_INIT = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
-	private static final byte[] HANDSHAKE_RESPONSE = "2: A robot must obey the orders given it by human beings except where such orders would conflict with the First Law.".getBytes();
+	private static final byte[] HANDSHAKE_ASIMOV1 = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
 	
 	//declaring local instance variables
 	private boolean connected;
@@ -55,7 +51,7 @@ public class DataChannel extends Thread
 	//generic constructor
 	public DataChannel()
 	{
-		//intialize things
+		//initialize things
 		connected = false;
 		
 		try
