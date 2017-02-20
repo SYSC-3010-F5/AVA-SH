@@ -177,9 +177,10 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("disconnect", "Disconnect from main server");															//TODO implement this
 		
 		cmdMap.put("ip", "Request and return the IP of a module\n"															//TODO implement this
-					+ "\tparam1= n/a   || Print the IPv4 address of the local machine\n"
-					+ "\tparam1= local || Print the IPv4 address of the local machine\n"
-					+ "\tparam1= <STR> || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
+					+ "\tparam1= n/a    || Print the IPv4 address of the local machine\n"
+					+ "\tparam1= local  || Print the IPv4 address of the local machine\n"
+					+ "\tparam1= server || Print the IPv4 address of the connected server\n"
+					+ "\tparam1= <STR>  || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
 		
 		cmdMap.put("color", "Change the color theme of the terminal\n"
 					+ "\tparam1= n/a   || Set the color scheme to the default\n"
@@ -379,6 +380,11 @@ public class Terminal extends JFrame implements ActionListener
 							ui.println(InetAddress.getLocalHost().toString());
 						} 
 						catch (UnknownHostException e) {e.printStackTrace();}
+					}
+					else if(input[1].equals("server") || input[1].equals("ava"))
+					{
+						//TODO
+						ui.println("TODO >> dataChannel.ip");
 					}
 					//request ip of module
 					else
