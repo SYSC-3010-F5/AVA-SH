@@ -3,12 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    19/02/2017                                              
-*Version:           1.0.0                                         
+*Version:           1.0.2                                         
 *                                                                                   
 *Purpose:           Allow to user to select a time and dates for an alarm.
 *					
 * 
-*Update Log			v1.0.1
+*Update Log			v1.0.3
+*						- hotkeys added to the dialog (alt+1 for mon, alt+2 for tues, etc)
+*					v1.0.2
+*						- bug where user could select no days for valid alarm patched
+*					v1.0.1
 *						- bug where using cancel button returned invalid data patched
 *						- state saved in Alarm object instead of separate primitives
 *						- JTextField for alarm name added
@@ -23,6 +27,7 @@ package terminal.dialogs;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import java.awt.FlowLayout;
 import javax.swing.JTextField;
@@ -62,6 +67,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 	//declaring local instance variables
 	private int closeMode;
 	private Alarm alarm;
+	private final String windowName;
 	
 	private JCheckBox[] days;
 	private JSpinner spHour;
@@ -76,6 +82,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 	{
 		//set up dialog box
 		super(callingFrame, true);
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		this.setTitle(windowName);
 		this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 		this.setResizable(false);
@@ -84,6 +91,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		
 		//initalize non-gui elements
 		closeMode = this.WINDOW_CLOSE_OPTION;
+		this.windowName = windowName;
 		alarm = null;
 		
 		//set up panel for days
@@ -99,6 +107,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		{
 			days[i] = new JCheckBox(DAYS[i]);
 			days[i].setFont(checkBoxFont);
+			days[i].setMnemonic(i+0x31);		//KeyEvent.VK_# is the same as ASCII value for num
 			dayPanel.add(days[i]);
 		}
 		
@@ -189,20 +198,31 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		Object src = ae.getSource();
 		if(src == btnOk)
 		{
-			//set exit mode
-			closeMode = this.OK_OPTION;
-			
 			//save state
 			alarm = new Alarm();
-			alarm.setName(txtName.getText());
-			alarm.setHour((int)spHour.getValue());
-			alarm.setMinute((int)spMin.getValue());
+			boolean daySelected = false;
 			boolean[] daysArr = new boolean[7];
 			for(int i=0; i<days.length; i++)
 			{
 				daysArr[i] = days[i].isSelected();
+				if(daysArr[i] && !daySelected)
+				{
+					daySelected = true;
+				}
+			}
+			//user did not select a day
+			if(!daySelected)
+			{
+				JOptionPane.showMessageDialog(this, "You must selected at least one day to set the alarm", windowName, JOptionPane.ERROR_MESSAGE);
+				return;
 			}
 			alarm.setDays(daysArr);
+			alarm.setName(txtName.getText());
+			alarm.setHour((int)spHour.getValue());
+			alarm.setMinute((int)spMin.getValue());
+			
+			//set exit mode
+			closeMode = this.OK_OPTION;
 		}
 		else
 		{
