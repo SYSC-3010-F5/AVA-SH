@@ -93,7 +93,7 @@ GENERAL FORMAT
 	
 TYPE CLASSIFICATIONS
 ===============================
-	There are 5 types of packets that can be sent.
+	There are 4 types of packets that can be sent.
 	Listed as follows:
 
 		Type 0:		Handshake 
