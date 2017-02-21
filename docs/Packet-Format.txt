@@ -93,7 +93,7 @@ GENERAL FORMAT
 	
 TYPE CLASSIFICATIONS
 ===============================
-	There are 4 types of packets that can be sent.
+	There are 5 types of packets that can be sent.
 	Listed as follows:
 
 		Type 0:		Handshake 
@@ -120,10 +120,10 @@ TYPE-DEPENANT FORMATS
 	Type 0: Handshake
 	-------------------------------------
 	
-		   1 Byte        <k> Bytes		  1 Byte       <n> Bytes      1 Byte
-		|----------|-------------------|----------|-----------------|--------|
-		|   0x00   |   HANDSHAKE_KEY   |   0x00   |   DEVICE_NAME   |  0x00  | 
-		|----------|-------------------|----------|-----------------|--------|
+		   1 Byte        <k> Bytes		  1 Byte            <n> Bytes      
+		|----------|-------------------|----------|--------------------------|
+		|   0x00   |   HANDSHAKE_KEY   |   0x00   |        DEVICE_NAME       | 
+		|----------|-------------------|----------|--------------------------|
 			
 		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Handshake" packet, the TYPE field will always be 0x00.
 		
@@ -134,11 +134,9 @@ TYPE-DEPENANT FORMATS
 		
 		The HANDSHAKE_KEY is followed by a terminating zero byte (0x00). The sole purpose of this Byte is to denote a termination of the HANDSHAKE_KEY. This allows the HANDSHAKE_KEY to be freely changed (so long as both client and server are aware of what the active key is), and not be limited to a static Byte size.
 		
-		Following the terminating 0x00 Byte, there is a variable <n> Bytes long DEVICE_NAME field. The DEVICE_NAME is a string identifier for the device being paired. It is encoded as 8bit ASCII characters. Similarly to HANDSHAKE_KEY, it must not contain a 0x00 Byte (null character), as this will result in a premature termination of the DEVICE_NAME. 
+		Following the terminating 0x00 Byte, there is a variable <n> Bytes long DEVICE_NAME field. The DEVICE_NAME is a string identifier for the device being paired. It is encoded as 8bit ASCII characters. The length of the DEVICE_NAME field spans to the end of the packet.
 		
-		Following the DEVICE_NAME is a static 1 Byte long terminating 0x00 Byte. This is to denote the end of the DEVICE_NAME field. This is the final Byte in the packet.
-		
-		The server responce to a valid handshake packet is an empty handshake packet, that is, a packet where the first byte is a 0x00, and no other bytes. Such that:
+		The server responce to a valid handshake packet is an empty handshake packet, that is, a packet where the first and only byte is a 0x00 (the opcode for the handshake-type packet), such that:
 		
 				|------|
 				| 0x00 |
@@ -189,7 +187,7 @@ TYPE-DEPENANT FORMATS
 		
 		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Error" packet, the TYPE field will always be a 0x03.
 		
-		The rest of the data is encoded as an 8bit ASCII string of characters. It should accurately describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> Bytes long
+		The rest of the data is encoded as an 8bit ASCII string of characters. It should accuratly describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> Bytes long
 		
 		Essentially, the error packet is exactly the same as a info packet, with the exception that the opcode is labeled as an error instead of regular informaton.
 		
