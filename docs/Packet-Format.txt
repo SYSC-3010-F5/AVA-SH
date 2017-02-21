@@ -93,7 +93,7 @@ GENERAL FORMAT
 	
 TYPE CLASSIFICATIONS
 ===============================
-	There are 5 types of packets that can be sent.
+	There are 4 types of packets that can be sent.
 	Listed as follows:
 
 		Type 0:		Handshake 
@@ -189,7 +189,7 @@ TYPE-DEPENANT FORMATS
 		
 		The TYPE (static 1 Byte size) denotes the type of packet being sent. Since this is a "Error" packet, the TYPE field will always be a 0x03.
 		
-		The rest of the data is encoded as an 8bit ASCII string of characters. It should accuratly describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> Bytes long
+		The rest of the data is encoded as an 8bit ASCII string of characters. It should accurately describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> Bytes long
 		
 		Essentially, the error packet is exactly the same as a info packet, with the exception that the opcode is labeled as an error instead of regular informaton.
 		
