@@ -59,8 +59,8 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 										"Friday", 
 										"Saturday",
 										"Sunday"};
-	private static final Font checkBoxFont = new Font("Tahoma", Font.PLAIN, 14);
-	private static final Font spinnerFont = new Font("Tahoma", Font.PLAIN, 24);
+	private static final Font CHECKBOX_FONT = new Font("Tahoma", Font.PLAIN, 14);
+	private static final Font SPINNER_FONT = new Font("Tahoma", Font.PLAIN, 24);
 	private static final int DEFAULT_WIDTH = 635;
 	private static final int DEFAULT_HEIGHT = 145;
 	
@@ -106,7 +106,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		for(int i=0; i<7; i++)
 		{
 			days[i] = new JCheckBox(DAYS[i]);
-			days[i].setFont(checkBoxFont);
+			days[i].setFont(CHECKBOX_FONT);
 			days[i].setMnemonic(i+0x31);		//KeyEvent.VK_# is the same as ASCII value for num
 			dayPanel.add(days[i]);
 		}
@@ -115,7 +115,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		txtName = new JTextField();
 		txtName.setEditable(true);
 		txtName.setText("Generic Alarm");
-		txtName.setFont(spinnerFont);
+		txtName.setFont(CHECKBOX_FONT);
 		txtName.setBounds(10, 57, 198, 46);
 		getContentPane().add(txtName);
 		txtName.setColumns(10);
@@ -144,14 +144,14 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		//add hour spinner
 		spHour = new JSpinner();
 		spHour.setModel(new SpinnerNumberModel(0, 0, 23, 1));
-		spHour.setFont(spinnerFont);
+		spHour.setFont(SPINNER_FONT);
 		spHour.setBounds(287, 57, 100, 46);
 		this.getContentPane().add(spHour);
 		
 		//add minute spinner
 		spMin = new JSpinner();
 		spMin.setModel(new SpinnerNumberModel(0, 0, 59, 1));
-		spMin.setFont(spinnerFont);
+		spMin.setFont(SPINNER_FONT);
 		spMin.setBounds(420, 57, 100, 46);
 		this.getContentPane().add(spMin);
 		

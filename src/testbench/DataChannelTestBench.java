@@ -16,11 +16,14 @@
 package testbench;
 
 
+import java.net.DatagramPacket;
 //import external libraries
 import java.util.Arrays;
 
 //import packages
 import network.DataChannel;
+import network.NetworkException;
+import network.PacketWrapper;
 
 
 
@@ -51,6 +54,308 @@ public class DataChannelTestBench extends TestBench
 		channel = null;
 	}
 
+	
+	//test unpacking a improper packet
+	public void testBadPacket()
+	{
+		printHeader("Testing unpack(...) method for bad packet (type 0xAD)...");
+		//local test variables
+		DatagramPacket packet;
+		byte[] packetData;
+		boolean e;
+
+		//test 1
+		//make packet
+		byte[] infoString = "Rock. Robot rock".getBytes();
+		println("Creating garbage packet with \"Rock. Robot rock\" as data...");
+		packetData = new byte[infoString.length + 1];
+		packetData[0] = (byte)0xAD;
+		for(int i=0; i< infoString.length; i++)
+		{
+			packetData[i+1] = infoString[i];
+		}
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			printTest(false);
+			assertTrue(false);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			printTest(true);
+			assertTrue(true);
+		}
+	}
+	
+	
+	//test unpacking a command packet
+	public void testUnpackCommand()
+	{
+		printHeader("Testing unpack(...) method for command packet...");
+		//local test variables
+		DatagramPacket packet;
+		byte[] packetData;
+		boolean e;
+		int i=0;
+
+		//test 1
+		//make packet
+		String commandKey = "new alarm";
+		String extraInfo = "{hour: 7, minute: 00, name: wake_up}";
+		byte[] keyBytes = commandKey.getBytes();
+		byte[] infoBytes = extraInfo.getBytes();
+		println("Creating info packet with \"" + commandKey + "\" as command key, \"" + extraInfo + "\" as extra info...");
+		packetData = new byte[keyBytes.length + 3 + infoBytes.length];
+		packetData[0] = DataChannel.TYPE_CMD;
+		i=1;
+		for(byte b : keyBytes)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		i++;
+		for(byte b : infoBytes)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = commandKey.equals(wrapper.commandKey()) && extraInfo.equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+		println();
+		
+		
+		
+		//test 2
+		//make packet
+		commandKey = "toggle light";
+		keyBytes = commandKey.getBytes();
+		println("Creating info packet with \"" + commandKey + "\" as command key, and no extra info...");
+		packetData = new byte[keyBytes.length + 3];
+		packetData[0] = DataChannel.TYPE_CMD;
+		i=1;
+		for(byte b : keyBytes)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		i++;
+		packetData[i] = (byte)0x00;
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = commandKey.equals(wrapper.commandKey()) && "".equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+	}
+	
+	
+	//test unpacking an error packet
+	public void testUnpackError()
+	{
+		printHeader("Testing unpack(...) method for error packet...");
+		//local test variables
+		DatagramPacket packet;
+		byte[] packetData;
+		boolean e;
+
+		//test 1
+		//make packet
+		String errorMsg = "this is an error message you've broken something. Sound about right.";
+		byte[] msgByte = errorMsg.getBytes();
+		println("Creating info packet with \"" + errorMsg + "\" as message field...");
+		packetData = new byte[msgByte.length + 1];
+		packetData[0] = DataChannel.TYPE_ERR;
+		for(int i=0; i< msgByte.length; i++)
+		{
+			packetData[i+1] = msgByte[i];
+		}
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = errorMsg.equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+		println();
+		
+		
+		
+		//test 2
+		//make packet
+		msgByte = "".getBytes();
+		println("Creating info packet with blank string as info field...");
+		packetData = new byte[msgByte.length + 1];
+		packetData[0] = DataChannel.TYPE_ERR;
+		for(int i=0; i< msgByte.length; i++)
+		{
+			packetData[i+1] = msgByte[i];
+		}
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = "".equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+	}
+	
+	
+	
+	//test unpacking an info packet
+	public void testUnpackInfo()
+	{
+		printHeader("Testing unpack(...) method for info packet...");
+		//local test variables
+		DatagramPacket packet;
+		byte[] packetData;
+		boolean e;
+
+		//test 1
+		//make packet
+		byte[] infoString = "some info goes here".getBytes();
+		println("Creating info packet with \"some info goes here\" as info field...");
+		packetData = new byte[infoString.length + 1];
+		packetData[0] = DataChannel.TYPE_INFO;
+		for(int i=0; i< infoString.length; i++)
+		{
+			packetData[i+1] = infoString[i];
+		}
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = "some info goes here".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+		println();
+		
+		
+		
+		//test 2
+		//make packet
+		infoString = "".getBytes();
+		println("Creating info packet with blank string as info field...");
+		packetData = new byte[infoString.length + 1];
+		packetData[0] = DataChannel.TYPE_INFO;
+		for(int i=0; i< infoString.length; i++)
+		{
+			packetData[i+1] = infoString[i];
+		}
+		packet = new DatagramPacket(packetData, packetData.length);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = "".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+	}
 	
 	public void testToByteArray()
 	{

@@ -52,6 +52,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
 import java.util.TreeMap;
@@ -92,7 +93,17 @@ public class Terminal extends JFrame implements ActionListener
 		ui.initCmdMap(this.initCmdMap());
 		
 		//init variables
-		dataChannel = new DataChannel();
+		ui.println("Binding Socket...");
+		try 
+		{
+			dataChannel = new DataChannel();
+		} 
+		catch (SocketException e) 
+		{
+			ui.printError("Socket could not be bound\n" + e.getMessage() + "\n\nExiting...");
+			e.printStackTrace();
+			System.exit(ERROR);
+		}
 		runFlag = true;
 		
 		//update ui
