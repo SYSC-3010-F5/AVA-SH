@@ -35,17 +35,17 @@ public interface ComsProtocol
 	public void respondHandshake(InetAddress toPair, int listeningPort) throws NetworkException;
 
 	//send a command to the server
-	public void sendCmd(String cmdKey);							//send with empty EXTRA_INFO field
-	public void sendCmd(String cmdKey, String extraInfo);
-	public void sendCmd(String cmdKey, JsonFile extraInfo);
-	public void sendCmd(byte[] cmdKey, byte[] extraInfo);
+	public void sendCmd(String cmdKey) throws NetworkException;		//send with empty EXTRA_INFO field
+	public void sendCmd(String cmdKey, String extraInfo) throws NetworkException;
+	public void sendCmd(String cmdKey, JsonFile extraInfo) throws NetworkException;
+	public void sendCmd(byte[] cmdKey, byte[] extraInfo)throws NetworkException;
 	
 	//send an info packet to the server
-	public void sendInfo(JsonFile info);
-	public void sendInfo(String info);
-	public void sendInfo(byte[] info);
+	public void sendInfo(JsonFile info) throws NetworkException;
+	public void sendInfo(String info) throws NetworkException;
+	public void sendInfo(byte[] info) throws NetworkException;
 	
 	//send an error packet to the server
-	public void sendErr(String errMsg);
-	public void sendErr(byte[] errMsg);
+	public void sendErr(String errMsg) throws NetworkException;
+	public void sendErr(byte[] errMsg) throws NetworkException;
 }

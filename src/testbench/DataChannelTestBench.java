@@ -56,7 +56,7 @@ public class DataChannelTestBench extends TestBench
 
 	
 	//test unpacking a improper packet
-	public void testBadPacket()
+	public void testUnpackBadPacket()
 	{
 		printHeader("Testing unpack(...) method for bad packet (type 0xAD)...");
 		//local test variables
@@ -245,7 +245,7 @@ public class DataChannelTestBench extends TestBench
 		//test 2
 		//make packet
 		msgByte = "".getBytes();
-		println("Creating info packet with blank string as info field...");
+		println("Creating info packet with blank string as message field...");
 		packetData = new byte[msgByte.length + 1];
 		packetData[0] = DataChannel.TYPE_ERR;
 		for(int i=0; i< msgByte.length; i++)
@@ -357,6 +357,11 @@ public class DataChannelTestBench extends TestBench
 		}
 	}
 	
+	
+	/* these methods were used in a previous revision, no longer needed but leaving the code in
+	 * case we need it in the future
+	 */
+	/*
 	public void testToByteArray()
 	{
 		printHeader("Testing toByteArray(...) method...");
@@ -503,4 +508,5 @@ public class DataChannelTestBench extends TestBench
 		assertTrue("Testing Y-->[toByteArr]-->[fromByteArr]-->Y", e);
 		println("\n\n");
 	}
+	*/
 }

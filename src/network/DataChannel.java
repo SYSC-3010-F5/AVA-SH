@@ -2,7 +2,7 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    20/02/2017                                              
+*Date of Update:    21/02/2017                                              
 *Version:           0.3.0                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
@@ -22,6 +22,11 @@
 *						- opcodes changed (changed to type byte as well)
 *						- send start/end packet types removed (no longer exist in rev2.0.0 of protocol)
 *						- receive method written
+*						- packet unpacking added
+*						- send command packet added
+*						- send info packet added
+*						- send error packet added
+*						- send handshake added
 *					v0.2.1
 *						- generic accessors added
 *					v0.2.0
@@ -58,7 +63,7 @@ public class DataChannel extends Thread implements ComsProtocol
 	public static final int MAX_PACKET_SIZE = 1024;
 	
 	private static final int TIMEOUT_MS = 5000;
-	private static final byte[] HANDSHAKE_ASIMOV_1 = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
+	private static final byte[] HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
 	
 	//declaring local instance variables
 	private boolean connected;
@@ -122,21 +127,10 @@ public class DataChannel extends Thread implements ComsProtocol
 	
 	
 	//generic send
-	private void sendPacket(byte opcode, byte[] toSend) throws NetworkException
+	private void sendPacket(byte[] toSend) throws NetworkException
 	{
 		if(connected)
 		{
-			//construct the byte array to send, add opcode
-			byte[] data = new byte[toSend.length + 1];
-			data[0] = opcode;
-	
-			//add all bytes from toSend
-			int i = 1;
-			for(byte b : toSend)
-			{
-				data[i] = b;
-			}
-			
 			//construct and send packet
 			DatagramPacket packet = new DatagramPacket(toSend, toSend.length, pairedAddress, pairedPort);
 			try 
@@ -193,7 +187,7 @@ public class DataChannel extends Thread implements ComsProtocol
 	}
 	
 	
-	//process packet (added as seperate method for debugging & testing)
+	//process packet (added as separate method for debugging & testing)
 	public PacketWrapper unpack(DatagramPacket packet) throws NetworkException
 	{
 		//determine packet type and parse accordingly
@@ -204,6 +198,7 @@ public class DataChannel extends Thread implements ComsProtocol
 			case(TYPE_HANDSHAKE):
 				throw new NetworkException("Intial handshake packet received from paired server");
 			
+			//COMMAND PACKET
 			case(TYPE_CMD):
 				ArrayList<Byte> commandKeyBuilder = new ArrayList<Byte>();
 				ArrayList<Byte> extraInfoBuilder = new ArrayList<Byte>();
@@ -265,7 +260,69 @@ public class DataChannel extends Thread implements ComsProtocol
 	@Override
 	public void sendHandshake(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException
 	{
-		//TODO Auto-generated method stub
+		int i=1;
+		//assemble empty byte array
+		byte[] nameBytes = deviceName.getBytes();
+		byte[] toSend = new byte[HANDSHAKE.length + nameBytes.length + 2];
+		
+		//add opcode
+		toSend[0] = TYPE_HANDSHAKE;
+		for(byte b : HANDSHAKE)
+		{
+			toSend[i] = b;
+			i++;
+		}
+		
+		//add terminating 0
+		toSend[i] = (byte)0x00;
+		i++;
+		
+		//add device name
+		for(byte b : nameBytes)
+		{
+			toSend[i] = b;
+		}
+		
+		//create & send packet
+		DatagramPacket packet = new DatagramPacket(toSend, toSend.length, toPair, listeningPort);
+		try 
+		{
+			gpSocket.send(packet);
+		}
+		catch (IOException e) 
+		{
+			throw new NetworkException("Error sending inital handshake packet");
+		}
+		
+		//wait for response for 10 seconds
+		DatagramPacket response = new DatagramPacket(new byte[1], 1);
+		try 
+		{
+			gpSocket.setSoTimeout(TIMEOUT_MS);
+			gpSocket.receive(response);
+		} 
+		catch (IOException e) 
+		{
+			//socket timeout, reset timeout and throw error
+			try 
+			{
+				gpSocket.setSoTimeout(0);
+			} 
+			catch (SocketException e1) {e1.printStackTrace();}
+			throw new NetworkException("Socket timeout -- no responce from server");
+		}
+		
+		//save information
+		if(response.getData()[0] == TYPE_HANDSHAKE)
+		{
+			pairedPort = response.getPort();
+			pairedAddress = response.getAddress();
+			connected = true;
+		}
+		else
+		{
+			throw new NetworkException("Invalid response to handshake");
+		}
 	}
 
 
@@ -277,65 +334,120 @@ public class DataChannel extends Thread implements ComsProtocol
 
 
 	@Override
-	public void sendCmd(String cmdKey) 
+	public void sendCmd(String cmdKey) throws NetworkException 
 	{
-		sendCmd(cmdKey.getBytes(), null);
+		sendCmd(cmdKey.getBytes(), new byte[0]);
 	}
 
 
 	@Override
-	public void sendCmd(String cmdKey, String extraInfo) 
+	public void sendCmd(String cmdKey, String extraInfo) throws NetworkException 
 	{
 		sendCmd(cmdKey.getBytes(), extraInfo.getBytes());
 	}
 
 
 	@Override
-	public void sendCmd(String cmdKey, JsonFile extraInfo) 
+	public void sendCmd(String cmdKey, JsonFile extraInfo) throws NetworkException 
 	{
 		sendCmd(cmdKey.getBytes(), extraInfo.toByteArray());
 	}
 
 
 	@Override
-	public void sendCmd(byte[] cmdKey, byte[] extraInfo) 
+	public void sendCmd(byte[] cmdKey, byte[] extraInfo) throws NetworkException 
 	{
-		//TODO Auto-generated method stub
+		//create empty byte array
+		byte[] toSend = new byte[cmdKey.length + 3 + extraInfo.length];
+		
+		//set opcode
+		toSend[0] = TYPE_CMD;
+		int i = 1;
+		
+		//set command key
+		for(byte b : cmdKey)
+		{
+			toSend[i] = b;
+			i++;
+		}
+		
+		//add 1st terminating 0
+		toSend[i] = (byte)0x00;
+		i++;
+		
+		//set extra info
+		for(byte b : extraInfo)
+		{
+			toSend[i] = b;
+			i++;
+		}
+		
+		//add final termination 0
+		toSend[i] = (byte)0x00;
+		
+		//send packet
+		this.sendPacket(toSend);
 	}
 
 
 	@Override
-	public void sendInfo(JsonFile info) 
+	public void sendInfo(JsonFile info) throws NetworkException 
 	{
 		sendInfo(info.toByteArray());
 	}
 
 
 	@Override
-	public void sendInfo(String info) 
+	public void sendInfo(String info) throws NetworkException 
 	{
 		sendInfo(info.getBytes());
 	}
 
 
 	@Override
-	public void sendInfo(byte[] info) 
+	public void sendInfo(byte[] info) throws NetworkException
 	{
-		// TODO Auto-generated method stub
+		//create an empty byte array
+		byte[] toSend = new byte[info.length + 1];
+		
+		//add opcode
+		toSend[0] = TYPE_INFO;
+		
+		//add info field
+		for (int i=0; i<info.length; i++)
+		{
+			toSend[i+1] = info[i];
+		}
+		
+		//send
+		this.sendPacket(toSend);
 	}
 
 
 	@Override
-	public void sendErr(String errMsg)
+	public void sendErr(String errMsg) throws NetworkException
 	{
 		sendErr(errMsg.getBytes());
 	}
 
 
 	@Override
-	public void sendErr(byte[] errMsg) 
+	public void sendErr(byte[] errMsg) throws NetworkException 
 	{
-		// TODO Auto-generated method stub
+		//create an empty byte array
+		byte[] toSend = new byte[errMsg.length + 1];
+		
+		//add opcode
+		toSend[0] = TYPE_ERR;
+		
+		//add info field
+		for (int i=0; i<errMsg.length; i++)
+		{
+			toSend[i+1] = errMsg[i];
+		}
+		
+		//send
+		this.sendPacket(toSend);
 	}
 }
 
