@@ -10,7 +10,9 @@
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.3.1
+*Update Log			v0.3.2
+*						- error dialog altered so multi-line in dialog will appear as a -- in console
+*					v0.3.1
 *						- dialog added to get data for an alarm (day, time, name)
 *						- imports tidied
 *					v0.3.0
@@ -463,7 +465,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		if (msg != null)
 		{
-			this.println("Error: " + msg);
+			this.println("Error: " + msg.replaceAll("\n", " -- "));
 			JOptionPane.showMessageDialog(this, msg, TERMINAL_NAME, JOptionPane.ERROR_MESSAGE);
 		}
 	}

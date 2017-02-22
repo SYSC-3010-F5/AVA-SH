@@ -14,25 +14,21 @@
 */
 package network;
 
-public class NetworkException extends Exception 
+public class NetworkException extends Exception
 {
 	//declaring local instance variables
-	public final String title;
-	public final String msg;
 	public final boolean critical;
 	
 	
 	//generic constructor
-	public NetworkException(String msg, String title, boolean critical)
+	public NetworkException(String msg, boolean critical)
 	{
-		super();
-		this.title = title;
-		this.msg = msg;					//use final instance var instead of getMessage() from super to keep all accessing of class fields the same
+		super(msg);
 		this.critical = critical;
 	}
 	//shorthand constructor
-	public NetworkException(String msg, String title)
+	public NetworkException(String msg)
 	{
-		this(msg, title, false);
+		this(msg, false);
 	}
 }
