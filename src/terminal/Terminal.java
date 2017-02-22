@@ -2,16 +2,19 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    18/02/2017                                              
-*Version:           0.4.0                                         
+*Date of Update:    22/02/2017                                              
+*Version:           0.5.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.4.1
+*Update Log			v0.5.0
 *						- pinging added
+*						- connection establishing with server added
+*						- connection command and associated method re-written
+*						- default server address/port added, default device name added
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -77,11 +80,15 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.4.1";
+	private static final String VERSION = "v0.5.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
-	private static final int RETRY_QUANTUM = 5;
+	private static final int RETRY_QUANTUM = 5;	
 	
 	//declaring local instance variables
+	private String 		defaultDeviceName;
+	private InetAddress defaultServerAddress;
+	private int 		defaultServerPort;
+	
 	private boolean runFlag;
 	private int closeReason;
 	private TerminalUI ui;
@@ -97,14 +104,24 @@ public class Terminal extends JFrame implements ActionListener
 		ui.initCmdMap(this.initCmdMap());
 		
 		//init variables
-		ui.println("Binding Socket...");
 		try 
 		{
+			ui.println("Binding Socket...");
 			dataChannel = new DataChannel();
+			ui.println("Obtaining local address...");
+			defaultServerAddress = InetAddress.getLocalHost();
+			defaultDeviceName = "terminal";
+			defaultServerPort = 3010;
 		} 
 		catch (SocketException e) 
 		{
 			ui.printError("Socket could not be bound\n" + e.getMessage() + "\n\nExiting...");
+			e.printStackTrace();
+			System.exit(ERROR);
+		}
+		catch (UnknownHostException e)
+		{
+			ui.printError("Local address could not be found\n" + e.getMessage() + "\n\nExiting...");
 			e.printStackTrace();
 			System.exit(ERROR);
 		}
@@ -236,13 +253,13 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//connect to server
-	private boolean establishConnection(InetAddress address, int port)
+	private boolean establishConnection(InetAddress address, int port, String name)
 	{
 		for(int i=0; i<RETRY_QUANTUM; i++)
 		{
 			ui.println("Establishing connection...");
 			try {
-				dataChannel.sendHandshake(address, port, "Jason");
+				dataChannel.sendHandshake(address, port, name);
 			} catch (NetworkException e) {
 				ui.println(e.getMessage());
 			}
@@ -570,13 +587,103 @@ public class Terminal extends JFrame implements ActionListener
 			
 			//attempt to connect to the server
 			case("connect"):
-			try {
-				this.establishConnection(InetAddress.getLocalHost(), 3010);
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-				
+				if (input.length <= 4)
+				{
+					//default values
+					InetAddress address = defaultServerAddress;
+					int port = defaultServerPort;
+					String name = defaultDeviceName;
+					
+					//non-default values -- parse and set address and port
+					if (input.length >= 2)
+					{
+						//set address
+						if (input[1].equals("default"))
+						{
+							address = defaultServerAddress;
+						}
+						else if (input[1].equals("local"))
+						{
+							try
+							{
+								address = InetAddress.getLocalHost();
+							}
+							catch (UnknownHostException e)
+							{
+								ui.printError("Could not obtain local IPv4 address");
+								return;
+							}
+						}
+						else
+						{
+							try
+							{
+								//declaring temporary method variables
+								byte[] addr;
+								String subStrBytes[];
+
+								//parse addr
+								subStrBytes = (input[1]).split("\\.");
+								
+								addr = new byte[subStrBytes.length];
+								for(int i=0; i<subStrBytes.length; i++)
+								{
+									addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
+								}
+								
+								//save as ip
+								address = InetAddress.getByAddress(addr);
+							}
+							catch (NumberFormatException|UnknownHostException e)
+							{
+								ui.printError("Invalid IPAddress -- must be of form \"xxx.xxx.xxx.xxx\"");
+								return;
+							}	
+						}
+						
+						//set port
+						if (input.length >= 3)
+						{
+							if(input[2].equals("default"))
+							{
+								port = defaultServerPort;
+							}
+							else
+							{
+								try
+								{
+									port = Integer.parseInt(input[2]);
+								}
+								catch (NumberFormatException e)
+								{
+									ui.printError("Invalid Port -- must be a valid 32bit integer");
+									return;
+								}
+							}
+							
+							//set name
+							if(input.length == 4)
+							{
+								if(input[3].equals("default"))
+								{
+									name = defaultDeviceName;
+								}
+								else
+								{
+									name = input[3];
+								}
+							}
+						}
+					}
+					
+					//try to connect
+					establishConnection(address, port, name);
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
 				
 			//cmd not found
 			default:

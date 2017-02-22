@@ -2,14 +2,13 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    21/02/2017                                              
-*Version:           1.0.0                                         
+*Date of Update:    22/02/2017                                              
+*Version:           0.1.0                                         
 *                                                                                   
-*Purpose:           Generic wrapper class that shows the components of a packet
-*					in an easy, ready-to-use form.
+*Purpose:           The main controller of the AVA system
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v0.1.0
 *						- null
 */
 package server;
@@ -21,7 +20,6 @@ import java.net.SocketException;
 import java.util.HashMap;
 
 //import packages
-import network.DataChannel;
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
@@ -56,6 +54,7 @@ public class MainServer
 			{
 				System.out.println("Blocking...");
 				PacketWrapper wrapper = multiChannel.receivePacket();
+				System.out.println(wrapper.deviceName());
 				System.out.println(wrapper.toString());
 				multiChannel.respondHandshake(wrapper.source.getAddress(), wrapper.source.getPort());
 			} 

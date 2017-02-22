@@ -2,8 +2,8 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    21/02/2017                                              
-*Version:           0.3.0                                         
+*Date of Update:    22/02/2017                                              
+*Version:           0.3.1                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
@@ -18,6 +18,7 @@
 * 
 *Update Log			v0.3.1
 *						- added automated unpacking of handshake packets
+*						- bug where handshake packet's device_name field being cut off patched
 *					v0.3.0
 *						- revision 2.0.0 of the proposed system
 *						- checksums removed
@@ -353,6 +354,7 @@ public class DataChannel implements ComsProtocol
 		for(byte b : nameBytes)
 		{
 			toSend[i] = b;
+			i++;
 		}
 		
 		//create & send packet
@@ -367,7 +369,7 @@ public class DataChannel implements ComsProtocol
 		}
 		
 		//wait for response for 10 seconds
-		DatagramPacket response = new DatagramPacket(new byte[1], 1);
+		DatagramPacket response = new DatagramPacket(new byte[3], 3);
 		try 
 		{
 			gpSocket.setSoTimeout(TIMEOUT_MS);
@@ -385,7 +387,8 @@ public class DataChannel implements ComsProtocol
 		}
 		
 		//save information
-		if(response.getData()[0] == TYPE_HANDSHAKE)
+		byte[] data = response.getData();
+		if(data[0] == TYPE_HANDSHAKE && data[1] == 0x00 && data[2] == 0x00)
 		{
 			pairedPort = response.getPort();
 			pairedAddress = response.getAddress();

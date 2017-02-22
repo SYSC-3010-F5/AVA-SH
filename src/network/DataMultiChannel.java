@@ -1,3 +1,17 @@
+/**
+*Class:             DataMultChannel.java
+*Project:          	AVA Smart Home
+*Author:            Jason Van Kerkhoven                                             
+*Date of Update:    22/02/2017                                              
+*Version:           1.0.0                                         
+*                                                                                   
+*Purpose:           Real ugly way of allowing DataChannel to send to any address.
+*					Like, REALLY ugly.
+*					
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package network;
 
 import java.net.DatagramSocket;

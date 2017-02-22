@@ -2,7 +2,7 @@
 *Class:             PacketWrapper.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    21/02/2017                                              
+*Date of Update:    22/02/2017                                              
 *Version:           1.1.0                                         
 *                                                                                   
 *Purpose:           Generic wrapper class that shows the components of a packet

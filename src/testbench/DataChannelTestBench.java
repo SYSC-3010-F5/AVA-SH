@@ -2,7 +2,7 @@
 *Class:             DataChannelTestBench.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    04/02/2017                                              
+*Date of Update:    22/02/2017                                              
 *Version:           1.0.0                                         
 *                                                                                   
 *Purpose:           Test bench for methods in DataChannel.
