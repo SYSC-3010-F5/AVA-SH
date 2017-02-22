@@ -19,6 +19,8 @@
 *Update Log			v0.3.1
 *						- added automated unpacking of handshake packets
 *						- bug where handshake packet's device_name field being cut off patched
+*						- added timeout option for receiving
+*						- timeout for handshake reduced
 *					v0.3.0
 *						- revision 2.0.0 of the proposed system
 *						- checksums removed
@@ -68,7 +70,7 @@ public class DataChannel implements ComsProtocol
 	public static final byte TYPE_ERR = 3;
 	public static final int MAX_PACKET_SIZE = 1024;
 	
-	protected static final int TIMEOUT_MS = 10000;
+	protected static final int TIMEOUT_MS = 4000;
 	protected static final byte[] HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
 	
 	//declaring local instance variables
@@ -196,7 +198,7 @@ public class DataChannel implements ComsProtocol
 			} 
 			catch (IOException e) 
 			{
-				e.printStackTrace();
+				throw new NetworkException("Socket timeout");
 			}
 			
 			//unpack it and return
@@ -206,6 +208,22 @@ public class DataChannel implements ComsProtocol
 		{
 			throw new NetworkException("Cannot receive packet -- DataChannel not paired");
 		}
+	}
+	
+	
+	//receive for only set time
+	public PacketWrapper receivePacket(int timeout) throws NetworkException 
+	{
+		try
+		{
+			//set timeout
+			gpSocket.setSoTimeout(timeout);
+			PacketWrapper wrapper = this.receivePacket();
+			//reset timeout
+			gpSocket.setSoTimeout(0);
+			return wrapper;
+		}
+		catch (SocketException e){e.printStackTrace();return null;}
 	}
 	
 	

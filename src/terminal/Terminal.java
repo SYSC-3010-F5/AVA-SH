@@ -253,19 +253,36 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//connect to server
-	private boolean establishConnection(InetAddress address, int port, String name)
+	private void establishConnection(InetAddress address, int port, String name)
 	{
-		for(int i=0; i<RETRY_QUANTUM; i++)
+		if(!dataChannel.getConnected())
 		{
-			ui.println("Establishing connection...");
-			try {
-				dataChannel.sendHandshake(address, port, name);
-			} catch (NetworkException e) {
-				ui.println(e.getMessage());
+			for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
+			{
+				ui.println("Establishing connection...");
+				try 
+				{
+					dataChannel.sendHandshake(address, port, name);
+				} 
+				catch (NetworkException e) 
+				{
+					//timeout has occurred
+				}
+			}
+			
+			if(dataChannel.getConnected())
+			{
+				ui.println("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
+			}
+			else
+			{
+				ui.println("Connection could not be established!");
 			}
 		}
-		
-		return false;
+		else
+		{
+			ui.printError("Already connected!\nPlease disconnect first");
+		}
 	}
 	
 	
@@ -567,21 +584,7 @@ public class Terminal extends JFrame implements ActionListener
 				
 			//ping server
 			case("ping"):
-				try 
-				{
-					//send ping
-					dataChannel.sendCmd("ping");
-					//wait for response
-					PacketWrapper wrapper = dataChannel.receivePacket();
-					if(wrapper.type == DataChannel.TYPE_INFO)
-					{
-						ui.println("Response from server! >> \"" + wrapper.info());
-					}
-				}
-				catch (NetworkException e)
-				{
-					ui.printError(e.getMessage());
-				}
+				pingServer();
 				break;
 				
 			
@@ -678,6 +681,7 @@ public class Terminal extends JFrame implements ActionListener
 					
 					//try to connect
 					establishConnection(address, port, name);
+					ui.updateStatus(this.statusToString());
 				}
 				else
 				{
@@ -694,7 +698,47 @@ public class Terminal extends JFrame implements ActionListener
 	}
 	
 	
-	//summize the status as a string
+	//ping the server
+	private void pingServer()
+	{
+		//declaring method variables
+		long pre, post;
+		
+		//ping 5 times
+		for(int i=0; i<5; i++)
+		{
+			//pause between pinging
+			try {Thread.sleep(50);}
+			catch (InterruptedException e1) {e1.printStackTrace();}
+			
+			try 
+			{
+				//send ping
+				pre = System.currentTimeMillis();
+				dataChannel.sendCmd("ping");
+				
+				//wait for response
+				PacketWrapper wrapper = dataChannel.receivePacket(4000);
+				System.out.println(wrapper.toString());
+				if(wrapper.type == DataChannel.TYPE_INFO)
+				{
+					post = System.currentTimeMillis();
+					ui.println("Response from server, delay of " + (post-pre) + "ms");
+				}
+				else
+				{
+					ui.println("Unexpected packet recieved!");
+				}
+			}
+			catch (NetworkException e)
+			{
+				ui.println(e.getMessage());
+			}
+		}
+	}
+	
+	
+	//the status as a string
 	private String statusToString()
 	{
 		//returnable string
@@ -703,8 +747,7 @@ public class Terminal extends JFrame implements ActionListener
 		if(dataChannel.getConnected())
 		{
 			status += "Server: CONNECTED\n"
-					+ "        " + dataChannel.getPairedAddress().toString()
-					+ "        p: " + dataChannel.getPairedPort() + "\n\n" ;
+					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n" ;
 		}
 		else
 		{
