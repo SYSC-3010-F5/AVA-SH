@@ -16,7 +16,12 @@
 package testbench;
 
 
+import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 //import external libraries
 import java.util.Arrays;
 
@@ -56,7 +61,7 @@ public class DataChannelTestBench extends TestBench
 
 	
 	//test unpacking a improper packet
-	public void testUnpackBadPacket()
+	public void testUnpackBadPacket() throws UnknownHostException
 	{
 		printHeader("Testing unpack(...) method for bad packet (type 0xAD)...");
 		//local test variables
@@ -74,7 +79,7 @@ public class DataChannelTestBench extends TestBench
 		{
 			packetData[i+1] = infoString[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -97,7 +102,7 @@ public class DataChannelTestBench extends TestBench
 	
 	
 	//test unpacking a command packet
-	public void testUnpackCommand()
+	public void testUnpackCommand() throws UnknownHostException
 	{
 		printHeader("Testing unpack(...) method for command packet...");
 		//local test variables
@@ -112,7 +117,7 @@ public class DataChannelTestBench extends TestBench
 		String extraInfo = "{hour: 7, minute: 00, name: wake_up}";
 		byte[] keyBytes = commandKey.getBytes();
 		byte[] infoBytes = extraInfo.getBytes();
-		println("Creating info packet with \"" + commandKey + "\" as command key, \"" + extraInfo + "\" as extra info...");
+		println("Creating command packet with \"" + commandKey + "\" as command key, \"" + extraInfo + "\" as extra info...");
 		packetData = new byte[keyBytes.length + 3 + infoBytes.length];
 		packetData[0] = DataChannel.TYPE_CMD;
 		i=1;
@@ -129,7 +134,7 @@ public class DataChannelTestBench extends TestBench
 			i++;
 		}
 		packetData[i] = (byte)0x00;
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -159,7 +164,7 @@ public class DataChannelTestBench extends TestBench
 		//make packet
 		commandKey = "toggle light";
 		keyBytes = commandKey.getBytes();
-		println("Creating info packet with \"" + commandKey + "\" as command key, and no extra info...");
+		println("Creating command packet with \"" + commandKey + "\" as command key, and no extra info...");
 		packetData = new byte[keyBytes.length + 3];
 		packetData[0] = DataChannel.TYPE_CMD;
 		i=1;
@@ -171,7 +176,7 @@ public class DataChannelTestBench extends TestBench
 		packetData[i] = (byte)0x00;
 		i++;
 		packetData[i] = (byte)0x00;
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -197,7 +202,7 @@ public class DataChannelTestBench extends TestBench
 	
 	
 	//test unpacking an error packet
-	public void testUnpackError()
+	public void testUnpackError() throws UnknownHostException
 	{
 		printHeader("Testing unpack(...) method for error packet...");
 		//local test variables
@@ -216,7 +221,7 @@ public class DataChannelTestBench extends TestBench
 		{
 			packetData[i+1] = msgByte[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -252,7 +257,7 @@ public class DataChannelTestBench extends TestBench
 		{
 			packetData[i+1] = msgByte[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -279,7 +284,7 @@ public class DataChannelTestBench extends TestBench
 	
 	
 	//test unpacking an info packet
-	public void testUnpackInfo()
+	public void testUnpackInfo() throws UnknownHostException
 	{
 		printHeader("Testing unpack(...) method for info packet...");
 		//local test variables
@@ -297,7 +302,7 @@ public class DataChannelTestBench extends TestBench
 		{
 			packetData[i+1] = infoString[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -333,7 +338,7 @@ public class DataChannelTestBench extends TestBench
 		{
 			packetData[i+1] = infoString[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length);
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -356,6 +361,119 @@ public class DataChannelTestBench extends TestBench
 			assertTrue(false);
 		}
 	}
+	
+	
+	//test the handshake
+	public void testHandshake() throws NetworkException, IOException
+	{
+		printHeader("Testing unpack(...) method for handshake packet...");
+		//local test variables
+		DatagramPacket packet;
+		byte[] packetData;
+		boolean e;
+		int i=0;
+
+		//test 1
+		//make packet
+		String handshake = "Handshake Test";
+		String deviceName = "Terminal";
+		byte[] handShakeByte = handshake.getBytes();
+		byte[] nameBytes = deviceName.getBytes();
+		println("Creating handshake packet with \"" + handshake + "\" as handshake, \"" + deviceName + "\" as device name...");
+		packetData = new byte[handShakeByte.length + 3 + nameBytes.length];
+		packetData[0] = DataChannel.TYPE_HANDSHAKE;
+		i=1;
+		for(byte b : handShakeByte)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		i++;
+		for(byte b : nameBytes)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+		println();
+		
+		
+		
+		//test 2
+		//make packet
+		handshake = "";
+		deviceName = "";
+		handShakeByte = handshake.getBytes();
+		nameBytes = deviceName.getBytes();
+		println("Creating handshake packet with empty handshake/device name fields...");
+		packetData = new byte[handShakeByte.length + 3 + nameBytes.length];
+		packetData[0] = DataChannel.TYPE_HANDSHAKE;
+		i=1;
+		for(byte b : handShakeByte)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		i++;
+		for(byte b : nameBytes)
+		{
+			packetData[i] = b;
+			i++;
+		}
+		packetData[i] = (byte)0x00;
+		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		println("Packet contents:");
+		println(packet.getData());
+		
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
+		println();
+	}
+	
+	
+	
+	
+	
 	
 	
 	/* these methods were used in a previous revision, no longer needed but leaving the code in

@@ -10,7 +10,9 @@
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.4.0
+*Update Log			v0.4.1
+*						- pinging added
+*					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
 *						- help menu format improved
@@ -61,6 +63,8 @@ import javax.swing.UIManager;
 
 //import packages
 import network.DataChannel;
+import network.NetworkException;
+import network.PacketWrapper;
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
 
@@ -73,9 +77,9 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.4.0";
+	private static final String VERSION = "v0.4.1";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
-	private static final int RETRY_QUANTUM = 10;
+	private static final int RETRY_QUANTUM = 5;
 	
 	//declaring local instance variables
 	private boolean runFlag;
@@ -115,6 +119,7 @@ public class Terminal extends JFrame implements ActionListener
 	//main run-loop of the terminal
 	public int run()
 	{
+		/*
 		//initial setup
 		if(establishConnection(null))
 		{
@@ -124,6 +129,7 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			ui.println("Connection FAILED");
 		}
+		*/
 		
 		
 		//wait before clearing log
@@ -223,21 +229,23 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1: server || Reboot the main server\n"
 					+ "\tparam1: <STR>  || Reboot the device assosiated with <STR>");
 		
+		cmdMap.put("ping", "Ping the server");
+		
 		return cmdMap;
 	}
 	
 	
 	//connect to server
-	private boolean establishConnection(Inet4Address address)
+	private boolean establishConnection(InetAddress address, int port)
 	{
-		/*
-		 * TODO 
-		 * establish a connection
-		 * try some n amount of times to do the handshake
-		 */
 		for(int i=0; i<RETRY_QUANTUM; i++)
 		{
 			ui.println("Establishing connection...");
+			try {
+				dataChannel.sendHandshake(address, port, "Jason");
+			} catch (NetworkException e) {
+				ui.println(e.getMessage());
+			}
 		}
 		
 		return false;
@@ -538,6 +546,36 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+				
+				
+			//ping server
+			case("ping"):
+				try 
+				{
+					//send ping
+					dataChannel.sendCmd("ping");
+					//wait for response
+					PacketWrapper wrapper = dataChannel.receivePacket();
+					if(wrapper.type == DataChannel.TYPE_INFO)
+					{
+						ui.println("Response from server! >> \"" + wrapper.info());
+					}
+				}
+				catch (NetworkException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+				
+			
+			//attempt to connect to the server
+			case("connect"):
+			try {
+				this.establishConnection(InetAddress.getLocalHost(), 3010);
+			} catch (UnknownHostException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 				
 				
 			//cmd not found

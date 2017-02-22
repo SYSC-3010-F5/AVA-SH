@@ -18,6 +18,11 @@
 package network;
 
 
+//import libraries
+import java.net.InetSocketAddress;
+
+
+
 
 public class PacketWrapper
 {
@@ -25,14 +30,16 @@ public class PacketWrapper
 	public final byte type;
 	private final String sField1;
 	private final String sField2;
+	public final InetSocketAddress source;
 	
 	
 	//generic constructor
-	public PacketWrapper (byte type, String sField1, String sField2)
+	public PacketWrapper (byte type, String sField1, String sField2, InetSocketAddress source)
 	{
 		this.type = type;
 		this.sField1 = sField1;
 		this.sField2 = sField2;
+		this.source = source;
 	}
 	
 	
@@ -71,15 +78,22 @@ public class PacketWrapper
 		switch(type)
 		{
 			case(DataChannel.TYPE_HANDSHAKE):
-				return(s += "HANDSHAKE_KEY: <" + this.handshakeKey() + ">, DEVICE_NAME: <" + this.commandKey() + ">");
+				s += "HANDSHAKE_KEY: <" + this.handshakeKey() + ">, DEVICE_NAME: <" + this.deviceName() + ">";
+				break;
 			case(DataChannel.TYPE_CMD):
-				return(s += "CMD_KEY: <" + this.commandKey() + "> EXTRA_INFO: <" + this.extraInfo() + ">");
+				s += "CMD_KEY: <" + this.commandKey() + "> EXTRA_INFO: <" + this.extraInfo() + ">";
+				break;
 			case(DataChannel.TYPE_INFO):
-				return(s += "INFO: <" + this.info() + ">");
+				s += "INFO: <" + this.info() + ">";
+				break;
 			case(DataChannel.TYPE_ERR):
-				return(s += "ERR_MSG: <" + this.errorMessage() + ">");
+				s += "ERR_MSG: <" + this.errorMessage() + ">";
+				break;
 			default:
-				return(s += "FIELD1: <" + this.sField1 + "> FIELD2: <" + this.sField2 + ">");
+				s += "FIELD1: <" + this.sField1 + "> FIELD2: <" + this.sField2 + ">";
+				break;
 		}
+		s += ", FROM: " + this.source.toString();
+		return s;
 	}
 }
