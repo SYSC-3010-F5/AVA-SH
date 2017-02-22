@@ -12,9 +12,26 @@ import android.widget.TextView.OnEditorActionListener;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
 
+/**
+ *Class:                TerminalActivity.java
+ *Project:          	AVA Smart Home
+ *Author:               Nathaniel Charlebois
+ *Date of Update:       04/02/2017
+ *Version:              0.0.0
+ *
+ *Purpose:              The general terminalActivity view/model responsible for the main segment of
+ *                          the app.
+ *
+ *
+ *
+ *Update Log			v.0.0.0
+ *                          -Initial class creation
+ *                          -Refactoring to reflect the View-Controller-Model schematic
+ *
+ */
 
 
-public class Terminal extends AppCompatActivity {
+public class TerminalActivity extends AppCompatActivity {
 
 
     TextView terminalOutput;
@@ -33,11 +50,11 @@ public class Terminal extends AppCompatActivity {
         inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
 
-        initViews(this);
+        initViews();
 
     }
 
-    public void initViews(Context c){
+    public void initViews(){
         terminalOutput = (TextView) findViewById(R.id.terminal_output);
         terminalInput = (EditText) findViewById(R.id.terminal_input);
 

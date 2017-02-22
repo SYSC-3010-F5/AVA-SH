@@ -2,18 +2,16 @@ package f5.ava_sh;
 
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
 import android.widget.TextView;
 
 /**
- *Class:             Terminal.java
- *Project:          	AVA Smart Home
- *Author:            Nathaniel Charlebois
- *Date of Update:    04/02/2017
- *Version:           0.2.0
+ *Class:                TerminalActionListener.java
+ *Project:              AVA Smart Home
+ *Author:               Nathaniel Charlebois
+ *Date of Update:       04/02/2017
+ *Version:              0.0.0
  *
- *Purpose:          An ActionListener Controller bound to the Terminal view
+ *Purpose:          An ActionListener Controller bound to the TerminalActivity view
  *
  *
  *
@@ -26,9 +24,9 @@ import android.widget.TextView;
 public class TerminalActionListener implements TextView.OnEditorActionListener {
 
 
-    Terminal view;
+    TerminalActivity view;
 
-    public TerminalActionListener(Terminal terminal){
+    public TerminalActionListener(TerminalActivity terminal){
         view = terminal;
     }
 
