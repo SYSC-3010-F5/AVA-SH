@@ -90,7 +90,6 @@ public class MainServer
 			try 
 			{
 				packet = this.receivePacket();
-				multiChannel.respondHandshake(packet.source.getAddress(), packet.source.getPort());
 			} 
 			catch (NetworkException e) {e.printStackTrace();}
 			
