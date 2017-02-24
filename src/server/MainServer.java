@@ -2,34 +2,48 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    22/02/2017                                              
-*Version:           0.1.0                                         
+*Date of Update:    23/02/2017                                              
+*Version:           0.1.1                                        
 *                                                                                   
 *Purpose:           The main controller of the AVA system
 *					
 * 
-*Update Log			v0.1.0
-*						- null
+*Update Log			v0.1.1
+*						- if device name already exists in registry, error packet is sent
+*						- if handshake is bad, error packet sent
+*						- ServerDKSY used for output
+*						- new alarm prototype added
+*					v0.1.0
+*						- registry added for devices
+*						- handshaking added
+*						- responding to pings added
 */
 package server;
 
 
+//imports
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 //import libraries
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.HashMap;
 
+import io.json.JsonException;
 import network.DataChannel;
 //import packages
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.datatypes.Alarm;
+import terminal.Terminal;
 
 
 
-public class MainServer 
+public class MainServer implements ActionListener
 {
 	//declaring static class constants
+	private static final String SERVER_NAME = "AVA Server 0.1.1";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -42,7 +56,10 @@ public class MainServer
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
 	private DataMultiChannel multiChannel;
+	private boolean pauseFlag;
 	private boolean runFlag;
+	private int closeMode;
+	private ServerDSKY display;
 	
 	
 	//generic constructor
@@ -51,17 +68,27 @@ public class MainServer
 		//initialize
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
+		display = new ServerDSKY(SERVER_NAME, this);
 		runFlag = true;
+		pauseFlag = false;
+		
+		display.println("Server running!");
 	}
 	
 	
 	//receive packet
 	private PacketWrapper receivePacket() throws NetworkException
 	{
-		System.out.println("Waiting for packet...");
+		display.println("Waiting for packet...");
 		PacketWrapper wrapper = multiChannel.receivePacket();
-		System.out.println("Packet received!");
-		System.out.println("Contents: {" + wrapper.toString() + "}");
+		display.println("Packet received!\nContents: {" + wrapper.toString() + "}\n");
+		return wrapper;
+	}
+	private PacketWrapper receivePacket(int timeout) throws NetworkException, SocketException
+	{
+		display.println("Waiting for packet...");
+		PacketWrapper wrapper = multiChannel.receivePacket(timeout);
+		display.println("Packet received!\nContents: {" + wrapper.toString() + "}\n");
 		return wrapper;
 	}
 	
@@ -72,7 +99,7 @@ public class MainServer
 		//send an empty info packet to act as a ping
 		try 
 		{
-			System.out.println("Sending empty info packet...");
+			display.println("Sending empty info packet...");
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 			multiChannel.sendInfo("");
 		} 
@@ -80,88 +107,178 @@ public class MainServer
 	}
 	
 	
-	//main server input-control-wait loop
-	public void serverControlCycle()
+	//make a new alarm
+	private void newAlarm(String alarmJSON) throws JsonException
 	{
-		while(runFlag)
-		{
-			//receive
-			PacketWrapper packet = null;
-			try 
-			{
-				packet = this.receivePacket();
-			} 
-			catch (NetworkException e) {e.printStackTrace();}
-			
-			//decide what to do with the packet
-			switch(packet.type)
-			{
-				//new device for the registry
-				case(TYPE_HANDSHAKE):
-					System.out.println("Device attempting pairing...");
-					//check handshake
-					if(packet.handshakeKey().equals(HANDSHAKE))
-					{
-						//add to registry
-						System.out.println("Device handshake correct!\nAdding to registry...");
-						registry.put(packet.deviceName(), packet.source);
-						System.out.println("Device added to registry under name \"" + packet.deviceName() + "\", value: \"" + packet.source.toString() + "\"");
-						
-						//respond to handshake with empty handshake
-						try
-						{
-							multiChannel.respondHandshake(packet.source.getAddress(), packet.source.getPort());
-						}
-						catch (NetworkException e)
-						{
-							System.out.println("EXCEPTION >> " + e.getMessage());
-						}
-						
-					}
-					else
-					{
-						System.out.println("Device handshake incorrect!\nPairing FAILED");
-						//TODO respond to bad handshake
-					}
-					break;
-				
-				//some command from an interface
-				case(DataChannel.TYPE_CMD):
-					//determine what to do based on command key
-					switch(packet.commandKey())
-					{
-						case("ping"):
-							sendPing(packet.source);
-							break;
-					}
-					break;
-				
-				//we should not get these
-				case(DataChannel.TYPE_INFO):
-					break;
-				
-				//an error from one of the devices
-				case(DataChannel.TYPE_ERR):
-					break;
-			}
-		}
+		display.println("Creating new alarm...");
+		Alarm alarm = new Alarm();
+		alarm.fromJSON(alarmJSON);
+		display.println("Alarm created!");
+		//TODO actually do something with the alarm
 	}
 	
 	
-	//main method
-	public static void main(String[] args)
+	//main server input-control-wait loop
+	public int run()
 	{
-		MainServer server = null;
-		try 
+		while(runFlag)
 		{
-			server = new MainServer();
-		} 
-		catch (SocketException e) 
-		{
-			System.out.println(e.toString());
-			e.printStackTrace();
+			try
+			{
+				//receive
+				PacketWrapper packet = null;
+				packet = this.receivePacket();
+				
+				//decide what to do with the packet
+				switch(packet.type)
+				{
+					//new device for the registry
+					case(TYPE_HANDSHAKE):
+						display.println("Device attempting pairing...");
+						//check handshake
+						if(packet.handshakeKey().equals(HANDSHAKE))
+						{
+							//add to registry
+							display.println("Device handshake correct!\nAdding to registry...");
+							if(!registry.containsKey(packet.deviceName()))
+							{
+								registry.put(packet.deviceName(), packet.source);
+								display.println("Device added to registry under name \"" + packet.deviceName() + "\", value: \"" + packet.source.toString() + "\"");
+								
+								//respond to handshake with empty handshake
+								try
+								{
+									multiChannel.respondHandshake(packet.source.getAddress(), packet.source.getPort());
+								}
+								catch (NetworkException e)
+								{
+									display.println("EXCEPTION >> " + e.getMessage());
+								}
+							}
+							else
+							{
+								display.println("Device name already in used, error packet sent");
+								//device name already registered, respond with error
+								try 
+								{
+									multiChannel.hijackChannel(packet.source.getAddress(), packet.source.getPort());
+									multiChannel.sendErr("Device name already in used\nPlease choose another device name to register under");
+								} 
+								catch (NetworkException e) 
+								{
+									display.println("EXCEPTION >> " + e.getMessage());
+	
+								}
+							}
+						}
+						else
+						{
+							display.println("Device handshake incorrect!\nPairing FAILED");
+							//TODO respond to bad handshake
+						}
+						display.updateRegistry(registry);
+						break;
+					
+					//some command from an interface
+					case(DataChannel.TYPE_CMD):
+						//determine what to do based on command key
+						switch(packet.commandKey())
+						{
+							//somebody is pinging server, respond
+							case("ping"):
+								sendPing(packet.source);
+								break;
+								
+							//new alarm added
+							case("new alarm"):
+								try
+								{
+									newAlarm(packet.extraInfo());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+								}
+								break;
+						}
+						break;
+					
+					//we should not get these
+					case(DataChannel.TYPE_INFO):
+						break;
+					
+					//an error from one of the devices
+					case(DataChannel.TYPE_ERR):
+						break;
+				}
+			}
+			catch (NetworkException e){}
 		}
-		server.serverControlCycle();
+		return closeMode;
+	}
+	
+	
+	@Override
+	//Handle button presses
+	public void actionPerformed(ActionEvent ae) 
+	{
+		//parse based on action command
+		String cmd = ae.getActionCommand();
+		switch(cmd)
+		{
+			//erase the registry
+			case(ServerDSKY.BTN_ERASE_REGISTRY):
+				display.println("BUTTON >> ERASE REGISTRY");
+				display.println("Registry cleared");
+				registry = new HashMap<String,InetSocketAddress>();
+				display.updateRegistry(registry);
+				break;
+			
+			//force updating the registry view
+			case(ServerDSKY.BTN_UPDATE_REGISTRY):
+				display.println("BUTTON >> UPDATE REGISTRY");
+				display.updateRegistry(registry);
+				break;
+			
+			//soft shutdown of system
+			case(ServerDSKY.BTN_SOFT_SHUTDOWN):
+				display.println("BUTTON >> SOFT SHUTDOWN");
+				//TODO
+				break;
+			
+			//hard shutdown of system
+			case(ServerDSKY.BTN_HARD_SHUTDOWN):
+				display.println("BUTTON >> HARD SHUTDOWN");
+				System.exit(0);
+				break;
+			
+			//soft reset of system
+			case(ServerDSKY.BTN_SOFT_RESET):
+				display.println("BUTTON >> SOFT RESET");
+				//TODO
+				break;
+			
+			//hard reset of system
+			case(ServerDSKY.BTN_HARD_RESET):
+				//TODO
+				break;
+			
+			//pause of resume server
+			case(ServerDSKY.BTN_PAUSE_OR_RESUME):
+				display.println("BUTTON >> PAUSE/RESUME");
+				//TODO
+				break;
+		}
+		
+	}
+	
+	
+	
+	//main method
+	public static void main(String[] args) throws SocketException
+	{
+		MainServer server = new MainServer();
+		server.run();
 	}
 }
 

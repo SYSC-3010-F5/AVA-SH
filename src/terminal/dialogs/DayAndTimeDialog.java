@@ -115,7 +115,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		txtName = new JTextField();
 		txtName.setEditable(true);
 		txtName.setText("Generic Alarm");
-		txtName.setFont(CHECKBOX_FONT);
+		txtName.setFont(SPINNER_FONT);
 		txtName.setBounds(10, 57, 198, 46);
 		getContentPane().add(txtName);
 		txtName.setColumns(10);

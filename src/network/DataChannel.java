@@ -16,7 +16,11 @@
 *						- gross packet delays
 *					
 * 
-*Update Log			v0.3.1
+*Update Log			v1.0.0
+*						- all functionality added and tested
+*						- error handling added to handshaking
+*						- sendHandshake(...) method renamed to connect(...)
+*					v0.3.1
 *						- added automated unpacking of handshake packets
 *						- bug where handshake packet's device_name field being cut off patched
 *						- added timeout option for receiving
@@ -212,18 +216,14 @@ public class DataChannel implements ComsProtocol
 	
 	
 	//receive for only set time
-	public PacketWrapper receivePacket(int timeout) throws NetworkException 
+	public PacketWrapper receivePacket(int timeout) throws NetworkException, SocketException
 	{
-		try
-		{
-			//set timeout
-			gpSocket.setSoTimeout(timeout);
-			PacketWrapper wrapper = this.receivePacket();
-			//reset timeout
-			gpSocket.setSoTimeout(0);
-			return wrapper;
-		}
-		catch (SocketException e){e.printStackTrace();return null;}
+		//set timeout
+		gpSocket.setSoTimeout(timeout);
+		PacketWrapper wrapper = this.receivePacket();
+		//reset timeout
+		gpSocket.setSoTimeout(0);
+		return wrapper;
 	}
 	
 	
@@ -349,7 +349,7 @@ public class DataChannel implements ComsProtocol
 
 
 	@Override
-	public void sendHandshake(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException
+	public void connect(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException, IOException
 	{
 		int i=1;
 		//assemble empty byte array
@@ -387,7 +387,7 @@ public class DataChannel implements ComsProtocol
 		}
 		
 		//wait for response for 10 seconds
-		DatagramPacket response = new DatagramPacket(new byte[3], 3);
+		DatagramPacket response = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
 		try 
 		{
 			gpSocket.setSoTimeout(TIMEOUT_MS);
@@ -401,17 +401,32 @@ public class DataChannel implements ComsProtocol
 				gpSocket.setSoTimeout(0);
 			} 
 			catch (SocketException e1) {e1.printStackTrace();}
-			throw new NetworkException("Socket timeout -- no responce from server");
+			throw e;
 		}
 		
-		//save information
-		byte[] data = response.getData();
-		if(data[0] == TYPE_HANDSHAKE && data[1] == 0x00 && data[2] == 0x00)
+		//reset timeout
+		try 
 		{
+			gpSocket.setSoTimeout(0);
+		} 
+		catch (SocketException e1) {e1.printStackTrace();}
+		
+		
+		byte[] data = response.getData();
+		//valid handshake response
+		if(data[0] == TYPE_HANDSHAKE && data[1] == 0x00)
+		{
+			//save information
 			pairedPort = response.getPort();
 			pairedAddress = response.getAddress();
 			connected = true;
 		}
+		//error packet
+		else if (data[0] == TYPE_ERR)
+		{
+			throw new NetworkException(unpack(response).errorMessage());
+		}
+		//unexpected packet
 		else
 		{
 			throw new NetworkException("Invalid response to handshake");

@@ -2,7 +2,7 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    22/02/2017                                              
+*Date of Update:    23/02/2017                                              
 *Version:           0.5.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
@@ -15,6 +15,7 @@
 *						- connection establishing with server added
 *						- connection command and associated method re-written
 *						- default server address/port added, default device name added
+*						- alarm setting added (we actually send to the server now)
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -52,15 +53,20 @@
 package terminal;
 
 
+import java.awt.Image;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
 import java.util.TreeMap;
+
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
@@ -97,7 +103,7 @@ public class Terminal extends JFrame implements ActionListener
 	
 	//generic constructor
 	public Terminal()
-	{
+	{	
 		//init ui
 		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND);
 		ui.println("Initializing command map...");
@@ -246,7 +252,9 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1: server || Reboot the main server\n"
 					+ "\tparam1: <STR>  || Reboot the device assosiated with <STR>");
 		
-		cmdMap.put("ping", "Ping the server");
+		cmdMap.put("ping", "Ping the server\n"
+					+ "\tparam1: n/a   || Ping the server 5 times\n"
+					+ "\tparam1: <INT> || Ping the server <INT> times");
 		
 		return cmdMap;
 	}
@@ -257,26 +265,33 @@ public class Terminal extends JFrame implements ActionListener
 	{
 		if(!dataChannel.getConnected())
 		{
-			for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
+			try
 			{
-				ui.println("Establishing connection...");
-				try 
+				for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
 				{
-					dataChannel.sendHandshake(address, port, name);
-				} 
-				catch (NetworkException e) 
+					ui.println("Establishing connection...");
+					try 
+					{
+						dataChannel.connect(address, port, name);
+					} 
+					catch (IOException e1) 
+					{
+						//timeout has occurred
+					}
+				}
+				
+				if(dataChannel.getConnected())
 				{
-					//timeout has occurred
+					ui.println("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
+				}
+				else
+				{
+					ui.println("Connection could not be established!");
 				}
 			}
-			
-			if(dataChannel.getConnected())
+			catch (NetworkException e)
 			{
-				ui.println("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
-			}
-			else
-			{
-				ui.println("Connection could not be established!");
+				ui.printError(e.getMessage());
 			}
 		}
 		else
@@ -499,11 +514,15 @@ public class Terminal extends JFrame implements ActionListener
 					Alarm alarm = ui.getAlarm();
 					if(alarm != null)
 					{
-						/*
-						 * TODO send the actual data to server
-						 * For now we just echo it!
-						 */
-						ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+						//send alarm
+						try 
+						{
+							dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+						} 
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
 					}
 				}
 				//cmd alarm, generic name
@@ -569,11 +588,15 @@ public class Terminal extends JFrame implements ActionListener
 						alarm.setName(input[3]);
 					}
 					
-					/*
-					 * TODO send the actual data to server
-					 * For now we just echo it!
-					 */
-					ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+					//send alarm
+					try 
+					{
+						dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
 				}
 				else
 				{
@@ -584,7 +607,25 @@ public class Terminal extends JFrame implements ActionListener
 				
 			//ping server
 			case("ping"):
-				pingServer();
+				if(input.length == 1)
+				{
+					pingServer(5);
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						pingServer(Integer.parseInt(input[1]));
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("input must be a valid integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 				
 			
@@ -699,13 +740,13 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//ping the server
-	private void pingServer()
+	private void pingServer(int amount)
 	{
 		//declaring method variables
 		long pre, post;
 		
 		//ping 5 times
-		for(int i=0; i<5; i++)
+		for(int i=0; i<amount; i++)
 		{
 			//pause between pinging
 			try {Thread.sleep(50);}
@@ -718,8 +759,7 @@ public class Terminal extends JFrame implements ActionListener
 				dataChannel.sendCmd("ping");
 				
 				//wait for response
-				PacketWrapper wrapper = dataChannel.receivePacket(4000);
-				System.out.println(wrapper.toString());
+				PacketWrapper wrapper = dataChannel.receivePacket(5000);
 				if(wrapper.type == DataChannel.TYPE_INFO)
 				{
 					post = System.currentTimeMillis();
@@ -733,6 +773,10 @@ public class Terminal extends JFrame implements ActionListener
 			catch (NetworkException e)
 			{
 				ui.println(e.getMessage());
+			}
+			catch (SocketException e)
+			{
+				ui.println("No response");
 			}
 		}
 	}

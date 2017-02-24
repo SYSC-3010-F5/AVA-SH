@@ -17,8 +17,11 @@
 package network;
 
 
-//import packages
+//import libraries
 import java.net.InetAddress;
+import java.io.IOException;
+
+//import packages
 import io.json.JsonFile;
 
 
@@ -29,7 +32,7 @@ public interface ComsProtocol
 	public PacketWrapper receivePacket() throws NetworkException;
 	
 	//contact paired connection via handshake protocol
-	public void sendHandshake(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException;
+	public void connect(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException, IOException;
 	
 	//responds to a handshake, finalizing the connection
 	public void respondHandshake(InetAddress toPair, int listeningPort) throws NetworkException;
