@@ -3,14 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    23/02/2017                                              
-*Version:           2.0.0                                         
+*Version:           2.0.1                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
 *					Displays registry for server.
 *					A few buttons for basic server control, should be avoided (KeYboard).
 *					
 * 
-*Update Log			v2.0.0
+*Update Log			v2.0.1
+*						- buttons not saved as instance variables now
+*					v2.0.0
 *						- completely overhauled and remodeled into DSKY style
 *					v1.0.0
 *						- initial design to show plain text
@@ -45,6 +47,14 @@ import javax.swing.JLabel;
 
 public class ServerDSKY extends JFrame implements ActionListener
 {
+	//ASCII art
+	private static final String ASCII_MODULE_REGISTRY_HEADER = 
+			"\t    ___ _    _____ \n" +
+			"\t   /   | |  / /   |\n" +
+			"\t  / /| | | / / /| |\t\tModule\n" +
+			"\t / ___ | |/ / ___ |\t\tRegistry\n" +
+			"\t/_/  |_|___/_/  |_|\n\n\n" ;
+	
 	//declaring static class constants
 	public static final String BTN_SOFT_SHUTDOWN = "btn/softshutdown";
 	public static final String BTN_HARD_SHUTDOWN = "btn/hardshutdown";
@@ -64,13 +74,6 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//declaring local instance variables
 	private JTextArea display;
 	private JTextArea registryText;
-	private JButton btnSoftShutdown;
-	private JButton btnHardShutdown;
-	private JButton btnSoftReset;
-	private JButton btnHardReset; 
-	private JButton btnClearDisplay;
-	private JButton btnEraseRegistry;
-	private JButton btnUpdateRegistry;
 	private JButton btnPauseOrResume;
 	
 	
@@ -133,49 +136,49 @@ public class ServerDSKY extends JFrame implements ActionListener
 		buttonPanel.setBackground(DEFAULT_BACKGROUND_COLOR);
 		eastPanel.add(buttonPanel, BorderLayout.SOUTH);
 		
-		btnSoftReset = new JButton("<html>Soft<br />Reset</html>");
+		JButton btnSoftReset = new JButton("<html>Soft<br />Reset</html>");
 		btnSoftReset.setActionCommand(BTN_SOFT_RESET);
 		btnSoftReset.addActionListener(listener);
 		btnSoftReset.setFont(BUTTON_FONT);
 		btnSoftReset.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnSoftReset.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnHardReset = new JButton("<html>Hard<br />Reset</html>");
+		JButton btnHardReset = new JButton("<html>Hard<br />Reset</html>");
 		btnHardReset.setActionCommand(BTN_HARD_RESET);
 		btnHardReset.addActionListener(listener);
 		btnHardReset.setFont(BUTTON_FONT);
 		btnHardReset.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnHardReset.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnClearDisplay = new JButton("<html>Clear<br />Display</html>");
+		JButton btnClearDisplay = new JButton("<html>Clear<br />Display</html>");
 		btnClearDisplay.setActionCommand(BTN_CLEAR);
 		btnClearDisplay.addActionListener(this);
 		btnClearDisplay.setFont(BUTTON_FONT);
 		btnClearDisplay.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnClearDisplay.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnUpdateRegistry = new JButton("<html>Update<br />Registry</html>");
+		JButton btnUpdateRegistry = new JButton("<html>Update<br />Registry</html>");
 		btnUpdateRegistry.setActionCommand(BTN_UPDATE_REGISTRY);
 		btnUpdateRegistry.addActionListener(listener);
 		btnUpdateRegistry.setFont(BUTTON_FONT);
 		btnUpdateRegistry.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnUpdateRegistry.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnEraseRegistry = new JButton("<html>Erase<br />Registry</html>");
+		JButton btnEraseRegistry = new JButton("<html>Erase<br />Registry</html>");
 		btnEraseRegistry.setActionCommand(BTN_ERASE_REGISTRY);
 		btnEraseRegistry.addActionListener(listener);
 		btnEraseRegistry.setFont(BUTTON_FONT);
 		btnEraseRegistry.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnEraseRegistry.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnHardShutdown = new JButton("<html>Hard<br />Shutdown</html>");
+		JButton btnHardShutdown = new JButton("<html>Hard<br />Shutdown</html>");
 		btnHardShutdown.setActionCommand(BTN_HARD_SHUTDOWN);
 		btnHardShutdown.addActionListener(listener);
 		btnHardShutdown.setFont(BUTTON_FONT);
 		btnHardShutdown.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnHardShutdown.setForeground(DEFAULT_TEXT_COLOR);
 		
-		btnSoftShutdown = new JButton("<html>Soft<br />Shutdown</html>");
+		JButton btnSoftShutdown = new JButton("<html>Soft<br />Shutdown</html>");
 		btnSoftShutdown.setActionCommand(BTN_SOFT_SHUTDOWN);
 		btnSoftShutdown.addActionListener(listener);
 		btnSoftShutdown.setFont(BUTTON_FONT);
@@ -226,7 +229,6 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public void println(String string)
 	{
 		string = string.replaceAll("\n", "\n        \t");
-		//TODO get current time and append to start
 		display.append(getCurrentTime() + "\t" + string + "\n");
 		display.setCaretPosition(display.getDocument().getLength());
 	}
@@ -257,7 +259,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//update the registry overview
 	public void updateRegistry(HashMap<String,InetSocketAddress> registry)
 	{
-		String string = "\t\tMODULE REGISTRY\n===========================================\n\n";
+		String string = ASCII_MODULE_REGISTRY_HEADER;
 		
 		//iterate through all entries
 		if(registry != null)
@@ -266,12 +268,12 @@ public class ServerDSKY extends JFrame implements ActionListener
 			for(String key : keys)
 			{
 				InetSocketAddress address = registry.get(key);
-				string += "\"" + key + "\" @ " + address.toString() + "\n";
+				string += " \"" + key + "\" @ " + address.toString() + "\n";
 			}
 		}
 		//set the text
 		registryText.setText(string);
-		registryText.setCaretPosition(registryText.getDocument().getLength());
+		registryText.setCaretPosition(0);
 		
 	}
 	

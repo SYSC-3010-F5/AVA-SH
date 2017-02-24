@@ -16,6 +16,7 @@
 *						- connection command and associated method re-written
 *						- default server address/port added, default device name added
 *						- alarm setting added (we actually send to the server now)
+*						- request time command functionality added
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -255,6 +256,8 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("ping", "Ping the server\n"
 					+ "\tparam1: n/a   || Ping the server 5 times\n"
 					+ "\tparam1: <INT> || Ping the server <INT> times");
+		
+		cmdMap.put("time", "Get and print the current time from the server");
 		
 		return cmdMap;
 	}
@@ -730,6 +733,26 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 				
+			
+			//get time from server
+			case("time"):
+				try 
+				{
+					dataChannel.sendCmd("req time");
+					PacketWrapper wrapper = dataChannel.receivePacket(5000);
+					ui.println(wrapper.info());
+				} 
+				catch (NetworkException e) 
+				{
+					ui.printError(e.getMessage());
+				}
+				catch (SocketException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+			
+			
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);

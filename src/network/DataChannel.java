@@ -3,7 +3,7 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    22/02/2017                                              
-*Version:           0.3.1                                         
+*Version:           1.0.0                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
@@ -442,8 +442,9 @@ public class DataChannel implements ComsProtocol
 		pairedPort = listeningPort;
 		
 		//send packet
-		byte[] data = new byte[1];
+		byte[] data = new byte[2];
 		data[0] = TYPE_HANDSHAKE;
+		data[1] = 0x00;
 		sendPacket(data);
 	}
 

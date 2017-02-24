@@ -11,8 +11,9 @@
 *Update Log			v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
-*						- ServerDKSY used for output
+*						- ServerDSKY used for output
 *						- new alarm prototype added
+*						- req time command added
 *					v0.1.0
 *						- registry added for devices
 *						- handshaking added
@@ -21,29 +22,27 @@
 package server;
 
 
-//imports
+//import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-//import libraries
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.HashMap;
-
 import io.json.JsonException;
 import network.DataChannel;
+
 //import packages
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
-import terminal.Terminal;
 
 
 
 public class MainServer implements ActionListener
 {
 	//declaring static class constants
-	private static final String SERVER_NAME = "AVA Server 0.1.1";
+	private static final String SERVER_NAME = "AVA Server v0.1.1";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -99,7 +98,7 @@ public class MainServer implements ActionListener
 		//send an empty info packet to act as a ping
 		try 
 		{
-			display.println("Sending empty info packet...");
+			display.println("Sending empty ping response...");
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 			multiChannel.sendInfo("");
 		} 
@@ -115,6 +114,19 @@ public class MainServer implements ActionListener
 		alarm.fromJSON(alarmJSON);
 		display.println("Alarm created!");
 		//TODO actually do something with the alarm
+	}
+	
+	
+	//send the server time
+	private void sendTime(InetSocketAddress dest)
+	{
+		try
+		{
+			display.println("Sending time...");
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			multiChannel.sendInfo(ServerDSKY.getCurrentTime());
+		} 
+		catch (NetworkException e) {e.printStackTrace();}
 	}
 	
 	
@@ -200,6 +212,11 @@ public class MainServer implements ActionListener
 									display.println("ERROR >> " + e.getMessage());
 								}
 								break;
+								
+							//the server time is requested
+							case("req time"):
+								sendTime(packet.source);
+								break;
 						}
 						break;
 					
@@ -230,7 +247,7 @@ public class MainServer implements ActionListener
 			case(ServerDSKY.BTN_ERASE_REGISTRY):
 				display.println("BUTTON >> ERASE REGISTRY");
 				display.println("Registry cleared");
-				registry = new HashMap<String,InetSocketAddress>();
+				registry.clear();
 				display.updateRegistry(registry);
 				break;
 			
