@@ -35,12 +35,35 @@ public class ButtonAdapter extends BaseAdapter {
             "Terminal",
             "Play Song",
             "Check Weather",
-            "Start Morning"
+            "Start Morning",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function",
+            "Sample Function"
     };
+
 
     public ButtonAdapter(Context c) {
         mContext = c;
     }
+
 
     public int getCount() {
         return buttonNames.length;
@@ -50,9 +73,7 @@ public class ButtonAdapter extends BaseAdapter {
         return null;
     }
 
-    // Require for structure, not really used in my code. Can
-    // be used to get the id of an item in the adapter for
-    // manual control.
+
     public long getItemId(int position) {
         return position;
     }
@@ -63,8 +84,8 @@ public class ButtonAdapter extends BaseAdapter {
         if (convertView == null) {
             // if it's not recycled, initialize some attributes
             btn = new Button(mContext);
-            btn.setLayoutParams(new GridView.LayoutParams(200, 200));
-            btn.setPadding(10, 10, 10, 10);
+            btn.setLayoutParams(new GridView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT*2));
+            btn.setPadding(25, 25, 25, 25);
         }
         else {
             btn = (Button) convertView;
@@ -74,6 +95,8 @@ public class ButtonAdapter extends BaseAdapter {
         btn.setTextColor(Color.BLACK);
         btn.setBackgroundColor(Color.LTGRAY);
         btn.setId(position);
+        btn.setOnClickListener(new MainActivityButtonListener(buttonNames[position]));
+
 
         return btn;
 

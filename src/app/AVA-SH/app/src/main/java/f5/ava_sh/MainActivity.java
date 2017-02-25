@@ -3,6 +3,7 @@ package f5.ava_sh;
 import android.os.Bundle;
 import android.app.Activity;
 
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
@@ -26,7 +27,7 @@ import android.widget.AdapterView.OnItemClickListener;
  *
  */
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +37,7 @@ public class MainActivity extends Activity {
 
         GridView gridview = (GridView) findViewById(R.id.gridview);
         gridview.setAdapter(new ButtonAdapter(this));
-
+        this.setTitle("AVA-SH");
 
 
     }

@@ -12,5 +12,6 @@
     <!-- Dark Orange -->
     <color name="main_text">#000000</color>
     <color name="border_color">#808080</color>
+    <color name="upNav_arrow">#000000</color>
 
 </resources>

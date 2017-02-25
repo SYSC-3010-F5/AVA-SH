@@ -1,5 +1,7 @@
 package f5.ava_sh;
 
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -11,6 +13,8 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
+
+import static java.security.AccessController.getContext;
 
 /**
  *Class:                TerminalActivity.java
@@ -43,12 +47,18 @@ public class TerminalActivity extends AppCompatActivity {
 
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_terminal);
+        this.setTitle("Terminal");
+        this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-
+        final Drawable upArrow = getResources().getDrawable(R.drawable.abc_ic_ab_back_material);
+        upArrow.setColorFilter(getResources().getColor(R.color.upNav_arrow), PorterDuff.Mode.SRC_ATOP);
+        getSupportActionBar().setHomeAsUpIndicator(upArrow);
 
         initViews();
 
@@ -61,6 +71,8 @@ public class TerminalActivity extends AppCompatActivity {
 
         inputTerminalListener = new TerminalActionListener(this);
         terminalInput.setOnEditorActionListener(inputTerminalListener);
+
+
 
     }
 

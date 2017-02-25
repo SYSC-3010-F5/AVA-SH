@@ -1,8 +1,14 @@
 package f5.ava_sh;
 
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
+
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 
 /**
  *Class:                TerminalActionListener.java
@@ -42,6 +48,7 @@ public class TerminalActionListener implements TextView.OnEditorActionListener {
         }
         return handled;
     }
+
 
     private void parseInput(){
         view.getTerminalOutput().append(">"+view.getTerminalInput().getText().toString()+"\n");
