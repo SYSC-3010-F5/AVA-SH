@@ -14,6 +14,7 @@
 *						- ServerDSKY used for output
 *						- new alarm prototype added
 *						- req time command added
+*						- ip given in log + window title
 *					v0.1.0
 *						- registry added for devices
 *						- handshaking added
@@ -25,17 +26,19 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
-import io.json.JsonException;
-import network.DataChannel;
 
 //import packages
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
+import io.json.JsonException;
+import network.DataChannel;
 
 
 
@@ -62,16 +65,16 @@ public class MainServer implements ActionListener
 	
 	
 	//generic constructor
-	public MainServer() throws SocketException
+	public MainServer() throws SocketException, UnknownHostException
 	{
 		//initialize
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
-		display = new ServerDSKY(SERVER_NAME, this);
+		display = new ServerDSKY(SERVER_NAME + " @ " + InetAddress.getLocalHost()+":"+PORT, this);
 		runFlag = true;
 		pauseFlag = false;
 		
-		display.println("Server running!");
+		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
 	}
 	
 	
@@ -294,8 +297,21 @@ public class MainServer implements ActionListener
 	//main method
 	public static void main(String[] args) throws SocketException
 	{
-		MainServer server = new MainServer();
-		server.run();
+		try 
+		{
+			MainServer server = new MainServer();
+			server.run();
+		} 
+		catch (UnknownHostException e) 
+		{			
+			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());
+			e.printStackTrace();
+		}
+		catch (SocketException e)
+		{
+			System.out.println("EXCEPTION >> SocketException\n" + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 

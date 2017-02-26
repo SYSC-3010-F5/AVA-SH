@@ -208,7 +208,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		{
 			this.setVisible(true);
 			this.updateRegistry(null);
-			this.println("DSKY started for " + title);
+			this.println("DSKY running...");
 		} 
 		catch (Exception e) 
 		{
