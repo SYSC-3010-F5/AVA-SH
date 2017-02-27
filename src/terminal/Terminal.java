@@ -2,15 +2,22 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    18/02/2017                                              
-*Version:           0.4.0                                         
+*Date of Update:    23/02/2017                                              
+*Version:           0.5.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.4.0
+*Update Log			v0.5.0
+*						- pinging added
+*						- connection establishing with server added
+*						- connection command and associated method re-written
+*						- default server address/port added, default device name added
+*						- alarm setting added (we actually send to the server now)
+*						- request time command functionality added
+*					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
 *						- help menu format improved
@@ -47,19 +54,27 @@
 package terminal;
 
 
+import java.awt.Image;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
 import java.util.TreeMap;
+
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 //import packages
 import network.DataChannel;
+import network.NetworkException;
+import network.PacketWrapper;
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
 
@@ -72,11 +87,15 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.4.0";
+	private static final String VERSION = "v0.5.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
-	private static final int RETRY_QUANTUM = 10;
+	private static final int RETRY_QUANTUM = 5;	
 	
 	//declaring local instance variables
+	private String 		defaultDeviceName;
+	private InetAddress defaultServerAddress;
+	private int 		defaultServerPort;
+	
 	private boolean runFlag;
 	private int closeReason;
 	private TerminalUI ui;
@@ -85,14 +104,34 @@ public class Terminal extends JFrame implements ActionListener
 	
 	//generic constructor
 	public Terminal()
-	{
+	{	
 		//init ui
 		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
 		
 		//init variables
-		dataChannel = new DataChannel();
+		try 
+		{
+			ui.println("Binding Socket...");
+			dataChannel = new DataChannel();
+			ui.println("Obtaining local address...");
+			defaultServerAddress = InetAddress.getLocalHost();
+			defaultDeviceName = "terminal";
+			defaultServerPort = 3010;
+		} 
+		catch (SocketException e) 
+		{
+			ui.printError("Socket could not be bound\n" + e.getMessage() + "\n\nExiting...");
+			e.printStackTrace();
+			System.exit(ERROR);
+		}
+		catch (UnknownHostException e)
+		{
+			ui.printError("Local address could not be found\n" + e.getMessage() + "\n\nExiting...");
+			e.printStackTrace();
+			System.exit(ERROR);
+		}
 		runFlag = true;
 		
 		//update ui
@@ -104,6 +143,7 @@ public class Terminal extends JFrame implements ActionListener
 	//main run-loop of the terminal
 	public int run()
 	{
+		/*
 		//initial setup
 		if(establishConnection(null))
 		{
@@ -113,6 +153,7 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			ui.println("Connection FAILED");
 		}
+		*/
 		
 		
 		//wait before clearing log
@@ -212,24 +253,54 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1: server || Reboot the main server\n"
 					+ "\tparam1: <STR>  || Reboot the device assosiated with <STR>");
 		
+		cmdMap.put("ping", "Ping the server\n"
+					+ "\tparam1: n/a   || Ping the server 5 times\n"
+					+ "\tparam1: <INT> || Ping the server <INT> times");
+		
+		cmdMap.put("time", "Get and print the current time from the server");
+		
 		return cmdMap;
 	}
 	
 	
 	//connect to server
-	private boolean establishConnection(Inet4Address address)
+	private void establishConnection(InetAddress address, int port, String name)
 	{
-		/*
-		 * TODO 
-		 * establish a connection
-		 * try some n amount of times to do the handshake
-		 */
-		for(int i=0; i<RETRY_QUANTUM; i++)
+		if(!dataChannel.getConnected())
 		{
-			ui.println("Establishing connection...");
+			try
+			{
+				for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
+				{
+					ui.println("Establishing connection...");
+					try 
+					{
+						dataChannel.connect(address, port, name);
+					} 
+					catch (IOException e1) 
+					{
+						//timeout has occurred
+					}
+				}
+				
+				if(dataChannel.getConnected())
+				{
+					ui.println("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
+				}
+				else
+				{
+					ui.println("Connection could not be established!");
+				}
+			}
+			catch (NetworkException e)
+			{
+				ui.printError(e.getMessage());
+			}
 		}
-		
-		return false;
+		else
+		{
+			ui.printError("Already connected!\nPlease disconnect first");
+		}
 	}
 	
 	
@@ -446,11 +517,15 @@ public class Terminal extends JFrame implements ActionListener
 					Alarm alarm = ui.getAlarm();
 					if(alarm != null)
 					{
-						/*
-						 * TODO send the actual data to server
-						 * For now we just echo it!
-						 */
-						ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+						//send alarm
+						try 
+						{
+							dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+						} 
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
 					}
 				}
 				//cmd alarm, generic name
@@ -516,11 +591,15 @@ public class Terminal extends JFrame implements ActionListener
 						alarm.setName(input[3]);
 					}
 					
-					/*
-					 * TODO send the actual data to server
-					 * For now we just echo it!
-					 */
-					ui.println("TODO >> Send this to server!\n"+alarm.toJSON("").toString());
+					//send alarm
+					try 
+					{
+						dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
 				}
 				else
 				{
@@ -529,6 +608,151 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 				
 				
+			//ping server
+			case("ping"):
+				if(input.length == 1)
+				{
+					pingServer(5);
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						pingServer(Integer.parseInt(input[1]));
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("input must be a valid integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			
+			//attempt to connect to the server
+			case("connect"):
+				if (input.length <= 4)
+				{
+					//default values
+					InetAddress address = defaultServerAddress;
+					int port = defaultServerPort;
+					String name = defaultDeviceName;
+					
+					//non-default values -- parse and set address and port
+					if (input.length >= 2)
+					{
+						//set address
+						if (input[1].equals("default"))
+						{
+							address = defaultServerAddress;
+						}
+						else if (input[1].equals("local"))
+						{
+							try
+							{
+								address = InetAddress.getLocalHost();
+							}
+							catch (UnknownHostException e)
+							{
+								ui.printError("Could not obtain local IPv4 address");
+								return;
+							}
+						}
+						else
+						{
+							try
+							{
+								//declaring temporary method variables
+								byte[] addr;
+								String subStrBytes[];
+
+								//parse addr
+								subStrBytes = (input[1]).split("\\.");
+								
+								addr = new byte[subStrBytes.length];
+								for(int i=0; i<subStrBytes.length; i++)
+								{
+									addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
+								}
+								
+								//save as ip
+								address = InetAddress.getByAddress(addr);
+							}
+							catch (NumberFormatException|UnknownHostException e)
+							{
+								ui.printError("Invalid IPAddress -- must be of form \"xxx.xxx.xxx.xxx\"");
+								return;
+							}	
+						}
+						
+						//set port
+						if (input.length >= 3)
+						{
+							if(input[2].equals("default"))
+							{
+								port = defaultServerPort;
+							}
+							else
+							{
+								try
+								{
+									port = Integer.parseInt(input[2]);
+								}
+								catch (NumberFormatException e)
+								{
+									ui.printError("Invalid Port -- must be a valid 32bit integer");
+									return;
+								}
+							}
+							
+							//set name
+							if(input.length == 4)
+							{
+								if(input[3].equals("default"))
+								{
+									name = defaultDeviceName;
+								}
+								else
+								{
+									name = input[3];
+								}
+							}
+						}
+					}
+					
+					//try to connect
+					establishConnection(address, port, name);
+					ui.updateStatus(this.statusToString());
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			
+			//get time from server
+			case("time"):
+				try 
+				{
+					dataChannel.sendCmd("req time");
+					PacketWrapper wrapper = dataChannel.receivePacket(5000);
+					ui.println(wrapper.info());
+				} 
+				catch (NetworkException e) 
+				{
+					ui.printError(e.getMessage());
+				}
+				catch (SocketException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+			
+			
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);
@@ -538,7 +762,50 @@ public class Terminal extends JFrame implements ActionListener
 	}
 	
 	
-	//summize the status as a string
+	//ping the server
+	private void pingServer(int amount)
+	{
+		//declaring method variables
+		long pre, post;
+		
+		//ping 5 times
+		for(int i=0; i<amount; i++)
+		{
+			//pause between pinging
+			try {Thread.sleep(50);}
+			catch (InterruptedException e1) {e1.printStackTrace();}
+			
+			try 
+			{
+				//send ping
+				pre = System.currentTimeMillis();
+				dataChannel.sendCmd("ping");
+				
+				//wait for response
+				PacketWrapper wrapper = dataChannel.receivePacket(5000);
+				if(wrapper.type == DataChannel.TYPE_INFO)
+				{
+					post = System.currentTimeMillis();
+					ui.println("Response from server, delay of " + (post-pre) + "ms");
+				}
+				else
+				{
+					ui.println("Unexpected packet recieved!");
+				}
+			}
+			catch (NetworkException e)
+			{
+				ui.println(e.getMessage());
+			}
+			catch (SocketException e)
+			{
+				ui.println("No response");
+			}
+		}
+	}
+	
+	
+	//the status as a string
 	private String statusToString()
 	{
 		//returnable string
@@ -547,8 +814,7 @@ public class Terminal extends JFrame implements ActionListener
 		if(dataChannel.getConnected())
 		{
 			status += "Server: CONNECTED\n"
-					+ "        " + dataChannel.getPairedAddress().toString()
-					+ "        p: " + dataChannel.getPairedPort() + "\n\n" ;
+					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n" ;
 		}
 		else
 		{

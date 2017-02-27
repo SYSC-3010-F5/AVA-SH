@@ -3,14 +3,17 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    19/02/2017                                              
-*Version:           0.3.1                                         
+*Version:           0.3.2                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.3.1
+*Update Log			v0.3.2
+*						- error dialog altered so multi-line in dialog will appear as a -- in console
+*						- icon added
+*					v0.3.1
 *						- dialog added to get data for an alarm (day, time, name)
 *						- imports tidied
 *					v0.3.0
@@ -47,15 +50,19 @@ package terminal;
 
 //external imports
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.awt.Color;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
+
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -69,6 +76,7 @@ import javax.swing.JTextField;
 //import packages
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
+import java.awt.Toolkit;
 
 
 
@@ -120,6 +128,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		this.setBounds(100, 100, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.getContentPane().setBackground(DEFAULT_BACKGROUND_COLOR);
+		this.setIconImage(Toolkit.getDefaultToolkit().getImage(TerminalUI.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
+
 		
 		
 		//initialize non-gui elements
@@ -463,7 +473,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		if (msg != null)
 		{
-			this.println("Error: " + msg);
+			this.println("Error: " + msg.replaceAll("\n", " -- "));
 			JOptionPane.showMessageDialog(this, msg, TERMINAL_NAME, JOptionPane.ERROR_MESSAGE);
 		}
 	}
