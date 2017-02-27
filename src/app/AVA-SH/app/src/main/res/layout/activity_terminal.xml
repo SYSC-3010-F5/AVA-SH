@@ -8,7 +8,8 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="f5.ava_sh.Terminal"
+    tools:context="f5.ava_sh.TerminalActivity"
+    android:parentActivityName=".MainActivity"
     android:background="@color/main_background">
 
     <EditText
@@ -31,6 +32,7 @@
         android:imeOptions="actionDone"
         android:background="@drawable/border"
         android:selectAllOnFocus="true" />
+
 
     <TextView
         android:text=""
