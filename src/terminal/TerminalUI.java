@@ -2,15 +2,20 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    19/02/2017                                              
-*Version:           0.3.2                                         
+*Date of Update:    27/02/2017                                              
+*Version:           1.0.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
-*					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.3.2
+*Update Log			v1.0.0
+*						- UI finalized
+*						- splitPane replaced with static sized JPanels
+*						- menu items added
+*						- initialization now calls colorScheme method with a default scheme name instead of
+*						  manually initializing each component color
+*					v0.3.2
 *						- error dialog altered so multi-line in dialog will appear as a -- in console
 *						- icon added
 *					v0.3.1
@@ -56,7 +61,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
@@ -68,6 +75,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -94,12 +102,14 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	//declaring class constants
 	public static final String CONSOLE_IN = "txt/in";
 	public static final String MENU_CLOSE = "m/file/close";
+	public static final String MENU_CMD_LIST = "m/file/cmdlist";
+	public static final String MENU_COLOR_SCHEME = "m/options/colorscheme";
 	private static final Font DEFAULT_CONSOLE_FONT = new Font("Monospaced", Font.PLAIN, 13);
-	private static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
-	private static final Color DEFAULT_TEXT_COLOR = Color.ORANGE;
+	private static final String DEFAULT_COLOR_SCHEME = "aperture";
 	private static final int CMD_HISTORY_SIZE = 25;
 	private static final int DEFAULT_WINDOW_X = 1250;
 	private static final int DEFAULT_WINDOW_Y = 600;
+	private static final int STATUS_PANE_WIDTH = 245;
 	
 	//declaring local instance constants
 	private final String TERMINAL_NAME;
@@ -117,7 +127,6 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private JTextField consoleInput;
 	private JTextArea consoleOutput;
 	private JTextArea statusOverview;
-	private JMenuItem mntmClose;
 
 	
 	//generic constructor
@@ -127,10 +136,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		super(title);
 		this.setBounds(100, 100, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.getContentPane().setBackground(DEFAULT_BACKGROUND_COLOR);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(TerminalUI.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 
-		
 		
 		//initialize non-gui elements
 		TERMINAL_NAME = title;
@@ -159,26 +166,37 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		
 		
 		//add to "File" category
-		mntmClose = new JMenuItem("Close");
+		JMenuItem mntmClose = new JMenuItem("Close");
 		mntmClose.setActionCommand(MENU_CLOSE);
 		mntmClose.addActionListener(listener);
 		mnFile.add(mntmClose);
 		
 		
-		//set up plane for status/console
-		JSplitPane mainSplitPane = new JSplitPane();
-		mainSplitPane.setResizeWeight(0.14);
-		mainSplitPane.setBounds(10, 37, 1174, 524);
-		this.getContentPane().add(mainSplitPane);
+		//add to "Options" category
+		JMenuItem mntmColor = new JMenuItem("Color Scheme");
+		mntmColor.setActionCommand(MENU_COLOR_SCHEME);
+		mntmColor.addActionListener(this);
+		mnOptions.add(mntmColor);
+		
+		
+		//add to "Help" category
+		JMenuItem mntmCmds = new JMenuItem("Command List");
+		mntmCmds.setActionCommand(MENU_CMD_LIST);
+		mntmCmds.addActionListener(this);
+		mnHelp.add(mntmCmds);
+		
+		
+		//set up content pane for console/status split
+		JPanel contentPane = (JPanel)this.getContentPane();
+		contentPane.setLayout(new BorderLayout(0,0));
 		
 		
 		//set up pane for console i/o
-		JSplitPane consolePane = new JSplitPane();
+		JPanel consolePane = new JPanel();
 		JScrollPane outputPane = new JScrollPane();
-		consolePane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-		consolePane.setLeftComponent(outputPane);
-		consolePane.setResizeWeight(1.00);
-		mainSplitPane.setRightComponent(consolePane);
+		consolePane.setLayout(new BorderLayout(0, 0));
+		consolePane.add(outputPane, BorderLayout.CENTER);
+		contentPane.add(consolePane, BorderLayout.CENTER);
 		
 		
 		//set up input text to console pane
@@ -188,10 +206,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleInput.addKeyListener(this);
 		consoleInput.setColumns(10);
 		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
-		consoleInput.setBackground(DEFAULT_BACKGROUND_COLOR);
-		consoleInput.setForeground(DEFAULT_TEXT_COLOR);
-		consoleInput.setCaretColor(DEFAULT_TEXT_COLOR);
-		consolePane.setRightComponent(consoleInput);
+		consolePane.add(consoleInput, BorderLayout.SOUTH);
 		
 		
 		//set up output text to console pane
@@ -200,30 +215,28 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleOutput.setWrapStyleWord(true);
 		consoleOutput.setLineWrap(true);
 		consoleOutput.setFont(DEFAULT_CONSOLE_FONT);
-		consoleOutput.setBackground(DEFAULT_BACKGROUND_COLOR);
-		consoleOutput.setForeground(DEFAULT_TEXT_COLOR);
-		consoleOutput.setCaretColor(DEFAULT_TEXT_COLOR);
 		outputPane.setViewportView(consoleOutput);
 		
 		
 		//set up Pane+textArea for status overview
 		JScrollPane statusPane = new JScrollPane();
-		mainSplitPane.setLeftComponent(statusPane);
+		statusPane.setPreferredSize(new Dimension(STATUS_PANE_WIDTH,0));
+		contentPane.add(statusPane, BorderLayout.WEST);
 		statusOverview = new JTextArea();
 		statusOverview.setLineWrap(true);
 		statusOverview.setEditable(false);
 		statusOverview.setWrapStyleWord(true);
 		statusOverview.setFont(DEFAULT_CONSOLE_FONT);
-		statusOverview.setBackground(DEFAULT_BACKGROUND_COLOR);
-		statusOverview.setForeground(DEFAULT_TEXT_COLOR);
-		statusOverview.setCaretColor(DEFAULT_TEXT_COLOR);
 		statusPane.setViewportView(statusOverview);
 		
-		//set visible
+		
+		
+		//set visible and color
+		this.colorScheme(DEFAULT_COLOR_SCHEME);
 		try 
 		{
 			this.setVisible(true);
-			this.println("Starting interfaces on Thread <" + Thread.currentThread().getId() + ">...");
+			this.println("Starting TerminalUI v1.0.0 on Thread <" + Thread.currentThread().getId() + ">...");
 		} 
 		catch (Exception e) 
 		{
@@ -286,6 +299,10 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				return;
 			}
 		}
+		else
+		{
+			scheme = DEFAULT_COLOR_SCHEME;
+		}
 		
 		//search mapping for scheme
 		Color[] colors = colorMap.get(scheme);
@@ -325,7 +342,6 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		colorMap = new HashMap<String, Color[]>();
 		
-		colorMap.put(null, new Color[]{DEFAULT_BACKGROUND_COLOR, DEFAULT_TEXT_COLOR});
 		colorMap.put("aperture", new Color[]{Color.BLACK, Color.ORANGE});
 		colorMap.put("bluescreen", new Color[]{Color.BLUE, Color.WHITE});
 		colorMap.put("bumblebee", new Color[]{Color.BLACK, Color.YELLOW});
@@ -635,10 +651,47 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	
 	@Override
 	//respond to user input
-	public void actionPerformed(ActionEvent arg0) 
+	public void actionPerformed(ActionEvent ae) 
 	{
-		//get and parse input
-		input = this.getParsedInput();
-		setInputState(input);
+		//determine actions based on command 
+		String cmd = ae.getActionCommand();
+		switch(cmd)
+		{
+			//color scheme menu item pressed
+			case(MENU_COLOR_SCHEME):
+				//get a valid color scheme using system dialog
+				String[] keys = colorMap.keySet().toArray(new String[0]);
+				String selected = (String)JOptionPane.showInputDialog
+				(
+					this, 
+					"Select a color scheme to use", 
+					TERMINAL_NAME,
+					JOptionPane.QUESTION_MESSAGE,
+					null,
+					keys,
+					keys[0]
+				);
+				
+				//change to the selected scheme
+				if(selected != null)
+				{
+					colorScheme(selected);
+				}
+				break;
+			
+				
+			//command list menu item pressed
+			case(MENU_CMD_LIST):
+				//TODO
+				break;
+			
+			
+			//normal text input
+			default:
+				//get and parse input
+				input = this.getParsedInput();
+				setInputState(input);
+				break;
+		};
 	}
 }

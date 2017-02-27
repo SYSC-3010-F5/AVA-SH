@@ -17,6 +17,7 @@
 *						- default server address/port added, default device name added
 *						- alarm setting added (we actually send to the server now)
 *						- request time command functionality added
+*						- auto attempts to connect at startup
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -143,29 +144,11 @@ public class Terminal extends JFrame implements ActionListener
 	//main run-loop of the terminal
 	public int run()
 	{
-		/*
-		//initial setup
-		if(establishConnection(null))
-		{
-			ui.println("Connection established!");
-		}
-		else
-		{
-			ui.println("Connection FAILED");
-		}
-		*/
-		
-		
-		//wait before clearing log
-		try 
-		{
-			Thread.sleep(3000);
-		} 
-		catch (InterruptedException e) {e.printStackTrace();}
-		ui.clear();
+		//initial handshake
+		establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
 		
 		//main input-parse loop
-		ui.println("Waiting for input...");
+		ui.println("\n************************* INIT COMPLETE *************************\nWaiting for input...");
 		while(runFlag)
 		{
 			String[] in = ui.getInput();
@@ -301,6 +284,7 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			ui.printError("Already connected!\nPlease disconnect first");
 		}
+		ui.updateStatus(statusToString());
 	}
 	
 	
@@ -814,7 +798,8 @@ public class Terminal extends JFrame implements ActionListener
 		if(dataChannel.getConnected())
 		{
 			status += "Server: CONNECTED\n"
-					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n" ;
+					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n"
+					+ "        under \"" + dataChannel.getRegisteredName() + "\"\n";
 		}
 		else
 		{

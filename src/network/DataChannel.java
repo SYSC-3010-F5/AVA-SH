@@ -16,7 +16,9 @@
 *						- gross packet delays
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- added registered name field
+*					v1.0.0
 *						- all functionality added and tested
 *						- error handling added to handshaking
 *						- sendHandshake(...) method renamed to connect(...)
@@ -82,6 +84,7 @@ public class DataChannel implements ComsProtocol
 	protected DatagramSocket gpSocket;
 	protected InetAddress pairedAddress;
 	protected int pairedPort;
+	protected String registeredName;
 	
 	
 	//generic constructor
@@ -89,9 +92,10 @@ public class DataChannel implements ComsProtocol
 	{
 		//initialize things
 		connected = false;
-		this.pairedAddress = null;
-		this.pairedPort = -1;
+		pairedAddress = null;
+		pairedPort = -1;
 		gpSocket = new DatagramSocket();
+		registeredName = null;
 	}
 	
 	
@@ -130,6 +134,10 @@ public class DataChannel implements ComsProtocol
 			e.printStackTrace();
 			return "UnknownHostException";
 		}
+	}
+	public String getRegisteredName()
+	{
+		return registeredName;
 	}
 	
 	
@@ -420,6 +428,7 @@ public class DataChannel implements ComsProtocol
 			pairedPort = response.getPort();
 			pairedAddress = response.getAddress();
 			connected = true;
+			registeredName = deviceName;
 		}
 		//error packet
 		else if (data[0] == TYPE_ERR)
