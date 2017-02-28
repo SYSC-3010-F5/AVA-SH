@@ -68,6 +68,10 @@ public class PacketWrapper
 	{
 		return sField1;
 	}
+	public String disconnectMessage()
+	{
+		return sField1;
+	}
 	
 	
 	//toString method for debug
@@ -88,6 +92,9 @@ public class PacketWrapper
 				break;
 			case(DataChannel.TYPE_ERR):
 				s += "ERR_MSG: <" + this.errorMessage() + ">";
+				break;
+			case(DataChannel.TYPE_DISCONNECT):
+				s += "DISCONNECT_MSG: <" + this.disconnectMessage() + ">";
 				break;
 			default:
 				s += "FIELD1: <" + this.sField1 + "> FIELD2: <" + this.sField2 + ">";

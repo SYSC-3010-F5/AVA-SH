@@ -2,8 +2,8 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    22/02/2017                                              
-*Version:           1.0.0                                         
+*Date of Update:    28/02/2017                                              
+*Version:           1.1.0                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
@@ -16,7 +16,11 @@
 *						- gross packet delays
 *					
 * 
-*Update Log			v1.0.1
+*Update Log			v1.1.0
+*						- uses revision 2.1.1 of coms protocol
+*						- disconnect functionality added
+*						- disconnect packet packing/unpacking added
+*					v1.0.1
 *						- added registered name field
 *					v1.0.0
 *						- all functionality added and tested
@@ -74,6 +78,7 @@ public class DataChannel implements ComsProtocol
 	public static final byte TYPE_CMD = 1;
 	public static final byte TYPE_INFO = 2;
 	public static final byte TYPE_ERR = 3;
+	public static final byte TYPE_DISCONNECT = 4;
 	public static final int MAX_PACKET_SIZE = 1024;
 	
 	protected static final int TIMEOUT_MS = 4000;
@@ -166,6 +171,14 @@ public class DataChannel implements ComsProtocol
 		val[3] = (int)(bytes[3]);
 
 		return (val[0] & 0xFF000000 | val[1] & 0x00FF0000 | val[2] & 0x0000FF00 | val[3] & 0x000000FF);
+	}
+	
+	
+	//close this instance of DataChannel permanently
+	public void close()
+	{
+		gpSocket.close();
+		connected=false;
 	}
 	
 	
@@ -320,6 +333,7 @@ public class DataChannel implements ComsProtocol
 						new InetSocketAddress(packet.getAddress(), packet.getPort())
 						);
 			
+				
 			//INFO PACKET
 			case(TYPE_INFO):
 				//parse the info out
@@ -335,6 +349,7 @@ public class DataChannel implements ComsProtocol
 						new InetSocketAddress(packet.getAddress(), packet.getPort())
 						);
 			
+				
 			//ERROR PACKET
 			case(TYPE_ERR):
 				//parse the error message out
@@ -349,6 +364,22 @@ public class DataChannel implements ComsProtocol
 						null,
 						new InetSocketAddress(packet.getAddress(), packet.getPort())
 						);
+			
+			//DISCONNECT PACKET
+			case(TYPE_DISCONNECT):
+				//parse the reason for disconnect out
+				byte[] disMsg = new byte[packet.getLength()-1];
+				for(int i=1; i<packet.getLength(); i++)
+				{
+					disMsg[i-1] = rawData[i];
+				}
+				return new PacketWrapper(
+						TYPE_DISCONNECT,
+						new String(disMsg),
+						null,
+						new InetSocketAddress(packet.getAddress(), packet.getPort())
+						);
+				
 					
 			default:
 				throw new NetworkException("Unknown packet format: " + rawData[0]);
@@ -440,6 +471,27 @@ public class DataChannel implements ComsProtocol
 		{
 			throw new NetworkException("Invalid response to handshake");
 		}
+	}
+	
+	
+	@Override
+	public void disconnect(String reason) throws NetworkException
+	{
+		//create packet contents
+		byte[] stringBytes = reason.getBytes();
+		byte[] rawData = new byte[1+stringBytes.length];
+		rawData[0] = TYPE_DISCONNECT;
+		for(int i=0; i<stringBytes.length; i++)
+		{
+			rawData[i+1] = stringBytes[i];
+		}
+		
+		//send packet and set fields
+		sendPacket(rawData);
+		pairedPort = -1;
+		pairedAddress = null;
+		connected = false;
+		registeredName = null;
 	}
 
 

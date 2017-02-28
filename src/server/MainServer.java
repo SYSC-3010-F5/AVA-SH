@@ -2,13 +2,15 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/02/2017                                              
-*Version:           0.1.1                                        
+*Date of Update:    28/02/2017                                              
+*Version:           0.1.2                                        
 *                                                                                   
 *Purpose:           The main controller of the AVA system
 *					
 * 
-*Update Log			v0.1.1
+*Update Log			v0.1.2
+*						- disconnect now supported
+*					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
 *						- ServerDSKY used for output
@@ -51,6 +53,7 @@ public class MainServer implements ActionListener
 	public static final byte TYPE_CMD = 1;
 	public static final byte TYPE_INFO = 2;
 	public static final byte TYPE_ERR = 3;
+	public static final byte TYPE_DISCONNECT = 4;
 	public static final int MAX_PACKET_SIZE = 1024;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
 
@@ -194,6 +197,31 @@ public class MainServer implements ActionListener
 						display.updateRegistry(registry);
 						break;
 					
+						
+						
+					//disconnecting device	
+					case(TYPE_DISCONNECT):								//TODO consider replacement of this with custom bidirectional hashmap
+						boolean foundFlag=false;
+						display.println("Device attempting disconnect...\nChecking for device in registry...");
+						for(String s : registry.keySet())
+						{
+							if(registry.get(s).equals(packet.source))
+							{
+								registry.remove(s);
+								display.println("Device registered under \"" + s + "\" removed from registry with reason:\n\"" + packet.disconnectMessage() + "\"");
+								foundFlag = true;
+								display.updateRegistry(registry);
+								break;
+							}
+						}
+						if(!foundFlag)
+						{
+							display.println("Device not found in registry!");
+						}
+						break;
+						
+						
+					
 					//some command from an interface
 					case(DataChannel.TYPE_CMD):
 						//determine what to do based on command key
@@ -223,9 +251,13 @@ public class MainServer implements ActionListener
 						}
 						break;
 					
-					//we should not get these
+						
+						
+					//some info from an interface
 					case(DataChannel.TYPE_INFO):
 						break;
+					
+					
 					
 					//an error from one of the devices
 					case(DataChannel.TYPE_ERR):

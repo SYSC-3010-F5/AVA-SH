@@ -18,6 +18,7 @@
 *						- alarm setting added (we actually send to the server now)
 *						- request time command functionality added
 *						- auto attempts to connect at startup
+*						- disconnect functionality added
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -190,7 +191,7 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("close", "Exit the local terminal");
 		
-		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"										//TODO implement this
+		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
 					+ "\tparam1= n/a             || Attempt to establish server connection at default server address\n"
 					+ "\tparam1= default ::      || Attempt to establish server connection at default server address\n"
 					+ "\tparam1= local ::        || Attempt to establish server conncetion at the local IPv4 address\n"
@@ -285,6 +286,22 @@ public class Terminal extends JFrame implements ActionListener
 			ui.printError("Already connected!\nPlease disconnect first");
 		}
 		ui.updateStatus(statusToString());
+	}
+	
+	
+	//disconnect from server
+	private void disconnect(String msg)
+	{
+		try 
+		{
+			dataChannel.disconnect(msg);
+			ui.updateStatus(this.statusToString());
+			ui.println("Sucessfully disconnected from main AVA Server!");
+		} 
+		catch (NetworkException e) 
+		{
+			ui.printError(e.getMessage());
+		}
 	}
 	
 	
@@ -734,6 +751,12 @@ public class Terminal extends JFrame implements ActionListener
 				{
 					ui.printError(e.getMessage());
 				}
+				break;
+				
+				
+			//disconnect
+			case("disconnect"):
+				disconnect("user request");
 				break;
 			
 			

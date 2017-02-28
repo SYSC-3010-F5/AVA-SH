@@ -2,7 +2,7 @@
 |                                               |
 |              AVA-SH PACKET FORMAT             |
 |                                               |
-|                Revision 2.1.0                 |
+|                Revision 2.1.1                 |
 |                                               |
 \===============================================/
 Jason Van Kerkhoven
@@ -83,15 +83,17 @@ TYPE CLASSIFICATIONS
 		Type 1:		Command
 		Type 2:		Info
 		Type 3:		Error
+		Type 4:		Disconnect
 		
 	Type 0 is used to establish an itial connection with the server.
 	
 	Type 1 is used to issue a command to the server (get the server to do something like make coffee, schedual an alarm, play music, etc). Similarly, it can be sent by the server to a module.
 	
-	Type 2 is uesed to update the user on the progress of a task, or staus of something in the system (example, the server would return a type 2 packet if the user requests the weather).
+	Type 2 is used to update the user on the progress of a task, or staus of something in the system (example, the server would return a type 2 packet if the user requests the weather).
 	
 	Type 3 is sent to inform the user some error has occured (either their command, type 1, packet is not recognized as a valid command), or something else has gone midly or catastrophically wrong.
 	
+	Type 4 is used to disconnect with the server.
 
 
 	
@@ -173,6 +175,19 @@ TYPE-DEPENANT FORMATS
 		The rest of the data is encoded as an 8bit ASCII string of characters. It should accuratly describe the error that occured, as well as (if known) what caused said error to occur. If the system must shutdown/reboot as a result of this error, the message should contain that information. The ERROR_MESSAGE can be a variable <e> bytes long
 		
 		Essentially, the error packet is exactly the same as a info packet, with the exception that the opcode is labeled as an error instead of regular informaton.
+				
+		
+	Type 4: Disconnect
+	-------------------------------------
+			
+		  1 byte                           <d> bytes
+		|----------|--------------------------------------------------------|
+		|   0x04   |                  DISCONNECT_REASON                     |
+		|----------|--------------------------------------------------------|
+		
+		The TYPE (static 1 byte size) denotes the type of the packet being sent. Since this is a "Disconnect" packet, the TYPE field will always be a 0x04.
+		
+		The rest of the data is encoded as a string of UTF-8 encoded characters. It should denote the reason behind disconnecting (ie user request, module shutdown, module reset, etc). The DISCONNECT_REASON is not manditory, and can be left empty. Disconnect packets are handled the same regardless of if there is a valid DISCONNECT_REASON field. The DISCONNECT_REASON field is a variable <d> bytes long.
 		
 		
 		
