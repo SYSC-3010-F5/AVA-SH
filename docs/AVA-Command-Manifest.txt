@@ -27,6 +27,8 @@ COMMAND MANIFEST
 	COMMAND_KEY:	"ping"
 	EXTRA_INFO: 	false
 	PURPOSE:		Request an empty info-type packet from the server to act as a ping.
+	RESPONSE:		info-type packet
+	
 	
 	----------------------------
 	
@@ -40,10 +42,35 @@ COMMAND MANIFEST
 						"name" : "wake up"
 					}
 	PURPOSE:		Set a new alarm to trigger at a particular time on certain days of the week.
+	RESPONSE		N/A
+	
 	
 	----------------------------
 	
 	COMMAND_KEY:	"req time"
 	EXTRA_INFO:		false
 	PURPOSE:		Request the time from the server.
+	RESPONSE:		info-type packet with time as UTF-8 character String
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req ip"
+	EXTRA_INFO:		true
+					UTF-8 encoded character String. The name of the module we want the IP of.
+	PURPOSE:		Return the address of module registered under name String
+	RESPONSE:		info-type packet with {IPv4:port} as UTF-8 character String.
+					error-type packet if the module cannot be found.
+					
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req current weather"
+	EXTRA_INFO:		false
+	PURPOSE:		Return the current weather
+	RESPONSE:		info-type packet with weather, JSON format, UTF-8 encoding
+					error-type packet if the weather servers are not found.
+												
+	
+
 					

@@ -19,6 +19,7 @@
 *						- request time command functionality added
 *						- auto attempts to connect at startup
 *						- disconnect functionality added
+*						- ip command implemented
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -170,7 +171,15 @@ public class Terminal extends JFrame implements ActionListener
 	public void close(int reason)
 	{
 		ui.println("Closing terminal...");
-		//TODO disconnect from server
+		try 
+		{
+			dataChannel.disconnect("user");
+		} 
+		catch (NetworkException e) 
+		{
+			ui.printError("Error disconnecting from server\n" + e.getMessage());
+		}
+		dataChannel.close();
 		closeReason = reason;
 		ui.close();
 		runFlag = false;
@@ -199,9 +208,9 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam2= n/a ::          || Attempt to establish server connect to the default port\n"
 					+ "\tparam2= <INT> ::        || Attempt to establish server connection to port <INT>");
 		
-		cmdMap.put("disconnect", "Disconnect from main server");															//TODO implement this
+		cmdMap.put("disconnect", "Disconnect from main server");
 		
-		cmdMap.put("ip", "Request and return the IP of a module\n"															//TODO implement this
+		cmdMap.put("ip", "Request and return the IP of a module\n"	
 					+ "\tparam1= n/a    || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= local  || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= server || Print the IPv4 address of the connected server\n"
@@ -453,19 +462,33 @@ public class Terminal extends JFrame implements ActionListener
 						} 
 						catch (UnknownHostException e) {e.printStackTrace();}
 					}
+					//print server ip
 					else if(input[1].equals("server") || input[1].equals("ava"))
 					{
-						//TODO
-						ui.println("TODO >> dataChannel.ip");
+						ui.println(dataChannel.getPairedAddress()+":"+dataChannel.getPairedPort());
 					}
 					//request ip of module
 					else
 					{
 						String moduleString = input[1];
-						ui.println("TODO");
-						/*
-						 * TODO request ip of module
-						 */
+						//send and receive info
+						try 
+						{
+							dataChannel.sendCmd("req ip", moduleString);
+							PacketWrapper packet = dataChannel.receivePacket();
+							if(packet.type == DataChannel.TYPE_INFO)
+							{
+								ui.println("\"" + moduleString + "\" @ " + packet.info());
+							}
+							else
+							{
+								ui.println(packet.errorMessage());
+							}
+						}
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
 					}
 				}
 				//command not found
@@ -758,7 +781,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("disconnect"):
 				disconnect("user request");
 				break;
-			
+
 			
 			//cmd not found
 			default:

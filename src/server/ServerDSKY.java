@@ -12,6 +12,7 @@
 * 
 *Update Log			v2.0.1
 *						- buttons not saved as instance variables now
+*						- added method for printing blank lines
 *					v2.0.0
 *						- completely overhauled and remodeled into DSKY style
 *					v1.0.0
@@ -230,6 +231,14 @@ public class ServerDSKY extends JFrame implements ActionListener
 	{
 		string = string.replaceAll("\n", "\n        \t");
 		display.append(getCurrentTime() + "\t" + string + "\n");
+		display.setCaretPosition(display.getDocument().getLength());
+	}
+	
+	
+	//print empty line
+	public void println()
+	{
+		display.append("\n");
 		display.setCaretPosition(display.getDocument().getLength());
 	}
 	

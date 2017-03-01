@@ -1,15 +1,16 @@
 /**
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
-*Author:            Jason Van Kerkhoven                                             
-*Date of Update:    28/02/2017                                              
-*Version:           0.1.2                                        
-*                                                                                   
+*Author:            Jason Van Kerkhoven
+*Date of Update:    28/02/2017
+*Version:           0.1.2
+*
 *Purpose:           The main controller of the AVA system
-*					
+*
 * 
 *Update Log			v0.1.2
 *						- disconnect now supported
+*						- address lookup now supported
 *					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
@@ -84,16 +85,18 @@ public class MainServer implements ActionListener
 	//receive packet
 	private PacketWrapper receivePacket() throws NetworkException
 	{
+		display.println();
 		display.println("Waiting for packet...");
 		PacketWrapper wrapper = multiChannel.receivePacket();
-		display.println("Packet received!\nContents: {" + wrapper.toString() + "}\n");
+		display.println("Packet received!\nContents: {" + wrapper.toString() + "}");
 		return wrapper;
 	}
 	private PacketWrapper receivePacket(int timeout) throws NetworkException, SocketException
 	{
+		display.println();
 		display.println("Waiting for packet...");
 		PacketWrapper wrapper = multiChannel.receivePacket(timeout);
-		display.println("Packet received!\nContents: {" + wrapper.toString() + "}\n");
+		display.println("Packet received!\nContents: {" + wrapper.toString() + "}");
 		return wrapper;
 	}
 	
@@ -108,6 +111,30 @@ public class MainServer implements ActionListener
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 			multiChannel.sendInfo("");
 		} 
+		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
+	//send IPv4:socket address as String
+	private void sendAddress(InetSocketAddress dest, String key)
+	{
+		try
+		{
+			display.println("Accessing registry with key: \"" + key + "\"...");
+			InetSocketAddress address = registry.get(key);
+			if(address != null)
+			{
+				display.println("Value found: \"" + address.toString() + "\"\nSending info packet...");
+				multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+				multiChannel.sendInfo(address.toString());
+			}
+			else
+			{
+				display.println("Value not found\nSending error packet...");
+				multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+				multiChannel.sendErr("No module registered under \"" + key + "\"");
+			}
+		}
 		catch (NetworkException e) {e.printStackTrace();}
 	}
 	
@@ -248,6 +275,11 @@ public class MainServer implements ActionListener
 							case("req time"):
 								sendTime(packet.source);
 								break;
+								
+							//a module address is requested
+							case("req ip"):
+								sendAddress(packet.source, packet.extraInfo());
+								break;
 						}
 						break;
 					
@@ -333,7 +365,7 @@ public class MainServer implements ActionListener
 		{
 			MainServer server = new MainServer();
 			server.run();
-		} 
+		}
 		catch (UnknownHostException e) 
 		{			
 			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());

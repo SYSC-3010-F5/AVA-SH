@@ -113,7 +113,7 @@ public class DataChannel implements ComsProtocol
 		}
 		else
 		{
-			return "disconnected";
+			return "DISCONNECTED";
 		}
 	}
 	public int getPairedPort()
