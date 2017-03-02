@@ -2,14 +2,19 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    27/02/2017                                              
-*Version:           1.0.0                                         
+*Date of Update:    02/01/2017                                              
+*Version:           1.1.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.1.0
+*						- statusOverview shrunk to just display connection status
+*						- new JText area added for predictive command help
+*						- key events added for predictive command help
+*						- default window size increased
+*					v1.0.0
 *						- UI finalized
 *						- splitPane replaced with static sized JPanels
 *						- menu items added
@@ -107,9 +112,10 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private static final Font DEFAULT_CONSOLE_FONT = new Font("Monospaced", Font.PLAIN, 13);
 	private static final String DEFAULT_COLOR_SCHEME = "aperture";
 	private static final int CMD_HISTORY_SIZE = 25;
-	private static final int DEFAULT_WINDOW_X = 1250;
-	private static final int DEFAULT_WINDOW_Y = 600;
-	private static final int STATUS_PANE_WIDTH = 245;
+	private static final int DEFAULT_WINDOW_X = 1400;
+	private static final int DEFAULT_WINDOW_Y = 750;
+	private static final int AUX_PANEL_WIDTH = 275;
+	private static final int STATUS_PANE_HEIGHT = 250;
 	
 	//declaring local instance constants
 	private final String TERMINAL_NAME;
@@ -117,7 +123,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	
 	//declaring local instance variables
 	private CappedBuffer inputBuffer;
-	private TreeMap<String, String> cmdMap;					
+	private String allCommands;
+	private TreeMap<String, String> cmdMap;				
 	private HashMap<String, Color[]> colorMap;
 	private boolean inputReady;
 	private String[] input;
@@ -127,6 +134,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private JTextField consoleInput;
 	private JTextArea consoleOutput;
 	private JTextArea statusOverview;
+	private JTextArea cmdHelp;
 
 	
 	//generic constructor
@@ -186,16 +194,14 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		mnHelp.add(mntmCmds);
 		
 		
-		//set up content pane for console/status split
+		//set up content pane for console/aux split
 		JPanel contentPane = (JPanel)this.getContentPane();
 		contentPane.setLayout(new BorderLayout(0,0));
 		
 		
 		//set up pane for console i/o
 		JPanel consolePane = new JPanel();
-		JScrollPane outputPane = new JScrollPane();
 		consolePane.setLayout(new BorderLayout(0, 0));
-		consolePane.add(outputPane, BorderLayout.CENTER);
 		contentPane.add(consolePane, BorderLayout.CENTER);
 		
 		
@@ -204,9 +210,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleInput.setActionCommand(CONSOLE_IN);
 		consoleInput.addActionListener(this);
 		consoleInput.addKeyListener(this);
-		consoleInput.setColumns(10);
-		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
-		consolePane.add(consoleInput, BorderLayout.SOUTH);
+		JScrollPane outputPane = new JScrollPane();
+		consolePane.add(outputPane, BorderLayout.CENTER);
 		
 		
 		//set up output text to console pane
@@ -216,12 +221,21 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleOutput.setLineWrap(true);
 		consoleOutput.setFont(DEFAULT_CONSOLE_FONT);
 		outputPane.setViewportView(consoleOutput);
+		consoleInput.setColumns(10);
+		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
+		consolePane.add(consoleInput, BorderLayout.SOUTH);
 		
 		
-		//set up Pane+textArea for status overview
+		//set up auxiliary panel
+		JPanel auxPanel = new JPanel();
+		auxPanel.setLayout(new BorderLayout(0,0));
+		getContentPane().add(auxPanel, BorderLayout.WEST);
+		
+		
+		//set up scroll+textArea for status overview
 		JScrollPane statusPane = new JScrollPane();
-		statusPane.setPreferredSize(new Dimension(STATUS_PANE_WIDTH,0));
-		contentPane.add(statusPane, BorderLayout.WEST);
+		statusPane.setPreferredSize(new Dimension(AUX_PANEL_WIDTH,STATUS_PANE_HEIGHT));
+		auxPanel.add(statusPane, BorderLayout.NORTH);
 		statusOverview = new JTextArea();
 		statusOverview.setLineWrap(true);
 		statusOverview.setEditable(false);
@@ -230,13 +244,25 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		statusPane.setViewportView(statusOverview);
 		
 		
+		//set up textArea for predictive cmd help
+		JScrollPane cmdPane = new JScrollPane();
+		cmdPane.setPreferredSize(new Dimension(AUX_PANEL_WIDTH,0));
+		auxPanel.add(cmdPane, BorderLayout.CENTER);
+		cmdHelp = new JTextArea();
+		cmdHelp.setEditable(false);
+		cmdHelp.setTabSize(2);
+		cmdHelp.setLineWrap(true);
+		cmdHelp.setWrapStyleWord(true);
+		cmdHelp.setFont(DEFAULT_CONSOLE_FONT);
+		cmdPane.setViewportView(cmdHelp);
+		
 		
 		//set visible and color
 		this.colorScheme(DEFAULT_COLOR_SCHEME);
 		try 
 		{
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.0.0 on Thread <" + Thread.currentThread().getId() + ">...");
+			this.println("Starting TerminalUI v1.1.0 on Thread <" + Thread.currentThread().getId() + ">...");
 		} 
 		catch (Exception e) 
 		{
@@ -269,7 +295,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 			scheme = scheme.toLowerCase();
 			
 			//check if special case all
-			if(scheme.equals("all"))							//TODO why doesn't this work?
+			if(scheme.equals("all"))
 			{
 				//iterate through all colors
 				Set<String> keys = colorMap.keySet();
@@ -322,6 +348,11 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 			statusOverview.setBackground(colors[0]);
 			statusOverview.setForeground(colors[1]);
 			statusOverview.setCaretColor(colors[1]);
+			
+			//set command help
+			cmdHelp.setBackground(colors[0]);
+			cmdHelp.setForeground(colors[1]);
+			cmdHelp.setCaretColor(colors[1]);
 		}
 		else
 		{
@@ -334,6 +365,12 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void initCmdMap(TreeMap<String,String> cmdMap)
 	{
 		this.cmdMap = cmdMap;
+		String all = "";
+		for(String key : cmdMap.keySet())
+		{
+			all += key+"\n";
+		}
+		allCommands = all;
 	}
 	
 	
@@ -504,20 +541,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		}
 		
 		println("--------------- COMMAND LIST ---------------");
-		Set<String> keys = cmdMap.keySet();
-		
-		//list all available commands
-		for(String cmd : keys)
-		{
-			println(cmd);
-			
-			//print details
-			if(all)
-			{
-				println(cmdMap.get(cmd) + "\n");
-			}
-		}
-		
+		println(allCommands);
 		println("--------------------------------------------\n");
 	}
 	
@@ -548,7 +572,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void updateStatus(String newStatus)
 	{
 		//status string
-		String status = ASCII_AVA_LOGO + "\n\n*****************************\n" + newStatus;
+		String status = ASCII_AVA_LOGO + "\n\n\n" + newStatus;
 		
 		//set the text to the string
 		statusOverview.setText(status);
@@ -630,11 +654,29 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 
 
 	@Override
-	public void keyReleased(KeyEvent arg0) {}
+	public void keyReleased(KeyEvent arg0) 							//TODO needs formating!
+	{
+		//check if input matchs any commands
+    	Set<String> keys = cmdMap.keySet();
+    	for(String key : keys)
+    	{
+    		String cmdID = consoleInput.getText().split(" ")[0];
+    		if(key.equals(cmdID))
+    		{
+    			String output = key + "\n" + cmdMap.get(key);
+    			cmdHelp.setText(output);
+    			return;
+    		}
+    	}
+    	cmdHelp.setText(allCommands);
+	}
 
 
 	@Override
-	public void keyTyped(KeyEvent arg0) {}
+	public void keyTyped(KeyEvent arg0)
+	{
+ 
+	}
 
 	
 	//set the state of input and inputReady

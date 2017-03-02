@@ -18,8 +18,9 @@
 *						- alarm setting added (we actually send to the server now)
 *						- request time command functionality added
 *						- auto attempts to connect at startup
-*						- disconnect functionality added
+*						- disconnect functionality added (+ disconnect on reboot/close)
 *						- ip command implemented
+*						- setters and getters for default serverIPv4/port/registry name
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -57,29 +58,22 @@
 package terminal;
 
 
-import java.awt.Image;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
 import java.util.TreeMap;
-
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.UIManager;
 
 //import packages
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
-import terminal.dialogs.DayAndTimeDialog;
 
 
 
@@ -251,6 +245,18 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1: <INT> || Ping the server <INT> times");
 		
 		cmdMap.put("time", "Get and print the current time from the server");
+		
+		cmdMap.put("d-serverport", "Get or set the default server port\n"
+					+ "\tparam1: n/a   || Print the default server port\n"
+					+ "\tparam1: <INT> || Set the default server port to <INT>");
+		
+		cmdMap.put("d-serverip", "Get or set the default server IPv4 address\n"
+				+ "\tparam1: n/a             || Print the default server IPv4 address\n"
+				+ "\tparam1: xxx.xxx.xxx.xxx || Set the default server IPv4 address to xxx.xxx.xxx.xxx");
+		
+		cmdMap.put("d-name", "Get or set the default module-registry name of terminal\n"
+				+ "\tparam1: n/a   || Print the default module-registry name of terminal\n"
+				+ "\tparam1: <STR> || Set the default module-registry name of terminal to <STR>");
 		
 		return cmdMap;
 	}
@@ -707,7 +713,7 @@ public class Terminal extends JFrame implements ActionListener
 							}
 							catch (NumberFormatException|UnknownHostException e)
 							{
-								ui.printError("Invalid IPAddress -- must be of form \"xxx.xxx.xxx.xxx\"");
+								ui.printError("Invalid IPAddress\nMust be of form \"xxx.xxx.xxx.xxx\"");
 								return;
 							}	
 						}
@@ -727,7 +733,7 @@ public class Terminal extends JFrame implements ActionListener
 								}
 								catch (NumberFormatException e)
 								{
-									ui.printError("Invalid Port -- must be a valid 32bit integer");
+									ui.printError("Invalid Port\nMust be a valid 32bit integer");
 									return;
 								}
 							}
@@ -780,6 +786,86 @@ public class Terminal extends JFrame implements ActionListener
 			//disconnect
 			case("disconnect"):
 				disconnect("user request");
+				break;
+				
+				
+			//get/set default server port
+			case("d-serverport"):
+				if(input.length == 1)
+				{
+					ui.println(defaultServerPort+"");
+				}
+				else if (input.length == 2)
+				{
+					//set default server port
+					try
+					{
+						defaultServerPort = Integer.parseInt(input[1]);
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Invalid Port\nMust be a valid 32bit integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			
+			//get/set the default server IPv4
+			case("d-serverip"):
+				if(input.length == 1)
+				{
+					ui.println(defaultServerAddress.toString());
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						//declaring temporary method variables
+						byte[] addr;
+						String subStrBytes[];
+
+						//parse address
+						subStrBytes = (input[1]).split("\\.");
+						
+						addr = new byte[subStrBytes.length];
+						for(int i=0; i<subStrBytes.length; i++)
+						{
+							addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
+						}
+						
+						//save as ip
+						defaultServerAddress = InetAddress.getByAddress(addr);
+					}
+					catch (NumberFormatException|UnknownHostException e)
+					{
+						ui.printError("Invalid IPAddress\nMust be of form \"xxx.xxx.xxx.xxx\"");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+			
+			//get/set the default module-registry name
+			case("d-name"):
+				if(input.length == 1)
+				{
+					ui.println(defaultDeviceName);
+				}
+				else if (input.length == 2)
+				{
+					defaultDeviceName = input[1];
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 
 			
