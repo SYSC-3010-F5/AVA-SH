@@ -21,6 +21,7 @@
 *						- disconnect functionality added (+ disconnect on reboot/close)
 *						- ip command implemented
 *						- setters and getters for default serverIPv4/port/registry name
+*						- color command launchs dialog instead of setting to default
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -211,9 +212,9 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= <STR>  || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
 		
 		cmdMap.put("color", "Change the color theme of the terminal\n"
-					+ "\tparam1= n/a   || Set the color scheme to the default\n"
-					+ "\tparam1= all   || Show all color schemes\n"
-					+ "\tparam1= <STR> || Set the color schemes to <STR>\n"
+					+ "\tparam1= n/a   || Set the color scheme via dialog\n"
+					+ "\tparam1= all   || Demo all color schemes\n"
+					+ "\tparam1= <STR> || Set the color scheme to <STR>\n"
 					+ "\tTHEMES:          aperture, bluescreen, bumblebee, dark,\n" 
 					+ "\t                 light, matrix, ocean, prettyinpink, xmas");
 		
@@ -393,7 +394,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("color"):
 				if (length == 1)
 				{
-					ui.colorScheme(null);
+					ui.colorDialog();
 				}
 				else if (length == 2)
 				{
