@@ -11,6 +11,7 @@
 *Update Log			v0.1.2
 *						- disconnect now supported
 *						- address lookup now supported
+*						- server can be run on thread outside of calling thread
 *					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
@@ -79,6 +80,13 @@ public class MainServer extends Thread implements ActionListener
 		pauseFlag = false;
 		
 		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
+	}
+	
+	
+	//return pointer to DSKY
+	public ServerDSKY getDKSY()
+	{
+		return display;
 	}
 	
 	

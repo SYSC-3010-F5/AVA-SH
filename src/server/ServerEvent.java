@@ -12,7 +12,10 @@
 *
 *
 * 
-*Update Log			v1.0.1
+*Update Log			v1.1.0
+*						- name field added to help keep track of what each event does
+*						- instances have pointer back to Server DSKY, so they can print a message when triggered
+*					v1.0.1
 *						- toString added for testing
 *					v1.0.0
 *						- null
@@ -41,13 +44,17 @@ public class ServerEvent extends TimerTask
 	
 	//declaring local instance variables
 	private PacketWrapper[] commands;
+	private String eventName;
+	private ServerDSKY display;
 	
 
 	//generic constructor
-	public ServerEvent(PacketWrapper[] commands)
+	public ServerEvent(String eventName, PacketWrapper[] commands, ServerDSKY display)
 	{
 		super();
 		this.commands = commands;
+		this.eventName = eventName;
+		this.display = display;
 	}
 	
 	@Override
@@ -69,6 +76,7 @@ public class ServerEvent extends TimerTask
 		//packets that are not COMMAND, INFO, or ERROR not supported for scheduling and are ignored
 		try
 		{
+			display.println("EVENT >> \"" + eventName + "\" Triggered!");
 			channel.hijackChannel(localAddress, PORT);
 			for(PacketWrapper wrapper : commands)
 			{

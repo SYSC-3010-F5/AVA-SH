@@ -61,21 +61,22 @@ public class SeverEventTestBench extends TestBench
 	{
 		printHeader("Testing command firing at trigger...");
 		
+		println("Creating server to respond to commands...");
+		MainServer server = new MainServer();
+		server.start();
+		println("Server created on new thread!");
+		
 		println("Creating event...");
 		PacketWrapper[] commands = new PacketWrapper[3];
 		commands[0] = new PacketWrapper(DataChannel.TYPE_CMD, "ping", "", null);
 		commands[1] = new PacketWrapper(DataChannel.TYPE_CMD, "req time", "", null);
 		commands[2] = new PacketWrapper(DataChannel.TYPE_CMD, "ping", "", null);
-		event = new ServerEvent(commands);
+		event = new ServerEvent("TestEvent",commands, server.getDKSY());
 		println("Event created. At trigger daemon thread fires packets as:\n"
 				+commands[0].toString()+"\n"
 				+commands[1].toString()+"\n"
 				+commands[2].toString()+"\n");
 		
-		println("Creating server to respond to commands...");
-		MainServer server = new MainServer();
-		server.start();
-		println("Server created on new thread!");
 		println("Manually triggering event in:");
 		for(int i=5; i>0; i--)
 		{
