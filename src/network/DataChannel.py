@@ -1,7 +1,7 @@
 import socket
 import sys
 
-class DataChannel:
+class DataChannel():
 	TYPE_HANDSHAKE = 0
 	TYPE_CMD = 1
 	TYPE_INFO = 2
@@ -18,50 +18,50 @@ class DataChannel:
 	gpSocket = 0
 	
 	def __init__(self):
-		gpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		gpSocket.bind(("", PORT))
+		self.gpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.gpSocket.bind(("", self.PORT))
 		
 	
 	#generic accessors
-	def getPairedAddress():
-		return pairedAddress
-	def getPairedPort():
-		return pairedPort
-	def getConnected():
-		return connected
-	def getLocalPort():
-		return gpSocket.getsockname()[1]
-	def getLocalAddress():
-		return gpSocket.getsockname()[0]
-	def getRegisteredName():
-		return registeredName
+	def getPairedAddress(self):
+		return self.pairedAddress
+	def getPairedPort(self):
+		return self.pairedPort
+	def getConnected(self):
+		return self.connected
+	def getLocalPort(self):
+		return self.gpSocket.getsockname()[1]
+	def getLocalAddress(self):
+		return self.gpSocket.getsockname()[0]
+	def getRegisteredName(self):
+		return self.registeredName
 	
 	
 	#close this data channel
-	def close():
-		gpSocket.close()
-		connected = False
+	def close(self):
+		self.gpSocket.close()
+		self.connected = False
 	
 	#wait to receive a packet with a set timeout, in seconds
 	#returns the data as well as source IP+port
-	def rcvPacket(timeout):
-		gpSocket.settimeout(timeout)
-		data, addr = gpSocket.recvfrom(PORT)
+	def rcvPacket(self, timeout):
+		self.gpSocket.settimeout(timeout)
+		data, addr = self.gpSocket.recvfrom(self.PORT)
 		return [data, addr]
 	
 	#send data to IP
-	def sendPacketByteArr(byteArr):
-		if(connected):
-			gpSocket.sendto(byteArr, (pairedAddress, pairedPort))
+	def sendPacketByteArr(self, byteArr):
+		if(self.connected):
+			self.gpSocket.sendto(byteArr, (self.pairedAddress, self.pairedPort))
 		else:
 			print("Cannot send packet -- DataChannel not paired")
 		
 	#unpack a received packet according to our protocol
-	def Unpack(packet):
+	def Unpack(self, packet):
 		rawPacket = bytearray(packet)
 		index = 1
 		
-		if (rawPacket[0] == TYPE_HANDSHAKE):
+		if (rawPacket[0] == self.TYPE_HANDSHAKE):
 			handshakeKey = bytearray()
 			deviceNameBytes = bytearray()
 			#parse handshake key
@@ -81,9 +81,9 @@ class DataChannel:
 			#decode the bytes			
 			deviceName = deviceNameBytes.decode("utf-8")
 			
-			return [TYPE_HANDSHAKE, handshake, deviceName]
+			return [self.TYPE_HANDSHAKE, handshake, deviceName]
 		
-		if (rawPacket[0] == TYPE_CMD):
+		if (rawPacket[0] == self.TYPE_CMD):
 			commandKey = bytearray()
 			extraInfo = bytearray()
 			
@@ -104,105 +104,150 @@ class DataChannel:
 			#decode the bytes			
 			info = extraInfo.decode("utf-8")
 			
-			return [TYPE_CMD, cmdKey, deviceName]
+			return [self.TYPE_CMD, cmdKey, deviceName]
 		
-		if(rawPacket[0] == TYPE_INFO):
+		if(rawPacket[0] == self.TYPE_INFO):
 			infoBytes = bytearray()
 			
 			#parse the info string
-			while(rawPacket[index] != 0x00):
+			while(index < len(rawPacket)):
 				infoBytes.append(rawPacket[index])
 				index += 1
+			#rawPacket.remove(0)
+			#infoBytes.extend(rawPacket)
+			
 			
 			#decode the bytes	
 			infoString = infoBytes.decode("utf-8")
 			
-			return [TYPE_INFO, infoString, 0x00]
+			return [self.TYPE_INFO, infoString, 0x00]
 			
-		if(rawPacket[0] == TYPE_ERR):
+		if(rawPacket[0] == self.TYPE_ERR):
 			errBytes = bytearray()
 			
 			#parse the error message
-			while(rawPacket[index] != 0x00):
+			while(index < len(rawPacket)):
 				errBytes.append(rawPacket[index])
 				index += 1
 			
 			#decode the bytes
 			errString = errBytes.decode("utf-8")
 			
-			return [TYPE_ERR, errString, 0x00]
+			return [self.TYPE_ERR, errString, 0x00]
 		
-		if(rawPacket[0] == TYPE_DISCONNECT):
+		if(rawPacket[0] == self.TYPE_DISCONNECT):
 			reasonBytes = bytearray()
 			
 			#parse the reason to disconnect
-			while(rawPacket[index] != 0x00):
+			while(index < len(rawPacket)):
 				reasonBytes.append(rawPacket[index])
 				index += 1
 			
 			#decode the bytes
 			reasonString = reasonBytes.decode("utf-8")
 			
-			return [TYPE_DISCONNECT, reasonString, 0x00]
+			return [self.TYPE_DISCONNECT, reasonString, 0x00]
 	
-	def connect(sendAddress, sendPort, deviceName):
+	#attempt a connection, returns True if successful, False if not
+	def connect(self, sendAddress, sendPort, deviceName):
 		sendBytes = bytearray()
 		
 		#create the handshake packet according to the defined protocol
-		sendBytes.append(TYPE_HANDSHAKE)
-		sendBytes.append(HANDSHAKE.encode("utf-8"))
+		sendBytes.append(self.TYPE_HANDSHAKE)
+		sendBytes.extend(self.HANDSHAKE.encode("utf-8"))
 		sendBytes.append(0x00)
-		sendBytes.append(deviceName.encode("utf-8"))
-		
+		sendBytes.extend(deviceName.encode("utf-8"))
+		print(sendBytes)
 		#send the handshake packet
-		gpSocket.sendto(sendBytes, (sendAddress, sendPort))
+		self.gpSocket.sendto(sendBytes, (sendAddress, sendPort))
 		
 		#wait 10 seconds for a response
 		try:
-			data, addr = rcvPacket(10)
+			data, addr = self.rcvPacket(10)
 		except socket.timeout:
-			return
+			return False
 		
-		if(data[0] == TYPE_HANDSHAKE & data[1] == 0x00):
-			pairedPort = addr[1]
-			pairedAddress = addr[0]
-			connected = True
-			registeredName = deviceName
-		if(data[0] == TYPE_ERR):
-			print(unpack(data)[1])
+		if(data[0] == self.TYPE_HANDSHAKE & data[1] == 0x00):
+			self.pairedPort = addr[1]
+			print(addr[1])
+			self.pairedAddress = addr[0]
+			print(addr[0])
+			self.connected = True
+			self.registeredName = deviceName
+			return True
+		elif(data[0] == self.TYPE_ERR):
+			print(self.Unpack(data)[1])
+			return False
 		else:
-			print("Invalid response to handshake")
+			print("Invalid response to handshake\n")
+			print(data)
+			return False
 	
-	def disconnect(reason):
+	def disconnect(self, reason):
 		#create the disconnect packet
 		data = bytearray()
-		data.append(TYPE_DISCONNECT)
-		data.append(reason.encode("utf-8"))
+		data.append(self.TYPE_DISCONNECT)
+		data.extend(reason.encode("utf-8"))
 		#send the disconnect packet
-		sendPacketByteArr(data)
+		self.sendPacketByteArr(data)
 		
-		pairedPort = 0
-		pairedAddress = 0
-		connected = False
-		registeredName = ""
+		self.pairedPort = 0
+		self.pairedAddress = 0
+		self.connected = False
+		self.registeredName = ""
+	
+	#This class is meant for modules, so it does not need to respond to a handshake	
+	#def respondHandshake(self, pairingAddress, pairingPort):
+	#	self.connected = True
+	#	self.pairedAddress = pairingAddress
+	#	self.pairedPort = pairingPort
+	#	
+	#	#create the handshake response
+	#	data = bytearray()
+	#	data.append(self.TYPE_HANDSHAKE)
+	#	data.append(0x00)
+	#	self.sendPacketByteArr(data)
 		
-	def respondHandshake(pairingAddress, pairingPort):
-		connected = True
-		pairedAddress = pairingAddress
-		pairedPort = pairingPort
+	#send the command and extra info (should be formatted as string)
+	def sendCmd(self, cmdKey, extraInfo):
+		toSend = bytearray()
+		toSend.append(self.TYPE_CMD)
+		toSend.extend(cmdKey.encode("utf-8"))
+		toSend.append(0x00)
+		toSend.extend(extraInfo.encode("utf-8"))
+		toSend.append(0x00)
 		
-		#create the handshake response
-		data = bytearray()
-		data.append(TYPE_HANDSHAKE)
-		data.append(0x00)
-		sendPacketByteArr(data)
+		self.sendPacketByteArr(toSend)
+		
+	#send an info packet, info is a string
+	def sendInfo(self, info):
+		toSend = bytearray()
+		toSend.append(self.TYPE_INFO)
+		toSend.extend(info.encode("utf-8"))
+		
+		self.sendPacketByteArr(toSend)
+	
+	#send an error packet, errMsg is a string	
+	def sendErr(self, errMsg):
+		toSend = bytearray()
+		toSend.append(self.TYPE_ERR)
+		toSend.extend(errMsg.encode("utf-8"))
+		
+		self.sendPacketByteArr(toSend)
+		
 		
 #MAIN
-what = bytearray()
-what.append(0x00)
-what.extend("aaaa".encode("utf-8"))
-what.append(0x00)
-what.extend("BB8".encode("utf-8"))
-what.append(0x00)
-other = Unpack(what)
-print(other)
+myChannel = DataChannel()
+boolean = myChannel.connect("134.117.58.118", 3010, "BLYAT")
+print(boolean)
+boolean = myChannel.connect("134.117.58.118", 3010, "BLYAT")
+print(boolean)
+myChannel.sendInfo("THE ONLY THING YOU HAVE TO LOSE IS YOUR CHAINS")
+myChannel.sendCmd("req time", "")
+data, addr = myChannel.rcvPacket(10)
+print(data)
+opcode, info, extra = myChannel.Unpack(data)
+print(info)
+myChannel.sendCmd("RISE UP", "")
+myChannel.sendErr("STALIN DED")
+myChannel.disconnect("COMMUNISM DED")
