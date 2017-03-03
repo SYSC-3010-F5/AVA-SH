@@ -45,7 +45,7 @@ import network.DataChannel;
 
 
 
-public class MainServer implements ActionListener
+public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
 	private static final String SERVER_NAME = "AVA Server v0.1.1";
@@ -163,8 +163,9 @@ public class MainServer implements ActionListener
 	}
 	
 	
+	@Override
 	//main server input-control-wait loop
-	public int run()
+	public void run()
 	{
 		while(runFlag)
 		{
@@ -298,7 +299,6 @@ public class MainServer implements ActionListener
 			}
 			catch (NetworkException e){}
 		}
-		return closeMode;
 	}
 	
 	

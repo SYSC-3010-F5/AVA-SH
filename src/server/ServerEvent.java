@@ -12,23 +12,25 @@
 *
 *
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- toString added for testing
+*					v1.0.0
 *						- null
 */
 package server;
 
 
+//import libraries
+import java.util.TimerTask;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-//import libraries
-import java.util.TimerTask;
 
+//import packages
+import network.PacketWrapper;
 import network.DataChannel;
 import network.DataMultiChannel;
 import network.NetworkException;
-//import packages
-import network.PacketWrapper;
 
 
 
@@ -90,6 +92,18 @@ public class ServerEvent extends TimerTask
 			}
 		}
 		catch (NetworkException e){e.printStackTrace();}
-		
+	}
+	
+	
+	@Override
+	//show as a string (good for testing)
+	public String toString()
+	{
+		String s ="";
+		for(PacketWrapper packet : commands)
+		{
+			s += packet.toString()+"\n";
+		}
+		return s;
 	}
 }

@@ -100,7 +100,14 @@ public class PacketWrapper
 				s += "FIELD1: <" + this.sField1 + "> FIELD2: <" + this.sField2 + ">";
 				break;
 		}
-		s += ", FROM: " + this.source.toString();
+		if(source != null)
+		{
+			s += ", FROM: " + this.source.toString();
+		}
+		else
+		{
+			s += ", FROM: null";
+		}
 		return s;
 	}
 }
