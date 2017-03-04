@@ -184,7 +184,7 @@ public class MainServer extends Thread implements ActionListener
 				packet = this.receivePacket();
 				
 				//decide what to do with the packet
-				switch(packet.type)
+				switch(packet.type())
 				{
 					//new device for the registry
 					case(TYPE_HANDSHAKE):
@@ -196,13 +196,13 @@ public class MainServer extends Thread implements ActionListener
 							display.println("Device handshake correct!\nAdding to registry...");
 							if(!registry.containsKey(packet.deviceName()))
 							{
-								registry.put(packet.deviceName(), packet.source);
-								display.println("Device added to registry under name \"" + packet.deviceName() + "\", value: \"" + packet.source.toString() + "\"");
+								registry.put(packet.deviceName(), packet.source());
+								display.println("Device added to registry under name \"" + packet.deviceName() + "\", value: \"" + packet.source().toString() + "\"");
 								
 								//respond to handshake with empty handshake
 								try
 								{
-									multiChannel.respondHandshake(packet.source.getAddress(), packet.source.getPort());
+									multiChannel.respondHandshake(packet.source().getAddress(), packet.source().getPort());
 								}
 								catch (NetworkException e)
 								{
@@ -215,7 +215,7 @@ public class MainServer extends Thread implements ActionListener
 								//device name already registered, respond with error
 								try 
 								{
-									multiChannel.hijackChannel(packet.source.getAddress(), packet.source.getPort());
+									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
 									multiChannel.sendErr("Device name already in used\nPlease choose another device name to register under");
 								} 
 								catch (NetworkException e) 
@@ -241,7 +241,7 @@ public class MainServer extends Thread implements ActionListener
 						display.println("Device attempting disconnect...\nChecking for device in registry...");
 						for(String s : registry.keySet())
 						{
-							if(registry.get(s).equals(packet.source))
+							if(registry.get(s).equals(packet.source()))
 							{
 								registry.remove(s);
 								display.println("Device registered under \"" + s + "\" removed from registry with reason:\n\"" + packet.disconnectMessage() + "\"");
@@ -265,7 +265,7 @@ public class MainServer extends Thread implements ActionListener
 						{
 							//somebody is pinging server, respond
 							case("ping"):
-								sendPing(packet.source);
+								sendPing(packet.source());
 								break;
 								
 							//new alarm added
@@ -282,12 +282,12 @@ public class MainServer extends Thread implements ActionListener
 								
 							//the server time is requested
 							case("req time"):
-								sendTime(packet.source);
+								sendTime(packet.source());
 								break;
 								
 							//a module address is requested
 							case("req ip"):
-								sendAddress(packet.source, packet.extraInfo());
+								sendAddress(packet.source(), packet.extraInfo());
 								break;
 						}
 						break;

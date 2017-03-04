@@ -483,7 +483,7 @@ public class Terminal extends JFrame implements ActionListener
 						{
 							dataChannel.sendCmd("req ip", moduleString);
 							PacketWrapper packet = dataChannel.receivePacket();
-							if(packet.type == DataChannel.TYPE_INFO)
+							if(packet.type() == DataChannel.TYPE_INFO)
 							{
 								ui.println("\"" + moduleString + "\" @ " + packet.info());
 							}
@@ -900,7 +900,7 @@ public class Terminal extends JFrame implements ActionListener
 				
 				//wait for response
 				PacketWrapper wrapper = dataChannel.receivePacket(5000);
-				if(wrapper.type == DataChannel.TYPE_INFO)
+				if(wrapper.type() == DataChannel.TYPE_INFO)
 				{
 					post = System.currentTimeMillis();
 					ui.println("Response from server, delay of " + (post-pre) + "ms");

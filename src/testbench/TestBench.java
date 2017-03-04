@@ -20,7 +20,6 @@
 package testbench;
 
 import java.util.Scanner;
-
 import junit.framework.TestCase;
 
 public abstract class TestBench extends TestCase

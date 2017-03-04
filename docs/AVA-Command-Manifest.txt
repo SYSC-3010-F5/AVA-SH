@@ -17,9 +17,25 @@ ABSTRACT
 	
 	This document contains the current list of accepted COMMAND_KEY's, as well as what they cause the server to do. It also lists if the command contains anything in the optional EXTRA_INFO field, and if so, what should be included.
 
+	
+	
+
+ILLEGAL CHARACTERS
+===============================
+
+	Illegal characters must not be used in the COMMAND_KEY or the EXTRA_INFO field.
+	The list includes:
+	
+		|-------------------|--------------|------------------|
+		|UTF-8 CHARACTER    |     NAME     |    HEX VALUE     |
+		|-------------------|--------------|------------------|
+		| \0                | null         | 0x00             |
+		| $                 | dollar sign  | 0x24             |
+		|-------------------|--------------|------------------| 
+		
 
 
-
+	
 	
 COMMAND MANIFEST
 ===============================

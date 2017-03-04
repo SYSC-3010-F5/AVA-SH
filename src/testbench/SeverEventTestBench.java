@@ -1,20 +1,15 @@
 /**
-*Class:             TestBench.java
+*Class:             ServerEventTestBench.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    02/03/2017                                              
 *Version:           1.0.0                                         
 *                                                                                   
-*Purpose:           Master test bench all other test benchs should inherit from.
-*					Makes use of JUnitTests for regression tests, as well as printing out detailed 
-*					information for manual debugging of programs and detailed test information.
-*					More or less a collection of common methods.
+*Purpose:           Test manual triggering and subsequent firing of ServerEvents
 *					
 * 
-*Update Log			v1.0.1
-*						- added method for user input (manual testing)
-*					v1.0.0
-*						- some methods added
+*Update Log			v1.0.0
+*						- null
 */
 package testbench;
 
@@ -23,11 +18,14 @@ package testbench;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
+//import packages
 import network.DataChannel;
 import network.PacketWrapper;
 import server.MainServer;
-import server.ServerEvent;
-import server.datatypes.Alarm;
+import server.datatypes.ServerEvent;
+import server.datatypes.TimeAndDate;
+
+
 
 public class SeverEventTestBench extends TestBench 
 {
@@ -63,16 +61,19 @@ public class SeverEventTestBench extends TestBench
 		
 		println("Creating server to respond to commands...");
 		MainServer server = new MainServer();
+		ServerEvent.hookDSKY(server.getDKSY());
 		server.start();
 		println("Server created on new thread!");
 		
 		println("Creating event...");
+		TimeAndDate trigger = new TimeAndDate(7, 30, new boolean[]{false,true,true,true,true,true,false});
 		PacketWrapper[] commands = new PacketWrapper[3];
 		commands[0] = new PacketWrapper(DataChannel.TYPE_CMD, "ping", "", null);
 		commands[1] = new PacketWrapper(DataChannel.TYPE_CMD, "req time", "", null);
 		commands[2] = new PacketWrapper(DataChannel.TYPE_CMD, "ping", "", null);
-		event = new ServerEvent("TestEvent",commands, server.getDKSY());
-		println("Event created. At trigger daemon thread fires packets as:\n"
+		event = new ServerEvent("TestEvent", commands, trigger);
+		println("Event created as: "+event.toString());
+		println("At trigger daemon thread fires packets as:\n"
 				+commands[0].toString()+"\n"
 				+commands[1].toString()+"\n"
 				+commands[2].toString()+"\n");

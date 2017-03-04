@@ -94,10 +94,28 @@ TYPE CLASSIFICATIONS
 	Type 3 is sent to inform the user some error has occured (either their command, type 1, packet is not recognized as a valid command), or something else has gone midly or catastrophically wrong.
 	
 	Type 4 is used to disconnect with the server.
-
-
 	
+	
+	
+	
+	
+ILLEGAL CHARACTERS
+===============================
 
+	Illegal characters must not be used in the any of the UTF-8 encoded sections of the packets.
+	ie HANDSHAKE_KEY, DEVICE_NAME, COMMAND_KEY, EXTRA_INFO, INFO, ERROR_MESSAGE, or DISCONNECT_REASON must not contain these characters:
+	
+		|-------------------|--------------|------------------|
+		|UTF-8 CHARACTER    |     NAME     |    HEX VALUE     |
+		|-------------------|--------------|------------------|
+		| \0                | null         | 0x00             |
+		| $                 | dollar sign  | 0x24             |
+		|-------------------|--------------|------------------| 
+
+
+
+
+		
 TYPE-DEPENANT FORMATS
 ===============================
 	Each different type of packet follows its own format.
