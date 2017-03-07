@@ -1,5 +1,7 @@
 package server;
 
+import server.datatypes.WeatherData;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -116,5 +118,11 @@ public class Weather
 			e.printStackTrace();
 		}
 		System.out.println(ottawaWeather.toString());
+		WeatherData data = new WeatherData(ottawaWeather);
+		String str[] = data.getWeatherData();
+		System.out.println(str[0]);
+		System.out.println(str[1]);
+		System.out.println(str[2]);
+		System.out.println(str[3]);
 	}
 }
