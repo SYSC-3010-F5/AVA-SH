@@ -20,6 +20,14 @@ import java.net.SocketException;
 
 public class DataMultiChannel extends DataChannel 
 {
+	//even more generic constructor
+	public DataMultiChannel() throws SocketException
+	{
+		//initialize
+		super();
+		gpSocket = new DatagramSocket();
+		connected = true;
+	}
 	//generic constructor
 	public DataMultiChannel(int port) throws SocketException
 	{

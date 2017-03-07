@@ -8,9 +8,17 @@
 *Purpose:           Displays plain text with time stamps (DiSplay).
 *					Displays registry for server.
 *					A few buttons for basic server control, should be avoided (KeYboard).
+*			
+*					**NOTE
+*					Only methods dealing with the display:
+*					 {ie println(String), println(), clear()}
+*					Are guaranteed thread safe.
 *					
 * 
-*Update Log			v2.0.1
+*Update Log			v2.1.0
+*						- methods to print to display now thread safe
+*						  (as we now have DayScheduler daemon threads calling the print)
+*					v2.0.1
 *						- buttons not saved as instance variables now
 *						- added method for printing blank lines
 *					v2.0.0
@@ -227,7 +235,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//generic print
-	public void println(String string)
+	public synchronized void println(String string)
 	{
 		string = string.replaceAll("\n", "\n        \t");
 		display.append(getCurrentTime() + "\t" + string + "\n");
@@ -236,7 +244,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//print empty line
-	public void println()
+	public synchronized void println()
 	{
 		display.append("\n");
 		display.setCaretPosition(display.getDocument().getLength());
@@ -244,7 +252,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//generic clear
-	public void clear()
+	public synchronized void clear()
 	{
 		display.setText("");
 		display.setCaretPosition(display.getDocument().getLength());

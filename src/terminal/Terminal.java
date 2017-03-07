@@ -2,15 +2,17 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/02/2017                                              
-*Version:           0.5.0                                         
+*Date of Update:    07/03/2017                                              
+*Version:           0.5.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.0
+*Update Log			v0.5.1
+*						- terminal can set up timers
+*					v0.5.0
 *						- pinging added
 *						- connection establishing with server added
 *						- connection command and associated method re-written
@@ -21,6 +23,7 @@
 *						- disconnect functionality added (+ disconnect on reboot/close)
 *						- ip command implemented
 *						- setters and getters for default serverIPv4/port/registry name
+*						- color command launchs dialog instead of setting to default
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -211,9 +214,9 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= <STR>  || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
 		
 		cmdMap.put("color", "Change the color theme of the terminal\n"
-					+ "\tparam1= n/a   || Set the color scheme to the default\n"
-					+ "\tparam1= all   || Show all color schemes\n"
-					+ "\tparam1= <STR> || Set the color schemes to <STR>\n"
+					+ "\tparam1= n/a   || Set the color scheme via dialog\n"
+					+ "\tparam1= all   || Demo all color schemes\n"
+					+ "\tparam1= <STR> || Set the color scheme to <STR>\n"
 					+ "\tTHEMES:          aperture, bluescreen, bumblebee, dark,\n" 
 					+ "\t                 light, matrix, ocean, prettyinpink, xmas");
 		
@@ -257,6 +260,10 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("d-name", "Get or set the default module-registry name of terminal\n"
 				+ "\tparam1: n/a   || Print the default module-registry name of terminal\n"
 				+ "\tparam1: <STR> || Set the default module-registry name of terminal to <STR>");
+		
+		cmdMap.put("timer", "Set a new timer to go off in a set amount of minutes\n"
+				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
+				+ "\tparam2: <STR> || The name for the timer");
 		
 		return cmdMap;
 	}
@@ -393,7 +400,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("color"):
 				if (length == 1)
 				{
-					ui.colorScheme(null);
+					ui.colorDialog();
 				}
 				else if (length == 2)
 				{
@@ -482,7 +489,7 @@ public class Terminal extends JFrame implements ActionListener
 						{
 							dataChannel.sendCmd("req ip", moduleString);
 							PacketWrapper packet = dataChannel.receivePacket();
-							if(packet.type == DataChannel.TYPE_INFO)
+							if(packet.type() == DataChannel.TYPE_INFO)
 							{
 								ui.println("\"" + moduleString + "\" @ " + packet.info());
 							}
@@ -867,8 +874,40 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+				
+				
+			//set up a timer
+			case("timer"):
+				if(input.length == 1)
+				{
+					//TODO dialog
+				}
+				else if(input.length == 3)
+				{
+					try 
+					{
+						//check that minute param is valid int
+						Integer.parseInt(input[1]);
+						//send timer command
+						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + input[1] + "\n}";
+						dataChannel.sendCmd("set timer", json);
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Invalid Port\nMust be a valid 32bit integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
 
-			
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);
@@ -899,7 +938,7 @@ public class Terminal extends JFrame implements ActionListener
 				
 				//wait for response
 				PacketWrapper wrapper = dataChannel.receivePacket(5000);
-				if(wrapper.type == DataChannel.TYPE_INFO)
+				if(wrapper.type() == DataChannel.TYPE_INFO)
 				{
 					post = System.currentTimeMillis();
 					ui.println("Response from server, delay of " + (post-pre) + "ms");

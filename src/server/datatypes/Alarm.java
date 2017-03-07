@@ -11,7 +11,6 @@
 * 
 *Update Log			v1.0.1
 *						- toString method added for debugging (quicker to read than the JSON!)
-*						- hashmap-based function added for going between day-->number & number-->day
 *					v1.0.0
 *						- getters/setter added
 *						- each getter checks values to make sure preconditions met

@@ -1,8 +1,8 @@
 /**
-*Class:             DataChannelTestBench.java
+*Class:             TestBench.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    04/02/2017                                              
+*Date of Update:    02/03/2017                                              
 *Version:           1.0.0                                         
 *                                                                                   
 *Purpose:           Master test bench all other test benchs should inherit from.
@@ -11,12 +11,15 @@
 *					More or less a collection of common methods.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- added method for user input (manual testing)
+*					v1.0.0
 *						- some methods added
 */
 
 package testbench;
 
+import java.util.Scanner;
 import junit.framework.TestCase;
 
 public abstract class TestBench extends TestCase
@@ -75,5 +78,14 @@ public abstract class TestBench extends TestCase
 			printable = printable + "0x" + (String.format("%02x", b)).toUpperCase() + " ";
 		}
 		this.println(printable + "}");
+	}
+	
+	
+	//block for input, single line
+	public String getInput()
+	{
+		Scanner scanner = new Scanner(System.in);
+		String input = scanner.nextLine();
+		return input;
 	}
 }

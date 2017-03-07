@@ -183,7 +183,7 @@ public class DataChannel implements ComsProtocol
 	
 	
 	//generic send to paired
-	private void sendPacket(byte[] toSend) throws NetworkException
+	public void sendPacket(byte[] toSend) throws NetworkException
 	{
 		//attempt to send if connection is established
 		if(connected)
