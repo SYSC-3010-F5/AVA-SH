@@ -44,6 +44,57 @@ COMMAND MANIFEST
 	EXTRA_INFO: 	false
 	PURPOSE:		Request an empty info-type packet from the server to act as a ping.
 	RESPONSE:		info-type packet
+		
+		
+	----------------------------
+	
+	COMMAND_KEY:	"sch event"
+	EXTRA_INFO:		true
+					Formated using JSON using UTF-8 character encoding, includes information denoting the trigger of the event (ie what time of day, and what days per week), and an array of the commands to fire upon event triger. A sample of this looks like:
+					{
+						"eventName" : "Make Evening Coffee"
+						"trigger" : {
+							"hour" : 17
+							"minute" : 45
+							"days" : [false, true, true, true, true, true, false]
+						}
+						"commands" : {
+							{
+								"type" : 1
+								"sField1" : "ping"
+								"sField2" : ""
+								"source" : "null"
+							}
+							{
+								"type" : 1
+								"sField1" : "req time"
+								"sField2" : ""
+								"source" : "null"
+							}
+							{
+								"type" : 1
+								"sField1" : "ping"
+								"sField2" : ""
+								"source" : "null"
+							}
+						}
+					}
+	PURPOSE:		Schedule a new event to trigger at a certain time on certain days of the week.
+					On trigger the event will wake a daemon thread and fire the commands to the server (more generally to whatever address the Scheduler is running on, on port 3010).
+	RESPONSE		N/A
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"set timer"
+	EXTRA_INFO:		true
+					Formated JSON using UTF-8 encoding, includes information denoting a name for the timer, and the amount of time until the Timer is triggered (in minutes)
+					{
+						"name" : "Take food out of oven"
+						"timeUntilTrigger" : 30
+					}
+	PURPOSE:		Set a timer to trigger in a certain amount of minutes
+	RESPONSE		N/A
 	
 	
 	----------------------------

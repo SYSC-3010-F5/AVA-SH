@@ -1,9 +1,23 @@
+/**
+*Class:             Scheduler.java
+*Project:          	AVA Smart Home
+*Author:            Jason Van Kerkhoven                                             
+*Date of Update:    06/03/2017                                              
+*Version:           0.1.0                                         
+*                                                                                   
+*Purpose:           Real time is hard.
+*					
+* 
+*Update Log			v1.0.0
+*						- null
+*/
 package server;
 
 
 //import externals
 import java.util.Timer;
 import java.text.SimpleDateFormat;
+import java.time.DateTimeException;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -13,11 +27,12 @@ import server.datatypes.TimeAndDate;
 
 
 
-public class Scheduler 
+public class Scheduler
 {
 	//declaring static class constants
-	public static final int PERIOD_DAY = 1000*60*60*24;		// (1000ms/s)(60s/min)(60min/hr)(24hr/day)
-	public static final int PERIOD_WEEK = PERIOD_DAY*7;		// (1000ms/s)(60s/min)(60min/hr)(24hr/day)(7day/week)
+	public static final int MS_MIN =	1000*60;			// (1000ms/s)(60s/min)
+	public static final int MS_DAY =	MS_MIN*60*24;		// (1000ms/s)(60s/min)(60min/hr)(24hr/day)
+	public static final int MS_WEEK =	MS_DAY*7;			// (1000ms/s)(60s/min)(60min/hr)(24hr/day)(7day/week)
 	public static final int DAY_SUN = Calendar.SUNDAY;
 	public static final int DAY_MON = Calendar.MONDAY;
 	public static final int DAY_TUE = Calendar.TUESDAY;
@@ -61,20 +76,28 @@ public class Scheduler
 	}
 	
 	
-	//return time from epoch
-	public static boolean WillOccurLaterToday(int hour, int minute)
+	//return if hh:mm will occur later today
+	public boolean occursLaterToday(int hour, int minute)
 	{
+		//check preconditions
+		if(hour > 23 || hour < 0 || minute > 59 || minute < 0)
+		{
+			throw new DateTimeException("hour or minute parameter out of range");
+		}
+		
+		//get current time and time at hour:minute
 		Calendar trigger = Calendar.getInstance();
 		trigger.set(
-				Calendar.getInstance().get(Calendar.YEAR), 
-				Calendar.getInstance().get(Calendar.MONTH), 
-				Calendar.getInstance().get(Calendar.DATE), 
-				hour, 
-				minute, 
+				Calendar.getInstance().get(Calendar.YEAR),
+				Calendar.getInstance().get(Calendar.MONTH),
+				Calendar.getInstance().get(Calendar.DATE),
+				hour,
+				minute,
 				0);
 		Calendar current = Calendar.getInstance();
 		
-		return (current.getTimeInMillis() > trigger.getTimeInMillis());
+		//check if trigger occurs at a later time than current
+		return (current.getTimeInMillis() < trigger.getTimeInMillis());
 	}
 	
 	
@@ -82,6 +105,15 @@ public class Scheduler
 	public long computeDelay(TimeAndDate trigger)
 	{
 		return 5;
+	}
+	
+	
+	/* schedule a single event to occur after a delay (like a timer)
+	 * ignores any internal time information in event
+	 */
+	public void scheduleTimer(ServerEvent event, int secondsUntilTrigger)
+	{
+		scheduler.schedule(event, secondsUntilTrigger*1000);
 	}
 	
 	
@@ -111,11 +143,5 @@ public class Scheduler
 		
 		//determine if event to occur later today, or on a new day
 		Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
-	}
-	
-	public static void main(String[] args)
-	{
-		Scheduler s = new Scheduler("thing");
-		s.schedule(null);
 	}
 }

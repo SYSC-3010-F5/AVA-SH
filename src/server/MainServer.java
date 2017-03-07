@@ -2,16 +2,22 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    28/02/2017
-*Version:           0.1.2
+*Date of Update:    07/03/2017
+*Version:           0.2.0
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.1.2
+*Update Log			v0.2.0
+*						- Scheduler hooked in
+*						- methods to schedule ServerEvents added
+*						- adding timers working
+*						- timer triggering functional
+*					v0.1.2
 *						- disconnect now supported
 *						- address lookup now supported
 *						- server can be run on thread outside of calling thread
+*						- shutdown added
 *					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
@@ -41,6 +47,7 @@ import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
+import server.datatypes.ServerEvent;
 import io.json.JsonException;
 import network.DataChannel;
 
@@ -63,6 +70,7 @@ public class MainServer extends Thread implements ActionListener
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
 	private DataMultiChannel multiChannel;
+	private Scheduler scheduler;
 	private boolean pauseFlag;
 	private boolean runFlag;
 	private int closeMode;
@@ -75,10 +83,12 @@ public class MainServer extends Thread implements ActionListener
 		//initialize
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
+		scheduler = new Scheduler("AVA Scheduler");
 		display = new ServerDSKY(SERVER_NAME + " @ " + InetAddress.getLocalHost()+":"+PORT, this);
 		runFlag = true;
 		pauseFlag = false;
 		
+		ServerEvent.hookDSKY(display);
 		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
 	}
 	
@@ -89,6 +99,26 @@ public class MainServer extends Thread implements ActionListener
 		return display;
 	}
 	
+	
+	//shutdown server
+	public void shutdown()
+	{
+		multiChannel.close();
+		display.close();
+	}
+	
+	
+	//schedule a new event
+	public void scheduleEvent(String eventJson) throws JsonException
+	{
+		//get event
+		ServerEvent event = new ServerEvent();
+		event.fromJSON(eventJson);
+		
+		//schedule
+		display.println("Scheduling event: " + event.toString());
+		scheduler.schedule(event);
+	}
 	
 	//receive packet
 	private PacketWrapper receivePacket() throws NetworkException
@@ -120,6 +150,64 @@ public class MainServer extends Thread implements ActionListener
 			multiChannel.sendInfo("");
 		} 
 		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
+	//schedual a new timer
+	public void setTimer(String json) throws JsonException
+	{
+		String timerName;
+		int triggerTime;
+		
+		//parse info from json
+		int line = 0;
+		/*split at newlines, remove all tabs, remove spaces
+		 * keep one copy of tab-space filtered, separated at \n		fileLine
+		 * keep one copy of tab filtered, separated at \n			fileLineSpace
+		 */
+		String intermediate = json.replaceAll("\t", "");
+		String[] fileLineSpace = intermediate.split("\n");
+		intermediate = intermediate.replaceAll(" ", "");
+		String[] fileLine = intermediate.split("\n");
+		intermediate = null;
+		
+		//make sure there is a starting block
+		if (!fileLine[line].equals("{"))
+		{
+			throw new JsonException("No starting block", JsonException.ERR_FORMAT);
+		}
+		line++;
+		
+		//check for eventName field
+		if (!fileLine[line].contains("\"name\":"))
+		{
+			throw new JsonException("\"name\" field not found", JsonException.ERR_BAD_FIELD);
+		}
+		//extract name
+		String tempString = fileLineSpace[line].split(":",2)[1];
+		timerName = tempString.substring(tempString.indexOf("\"")+1, tempString.length()-1);
+		line++;
+		
+		//check for eventName field
+		if (!fileLine[line].contains("\"timeUntilTrigger\":"))
+		{
+			throw new JsonException("\"timeUntilTrigger\" field not found", JsonException.ERR_BAD_FIELD);
+		}
+		//extract minutes
+		String minute = fileLine[line].split(":")[1];
+		try
+		{
+			triggerTime = (Integer.parseInt(minute));
+		}
+		catch (NumberFormatException e)
+		{
+			throw new JsonException("minute field must be a valid 32bit integer", JsonException.ERR_BAD_VALUE);
+		}
+		
+		//create new ServerEvent for time, schedule it
+		PacketWrapper[] cmds = new PacketWrapper[0];			//TODO actually make it use alarm
+		ServerEvent event = new ServerEvent(timerName, cmds);
+		scheduler.scheduleTimer(event, triggerTime*60);
 	}
 	
 	
@@ -263,6 +351,30 @@ public class MainServer extends Thread implements ActionListener
 						//determine what to do based on command key
 						switch(packet.commandKey())
 						{
+							//new event being scheduled
+							case("sch event"):
+								try
+								{
+									scheduleEvent(packet.extraInfo());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+								}
+								break;
+								
+							//new basic timer is being added
+							case("set timer"):
+								try
+								{
+									setTimer(packet.extraInfo());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+								}
+								break;
+						
 							//somebody is pinging server, respond
 							case("ping"):
 								sendPing(packet.source());

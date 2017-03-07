@@ -163,7 +163,7 @@ public class JsonFile
 	//new block, but with field name
 	public void newBlock(String fieldName)
 	{
-		file += "\"" + fieldName + "\" : {\n";
+		add("\"" + fieldName + "\" : {\n");
 		offset += "\t";
 	}
 	
