@@ -22,7 +22,7 @@ public class Weather
 	public static final int OTTAWA_OPENWEATHER_ID = 6094817;
 	public static final String DEFAULT_APP_ID = "222b4b01c634f66b93422eb43f8ed354";
 	public static final String APPID_HEADER = "x-api-key";
-	private static final String BASE_OWM_URL = "api.openweathermap.org/data/2.5/weather";
+	private static final String BASE_OWM_URL = "http://api.openweathermap.org/data/2.5/";
 	
 	private HttpClient httpClient;
 	private String appID;
@@ -38,6 +38,14 @@ public class Weather
 		appID = appid;
 	}
 	
+	//get the current weather of the indicated city, by their city ID
+	public JSONObject currentWeatherAtCity(int cityID) throws IOException, JSONException
+	{
+		String subURL = String.format("weather?id=%d", cityID);
+		JSONObject response = doQuery(subURL);
+		return response;
+	}
+	
 	private JSONObject doQuery(String subUrl) throws JSONException, IOException
 	{
 		String responseBody = null;
@@ -46,8 +54,8 @@ public class Weather
 		{
 			httpget.addHeader(APPID_HEADER, appID);
 		}
-		
-		HttpResponse response = this.httpClient.execute(httpget);
+
+		HttpResponse response = httpClient.execute(httpget);
 		InputStream input = null;
 		
 		try
@@ -94,5 +102,19 @@ public class Weather
 				input.close();
 		}
 		return new JSONObject(responseBody);
+	}
+	
+	//quick test code to get the raw JSON of Ottawa's current weather
+	public static void main(String[] args)
+	{
+		Weather weather = new Weather();
+		JSONObject ottawaWeather = null;
+		try { 
+			ottawaWeather = weather.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
+		} catch (JSONException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println(ottawaWeather.toString());
 	}
 }
