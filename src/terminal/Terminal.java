@@ -11,7 +11,7 @@
 *					
 * 
 *Update Log			v0.5.1
-*						- terminal can set up timers
+*						- terminal can set up timers (cmd or dialog)
 *					v0.5.0
 *						- pinging added
 *						- connection establishing with server added
@@ -77,6 +77,7 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
+import terminal.dialogs.TimeDialog;
 
 
 
@@ -577,25 +578,25 @@ public class Terminal extends JFrame implements ActionListener
 						switch(day)
 						{
 							case("mon"):
-								daysArr[0] = true;
-								break;
-							case("tue"):
 								daysArr[1] = true;
 								break;
-							case("wed"):
+							case("tue"):
 								daysArr[2] = true;
 								break;
-							case("thu"):
+							case("wed"):
 								daysArr[3] = true;
 								break;
-							case("fri"):
+							case("thu"):
 								daysArr[4] = true;
 								break;
-							case("sat"):
+							case("fri"):
 								daysArr[5] = true;
 								break;
-							case("sun"):
+							case("sat"):
 								daysArr[6] = true;
+								break;
+							case("sun"):
+								daysArr[0] = true;
 								break;
 							default:
 								ui.printError("Unknown date");
@@ -880,7 +881,21 @@ public class Terminal extends JFrame implements ActionListener
 			case("timer"):
 				if(input.length == 1)
 				{
-					//TODO dialog
+					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);
+					if (d.getCloseMode() == TimeDialog.OK_OPTION)
+					{
+						//send timer command
+						ui.println(d.getName());
+						String json = "{\n\t\"name\" : \"" + d.getTimerName() + "\"\n\t\"timeUntilTrigger\" : " + d.getMinutes() + "\n}";
+						try 
+						{
+							dataChannel.sendCmd("set timer", json);
+						} 
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
+					}
 				}
 				else if(input.length == 3)
 				{
@@ -898,7 +913,7 @@ public class Terminal extends JFrame implements ActionListener
 					}
 					catch (NumberFormatException e)
 					{
-						ui.printError("Invalid Port\nMust be a valid 32bit integer");
+						ui.printError("Invalid Time\nMust be a valid 32bit integer");
 					}
 				}
 				else

@@ -34,20 +34,20 @@ import io.json.ToJSONFile;
 public class Alarm implements ToJSONFile
 {
 	//declaring static class constants
-	public static final String[] DAY_NAMES_FULL = { "Monday",
+	public static final String[] DAY_NAMES_FULL = { "Sunday",
+													"Monday",
 													"Tuesday",
 													"Wednesday",
 													"Thursday",
 													"Friday",
-													"Saturday",
-													"Sunday"};
-	public static final String[] DAY_NAMES_SHORT = {"mon",
+													"Saturday"};
+	public static final String[] DAY_NAMES_SHORT = {"sun",
+													"mon",
 													"tue",
 													"wed",
 													"thu",
 													"fri",
-													"sat",
-													"sun"};
+													"sat"};
 	private static final String DEFAULT_NAME = "Generic Alarm";
 	
 	//declaring local instance variables
