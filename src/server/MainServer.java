@@ -46,8 +46,10 @@ import java.util.HashMap;
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.Weather;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
+import server.datatypes.WeatherData;
 import io.json.JsonException;
 import network.DataChannel;
 
@@ -152,8 +154,13 @@ public class MainServer extends Thread implements ActionListener
 		catch (NetworkException e) {e.printStackTrace();}
 	}
 	
+	//send the current weather data
+	private void sendCurrentWeather(InetSocketAddress dest)
+	{
+		
+	}
 	
-	//schedual a new timer
+	//schedule a new timer
 	public void setTimer(String json) throws JsonException
 	{
 		String timerName;
@@ -400,6 +407,11 @@ public class MainServer extends Thread implements ActionListener
 							//a module address is requested
 							case("req ip"):
 								sendAddress(packet.source(), packet.extraInfo());
+								break;
+							
+							//the current weather is requested
+							case("req current weather"):
+								
 								break;
 						}
 						break;
