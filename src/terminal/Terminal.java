@@ -266,7 +266,7 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
 		
-		cmdMap.put("req current weather", "Request the current weather of Ottawa, Ontario");
+		cmdMap.put("weather", "Request the current weather of Ottawa, Ontario");
 		
 		return cmdMap;
 	}
@@ -924,7 +924,7 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 				
-			case("req current weather"):
+			case("weather"):
 				try 
 				{
 					dataChannel.sendCmd("req current weather");
