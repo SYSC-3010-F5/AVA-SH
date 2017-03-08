@@ -36,11 +36,15 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 //import packages
 import network.DataMultiChannel;
@@ -49,7 +53,6 @@ import network.PacketWrapper;
 import server.Weather;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
-import server.datatypes.WeatherData;
 import io.json.JsonException;
 import network.DataChannel;
 
@@ -154,10 +157,33 @@ public class MainServer extends Thread implements ActionListener
 		catch (NetworkException e) {e.printStackTrace();}
 	}
 	
-	//send the current weather data
+	//send the current weather data as unformatted JSON
 	private void sendCurrentWeather(InetSocketAddress dest)
 	{
-		
+		Weather weatherRequest = new Weather();
+		JSONObject weatherData = null;
+		try
+		{
+			weatherData = weatherRequest.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		catch(JSONException je)
+		{
+			je.printStackTrace();
+		}
+		try
+		{
+			display.println("Sending weather data...");
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			multiChannel.sendInfo(weatherData.toString());
+		}
+		catch(NetworkException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	//schedule a new timer
@@ -411,7 +437,7 @@ public class MainServer extends Thread implements ActionListener
 							
 							//the current weather is requested
 							case("req current weather"):
-								
+								sendCurrentWeather(packet.source());
 								break;
 						}
 						break;
