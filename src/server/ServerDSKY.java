@@ -53,6 +53,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 
 public class ServerDSKY extends JFrame implements ActionListener
 {
@@ -73,6 +74,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public static final String BTN_UPDATE_REGISTRY = "btn/updateregistry";
 	public static final String BTN_ERASE_REGISTRY = "btn/eraseregistry";
 	public static final String BTN_PAUSE_OR_RESUME = "btn/pauseorresume";
+	private static final String WINDOW_TITLE = MainServer.SERVER_NAME;
 	private static final int DEFAULT_WINDOW_X = 1000;
 	private static final int DEFAULT_WINDOW_Y = 725;
 	private static final Font DEFAULT_FONT = new Font("Monospaced", Font.PLAIN, 13);
@@ -231,6 +233,18 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public void close()
 	{
 		this.dispose();
+	}
+	
+	
+	//use dialogs to get yes or no
+	public boolean getBoolean(String msg)
+	{
+		int i = JOptionPane.showConfirmDialog(this, msg, WINDOW_TITLE, JOptionPane.YES_NO_OPTION);
+		if (i == JOptionPane.YES_OPTION)
+		{
+			return true;
+		}
+		return false;
 	}
 	
 	

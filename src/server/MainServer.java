@@ -13,6 +13,7 @@
 *						- methods to schedule ServerEvents added
 *						- adding timers working
 *						- timer triggering functional
+*						- confirmation for system exit added
 *					v0.1.2
 *						- disconnect now supported
 *						- address lookup now supported
@@ -36,21 +37,18 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import javax.swing.JOptionPane;
 
 //import packages
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
-import server.Weather;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
 import io.json.JsonException;
@@ -61,7 +59,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	private static final String SERVER_NAME = "AVA Server v0.1.1";
+	public static final String SERVER_NAME = "AVA Server v0.1.1";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -157,36 +155,8 @@ public class MainServer extends Thread implements ActionListener
 		catch (NetworkException e) {e.printStackTrace();}
 	}
 	
-	//send the current weather data as unformatted JSON
-	private void sendCurrentWeather(InetSocketAddress dest)
-	{
-		Weather weatherRequest = new Weather();
-		JSONObject weatherData = null;
-		try
-		{
-			weatherData = weatherRequest.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}
-		catch(JSONException je)
-		{
-			je.printStackTrace();
-		}
-		try
-		{
-			display.println("Sending weather data...");
-			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			multiChannel.sendInfo(weatherData.toString());
-		}
-		catch(NetworkException e)
-		{
-			e.printStackTrace();
-		}
-	}
 	
-	//schedule a new timer
+	//schedual a new timer
 	public void setTimer(String json) throws JsonException
 	{
 		String timerName;
@@ -240,7 +210,15 @@ public class MainServer extends Thread implements ActionListener
 		//create new ServerEvent for time, schedule it
 		PacketWrapper[] cmds = new PacketWrapper[0];			//TODO actually make it use alarm
 		ServerEvent event = new ServerEvent(timerName, cmds);
-		scheduler.scheduleTimer(event, triggerTime*60);
+		scheduler.scheduleTimer(event, triggerTime);
+		
+		//print confirmation
+		int[] time = {0,0,0};
+		time[0] = triggerTime/(60*60);
+		time[1] = (triggerTime%(60*60))/60;
+		time[2] = (triggerTime%(60*60))%60;
+		String printTime = time[0]+":"+time[1]+":"+time[2];
+		display.println("Timer: \"" + timerName + "\" added! Will trigger in " + printTime);
 	}
 	
 	
@@ -434,11 +412,6 @@ public class MainServer extends Thread implements ActionListener
 							case("req ip"):
 								sendAddress(packet.source(), packet.extraInfo());
 								break;
-							
-							//the current weather is requested
-							case("req current weather"):
-								sendCurrentWeather(packet.source());
-								break;
 						}
 						break;
 					
@@ -491,7 +464,14 @@ public class MainServer extends Thread implements ActionListener
 			//hard shutdown of system
 			case(ServerDSKY.BTN_HARD_SHUTDOWN):
 				display.println("BUTTON >> HARD SHUTDOWN");
-				System.exit(0);
+				if(display.getBoolean("Are you sure you wish to perform a hard shutdown on the AVA Server?\nThis can lead to unexpected events on modules and lost data"))
+				{
+					System.exit(0);
+				}
+				else
+				{
+					display.println("Shutdown canceled!");
+				}
 				break;
 			
 			//soft reset of system
