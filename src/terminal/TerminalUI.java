@@ -124,6 +124,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	//declaring local instance variables
 	private CappedBuffer inputBuffer;
 	private String allCommands;
+	private String lastCmd;
 	private TreeMap<String, String> cmdMap;				
 	private HashMap<String, Color[]> colorMap;
 	private boolean inputReady;
@@ -153,6 +154,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		inputBuffer = new CappedBuffer(CMD_HISTORY_SIZE);
 		cmdMap = new TreeMap<String, String>();
 		echo = false;
+		lastCmd = "";
 		initColorMap();
 		
 		
@@ -622,6 +624,30 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
+	//get a color via dialog
+	public void colorDialog()
+	{
+		//get a valid color scheme using system dialog
+		String[] keys = colorMap.keySet().toArray(new String[0]);
+		String selected = (String)JOptionPane.showInputDialog
+		(
+			this, 
+			"Select a color scheme to use", 
+			TERMINAL_NAME,
+			JOptionPane.QUESTION_MESSAGE,
+			null,
+			keys,
+			keys[0]
+		);
+		
+		//change to the selected scheme
+		if(selected != null)
+		{
+			colorScheme(selected);
+		}
+	}
+	
+	
 	@Override
 	//handle key press
 	public void keyPressed(KeyEvent ke)
@@ -657,18 +683,26 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void keyReleased(KeyEvent arg0) 							//TODO needs formating!
 	{
 		//check if input matchs any commands
-    	Set<String> keys = cmdMap.keySet();
-    	for(String key : keys)
-    	{
-    		String cmdID = consoleInput.getText().split(" ")[0];
-    		if(key.equals(cmdID))
-    		{
-    			String output = key + "\n" + cmdMap.get(key);
-    			cmdHelp.setText(output);
-    			return;
-    		}
-    	}
-    	cmdHelp.setText(allCommands);
+		try
+		{
+			String currentCmd = consoleInput.getText().split(" ")[0];
+			if(!lastCmd.equals(currentCmd))
+			{
+				String output = allCommands;
+		    	Set<String> keys = cmdMap.keySet();
+		    	for(String key : keys)
+		    	{
+		    		if(key.equals(currentCmd))
+		    		{
+		    			output = key + "\n" + cmdMap.get(key);
+		    			break;
+		    		}
+		    	}
+		    	cmdHelp.setText("\n".concat(output));
+			}
+			lastCmd = currentCmd;
+		}
+		catch (ArrayIndexOutOfBoundsException e){};
 	}
 
 
@@ -701,24 +735,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		{
 			//color scheme menu item pressed
 			case(MENU_COLOR_SCHEME):
-				//get a valid color scheme using system dialog
-				String[] keys = colorMap.keySet().toArray(new String[0]);
-				String selected = (String)JOptionPane.showInputDialog
-				(
-					this, 
-					"Select a color scheme to use", 
-					TERMINAL_NAME,
-					JOptionPane.QUESTION_MESSAGE,
-					null,
-					keys,
-					keys[0]
-				);
-				
-				//change to the selected scheme
-				if(selected != null)
-				{
-					colorScheme(selected);
-				}
+				colorDialog();
 				break;
 			
 				

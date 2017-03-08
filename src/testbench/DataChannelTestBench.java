@@ -145,7 +145,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = commandKey.equals(wrapper.commandKey()) && extraInfo.equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type;
+			e = commandKey.equals(wrapper.commandKey()) && extraInfo.equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -187,7 +187,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = commandKey.equals(wrapper.commandKey()) && "".equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type;
+			e = commandKey.equals(wrapper.commandKey()) && "".equals(wrapper.extraInfo()) && DataChannel.TYPE_CMD == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -232,7 +232,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = errorMsg.equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type;
+			e = errorMsg.equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -268,7 +268,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = "".equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type;
+			e = "".equals(wrapper.errorMessage()) && DataChannel.TYPE_ERR == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -313,7 +313,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = "some info goes here".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type;
+			e = "some info goes here".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -349,7 +349,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = "".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type;
+			e = "".equals(wrapper.info()) && DataChannel.TYPE_INFO == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -407,7 +407,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type;
+			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 
@@ -456,7 +456,7 @@ public class DataChannelTestBench extends TestBench
 			PacketWrapper wrapper = channel.unpack(packet);
 			println("Result:" + wrapper.toString());
 			
-			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type;
+			e = handshake.equals(wrapper.handshakeKey()) && deviceName.equals(wrapper.deviceName()) && DataChannel.TYPE_HANDSHAKE == wrapper.type();
 			printTest(e);
 			assertTrue(e);
 		} 

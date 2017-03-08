@@ -52,13 +52,13 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 	public static final int WINDOW_CLOSE_OPTION = -1;
 	public static final int OK_OPTION = 0;
 	public static final int CANCEL_OPTION = 1;
-	private static final String[] DAYS = {"Monday", 
+	private static final String[] DAYS = {"Sunday",
+										"Monday", 
 										"Tuesday", 
 										"Wednesday", 
 										"Thursday", 
 										"Friday", 
-										"Saturday",
-										"Sunday"};
+										"Saturday"};
 	private static final Font CHECKBOX_FONT = new Font("Tahoma", Font.PLAIN, 14);
 	private static final Font SPINNER_FONT = new Font("Tahoma", Font.PLAIN, 24);
 	private static final int DEFAULT_WIDTH = 635;
