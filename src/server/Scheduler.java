@@ -8,8 +8,12 @@
 *Purpose:           Real time is hard.
 *					
 * 
-*Update Log			v1.0.0
-*						- null
+*Update Log			v0.2.0
+*						-
+*					v0.1.0
+*						- added one timer timer event
+*						- added helper method to determine if event will occur later on todays date
+*						- constructor, fields, and other setup stuff
 */
 package server;
 

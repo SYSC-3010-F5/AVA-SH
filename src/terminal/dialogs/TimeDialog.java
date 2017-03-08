@@ -3,12 +3,14 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    07/03/2017                                              
-*Version:           1.0.0                                         
+*Version:           2.0.0                                         
 *                                                                                   
 *Purpose:           Allow to user to select a time for a timer
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			V2.0.0
+*						- Entire graphic aspect redone
+*					v1.0.0
 *						- null
 */
 package terminal.dialogs;
@@ -45,15 +47,10 @@ public class TimeDialog extends JDialog implements ActionListener
 	
 	//declaring local instance variables
 	private int closeMode;
-	private int hour;
-	private int minute;
+	private int[] time;
 	private String name;
-	private final String windowName;
-	
-	private JSpinner spHour;
-	private JSpinner spMin;
-	private JButton btnOk;
-	private JButton btnCancel; 
+	private JSpinner spMin,spSec, spHour;
+	private JButton btnOk, btnCancel; 
 	private JTextField txtName;
 	
 	
@@ -64,14 +61,16 @@ public class TimeDialog extends JDialog implements ActionListener
 		super(callingFrame, true);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		this.setTitle(windowName);
-		this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		this.setSize(330, 182);
 		this.setResizable(false);
 		this.setType(Type.POPUP);
 		this.getContentPane().setLayout(null);
 		
 		//initalize non-gui elements
-		closeMode = this.WINDOW_CLOSE_OPTION;
-		this.windowName = windowName;
+		closeMode = WINDOW_CLOSE_OPTION;
+		name = null;
+		time = new int[]{0,0,0};
+		
 		
 		//add name text field
 		txtName = new JTextField();
@@ -79,56 +78,101 @@ public class TimeDialog extends JDialog implements ActionListener
 		txtName.setEditable(true);
 		txtName.setText("Timer");
 		txtName.setFont(SPINNER_FONT);
-		txtName.setBounds(10, 21, 406, 46);
+		txtName.setBounds(10, 21, 302, 46);
 		getContentPane().add(txtName);
 		txtName.setColumns(10);
 		
 		//add label(s) for spinners
-		JTextField txtTime = new JTextField();
-		JTextField txtDiv = new JTextField();
-		txtTime.setEditable(false);
-		txtTime.setBorder(null);
-		txtTime.setBackground(SystemColor.menu);
-		txtTime.setText("Time:");
-		txtTime.setFont(new Font("Tahoma", Font.BOLD, 24));
-		txtTime.setBounds(10, 78, 74, 46);
-		txtTime.setColumns(10);
-		txtDiv.setHorizontalAlignment(SwingConstants.CENTER);
-		txtDiv.setText(":");
-		txtDiv.setFont(new Font("Tahoma", Font.PLAIN, 35));
-		txtDiv.setEditable(false);
-		txtDiv.setColumns(10);
-		txtDiv.setBorder(null);
-		txtDiv.setBackground(SystemColor.menu);
-		txtDiv.setBounds(194, 78, 13, 48);
-		this.getContentPane().add(txtTime);
-		getContentPane().add(txtDiv);
+		JTextField flavourHr = new JTextField();
+		flavourHr.setHorizontalAlignment(SwingConstants.CENTER);
+		flavourHr.setEditable(false);
+		flavourHr.setBorder(null);
+		flavourHr.setBackground(SystemColor.menu);
+		flavourHr.setText("Hour");
+		flavourHr.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		flavourHr.setBounds(10, 124, 61, 15);
+		flavourHr.setColumns(10);
+		this.getContentPane().add(flavourHr);
+		
+		JTextField txtFlavMin = new JTextField();
+		txtFlavMin.setText("Minute");
+		txtFlavMin.setHorizontalAlignment(SwingConstants.CENTER);
+		txtFlavMin.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		txtFlavMin.setEditable(false);
+		txtFlavMin.setColumns(10);
+		txtFlavMin.setBorder(null);
+		txtFlavMin.setBackground(SystemColor.menu);
+		txtFlavMin.setBounds(81, 124, 61, 15);
+		this.getContentPane().add(txtFlavMin);
+		
+		JTextField txtFlavSec = new JTextField();
+		txtFlavSec.setText("Second");
+		txtFlavSec.setHorizontalAlignment(SwingConstants.CENTER);
+		txtFlavSec.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		txtFlavSec.setEditable(false);
+		txtFlavSec.setColumns(10);
+		txtFlavSec.setBorder(null);
+		txtFlavSec.setBackground(SystemColor.menu);
+		txtFlavSec.setBounds(152, 124, 61, 15);
+		this.getContentPane().add(txtFlavSec);
+		
+		JTextField txtDiv1 = new JTextField();
+		txtDiv1.setHorizontalAlignment(SwingConstants.CENTER);
+		txtDiv1.setText(":");
+		txtDiv1.setFont(new Font("Tahoma", Font.PLAIN, 35));
+		txtDiv1.setEditable(false);
+		txtDiv1.setColumns(10);
+		txtDiv1.setBorder(null);
+		txtDiv1.setBackground(SystemColor.menu);
+		txtDiv1.setBounds(141, 78, 11, 46);
+		this.getContentPane().add(txtDiv1);
+		
+		JTextField txtDiv2 = new JTextField();
+		txtDiv2.setText(":");
+		txtDiv2.setHorizontalAlignment(SwingConstants.CENTER);
+		txtDiv2.setFont(new Font("Tahoma", Font.PLAIN, 35));
+		txtDiv2.setEditable(false);
+		txtDiv2.setColumns(10);
+		txtDiv2.setBorder(null);
+		txtDiv2.setBackground(SystemColor.menu);
+		txtDiv2.setBounds(71, 78, 11, 46);
+		this.getContentPane().add(txtDiv2);
+		
 		
 		//add hour spinner
 		spHour = new JSpinner();
-		spHour.setModel(new SpinnerNumberModel(new Integer(0), new Integer(0), null, new Integer(1)));
+		spHour.setModel(new SpinnerNumberModel(0, 0, 99, 1));
 		spHour.setFont(SPINNER_FONT);
-		spHour.setBounds(84, 78, 100, 46);
-		this.getContentPane().add(spHour);
+		spHour.setBounds(10, 78, 61, 46);
+		getContentPane().add(spHour);
 		
 		//add minute spinner
 		spMin = new JSpinner();
-		spMin.setModel(new SpinnerNumberModel(new Integer(0), new Integer(0), null, new Integer(1)));
+		spMin.setModel(new SpinnerNumberModel(0, 0, 99, 1));
 		spMin.setFont(SPINNER_FONT);
-		spMin.setBounds(217, 78, 100, 46);
+		spMin.setBounds(81, 78, 61, 46);
 		this.getContentPane().add(spMin);
 		
+		//add second spinner
+		spSec = new JSpinner();
+		spSec.setModel(new SpinnerNumberModel(0, 0, 99, 1));
+		spSec.setFont(SPINNER_FONT);
+		spSec.setBounds(152, 78, 61, 46);
+		this.getContentPane().add(spSec);
+		
+	
 		//add okay button
 		btnOk = new JButton("Ok");
-		btnOk.setBounds(327, 78, 89, 23);
+		btnOk.setBounds(223, 78, 89, 23);
 		btnOk.addActionListener(this);
 		this.getContentPane().add(btnOk);
 		
 		//add cancel button
 		btnCancel = new JButton("Cancel");
-		btnCancel.setBounds(327, 101, 89, 23);
+		btnCancel.setBounds(223, 101, 89, 23);
 		btnCancel.addActionListener(this);
 		this.getContentPane().add(btnCancel);
+		
 		
 		//set visible
 		this.setLocationRelativeTo(callingFrame);
@@ -137,9 +181,13 @@ public class TimeDialog extends JDialog implements ActionListener
 	
 	
 	//generic getters
-	public int getMinutes()
+	public int[] getTime()
 	{
-		return (hour*60 + minute);
+		return time;
+	}
+	public int getTimeInSeconds()
+	{
+		return ((time[0]*60*60) + (time[1]*60) + time[2]);
 	}
 	public int getCloseMode()
 	{
@@ -159,17 +207,18 @@ public class TimeDialog extends JDialog implements ActionListener
 		if(src == btnOk)
 		{
 			//save state
-			hour = (int)spHour.getValue();
-			minute = (int)spMin.getValue();
+			time[2] = (int)spSec.getValue();
+			time[1] = (int)spMin.getValue();
+			time[0] = (int)spHour.getValue();
 			name = txtName.getText();
 			
 			//set exit mode
-			closeMode = this.OK_OPTION;
+			closeMode = OK_OPTION;
 		}
 		else
 		{
 			//set exit mode
-			closeMode = this.CANCEL_OPTION;
+			closeMode = CANCEL_OPTION;
 		}
 		
 		//close dialog

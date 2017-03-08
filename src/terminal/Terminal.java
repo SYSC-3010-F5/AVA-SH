@@ -887,8 +887,7 @@ public class Terminal extends JFrame implements ActionListener
 					if (d.getCloseMode() == TimeDialog.OK_OPTION)
 					{
 						//send timer command
-						ui.println(d.getName());
-						String json = "{\n\t\"name\" : \"" + d.getTimerName() + "\"\n\t\"timeUntilTrigger\" : " + d.getMinutes() + "\n}";
+						String json = "{\n\t\"name\" : \"" + d.getTimerName() + "\"\n\t\"timeUntilTrigger\" : " + d.getTimeInSeconds() + "\n}";
 						try 
 						{
 							dataChannel.sendCmd("set timer", json);
@@ -904,9 +903,9 @@ public class Terminal extends JFrame implements ActionListener
 					try 
 					{
 						//check that minute param is valid int
-						Integer.parseInt(input[1]);
+						int seconds = 60*Integer.parseInt(input[1]);
 						//send timer command
-						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + input[1] + "\n}";
+						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + seconds + "\n}";
 						dataChannel.sendCmd("set timer", json);
 					} 
 					catch (NetworkException e) 
