@@ -147,7 +147,7 @@ public class SeverEventTestBench extends TestBench
 		printHeader("Testing command firing at trigger...");
 		
 		println("Creating server to respond to commands...");
-		MainServer server = new MainServer();
+		MainServer server = new MainServer(false);
 		ServerEvent.hookDSKY(server.getDKSY());
 		server.start();
 		println("Server created on new thread!");
@@ -193,7 +193,7 @@ public class SeverEventTestBench extends TestBench
 		printHeader("Testing command firing at trigger...");
 		
 		println("Creating server to respond to commands...");
-		MainServer server = new MainServer();
+		MainServer server = new MainServer(false);
 		ServerEvent.hookDSKY(server.getDKSY());
 		server.start();
 		println("Server created on new thread!");

@@ -81,13 +81,13 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//generic constructor
-	public MainServer() throws SocketException, UnknownHostException
+	public MainServer(boolean isFullScreen) throws SocketException, UnknownHostException
 	{
 		//initialize
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
 		scheduler = new Scheduler("AVA Scheduler");
-		display = new ServerDSKY(SERVER_NAME + " @ " + InetAddress.getLocalHost()+":"+PORT, this);
+		display = new ServerDSKY(SERVER_NAME + " @ " + InetAddress.getLocalHost()+":"+PORT, this, isFullScreen);
 		runFlag = true;
 		pauseFlag = false;
 		
@@ -501,7 +501,7 @@ public class MainServer extends Thread implements ActionListener
 	{
 		try 
 		{
-			MainServer server = new MainServer();
+			MainServer server = new MainServer(false);		//true=fullscreen, false=windowed
 			server.run();
 		}
 		catch (UnknownHostException e) 

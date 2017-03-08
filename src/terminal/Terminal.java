@@ -104,10 +104,10 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//generic constructor
-	public Terminal()
+	public Terminal(boolean isFullScreen)
 	{	
 		//init ui
-		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND);
+		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
 		
@@ -354,7 +354,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("help"):
 				if(length == 1)
 				{
-					ui.printHelp(false);
+					ui.printHelpAllCommands(false);
 				}
 				else if (length == 2)
 				{
@@ -1049,9 +1049,8 @@ public class Terminal extends JFrame implements ActionListener
 		while(relaunch)
 		{
 			//start terminal, enter main loop
-			Terminal terminal = new Terminal();
+			Terminal terminal = new Terminal(false);		//true=fullscreen, false=windowed
 			int close = terminal.run();
-			terminal = null;
 			
 			//determine and handle reason for close
 			switch(close)

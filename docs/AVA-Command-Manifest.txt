@@ -128,15 +128,7 @@ COMMAND MANIFEST
 	PURPOSE:		Return the address of module registered under name String
 	RESPONSE:		info-type packet with {IPv4:port} as UTF-8 character String.
 					error-type packet if the module cannot be found.
-					
-	
-	----------------------------
-	
-	COMMAND_KEY:	"req current weather"
-	EXTRA_INFO:		false
-	PURPOSE:		Return the current weather
-	RESPONSE:		info-type packet with weather, JSON format, UTF-8 encoding
-					error-type packet if the weather servers are not found.
+
 												
 	
 

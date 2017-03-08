@@ -2,8 +2,8 @@
 *Class:             ServerDSKY.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/02/2017                                              
-*Version:           2.0.1                                         
+*Date of Update:    08/03/2017                                              
+*Version:           2.1.0                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
 *					Displays registry for server.
@@ -18,6 +18,7 @@
 *Update Log			v2.1.0
 *						- methods to print to display now thread safe
 *						  (as we now have DayScheduler daemon threads calling the print)
+*						- optional fullscreen mode added
 *					v2.0.1
 *						- buttons not saved as instance variables now
 *						- added method for printing blank lines
@@ -96,7 +97,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//generic constructor
-	public ServerDSKY(String title, ActionListener listener) 
+	public ServerDSKY(String title, ActionListener listener, boolean isFullScreen) 
 	{
 		//set up main window frame
 		super(title);
@@ -217,9 +218,16 @@ public class ServerDSKY extends JFrame implements ActionListener
 		//set visible
 		try 
 		{
+			String flavor = "in windowed mode...";
+			if(isFullScreen)
+			{
+				this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+				this.setUndecorated(true);
+				flavor = "in fullscreen mode...";
+			}
 			this.setVisible(true);
 			this.updateRegistry(null);
-			this.println("DSKY running...");
+			this.println("DSKY running " + flavor);
 		} 
 		catch (Exception e) 
 		{

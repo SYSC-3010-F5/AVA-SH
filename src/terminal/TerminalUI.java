@@ -2,14 +2,18 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    02/01/2017                                              
-*Version:           1.1.0                                         
+*Date of Update:    09/03/2017                                              
+*Version:           1.1.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.1.0
+*Update Log			v1.1.1
+*						- optional fullscreen added
+*						- separate command-list window added
+*						- print all command details patched
+*					v1.1.0
 *						- statusOverview shrunk to just display connection status
 *						- new JText area added for predictive command help
 *						- key events added for predictive command help
@@ -60,28 +64,25 @@ package terminal;
 
 //external imports
 import java.awt.Font;
-import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSplitPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -89,7 +90,7 @@ import javax.swing.JTextField;
 //import packages
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
-import java.awt.Toolkit;
+import terminal.dialogs.TextView;
 
 
 
@@ -108,7 +109,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public static final String CONSOLE_IN = "txt/in";
 	public static final String MENU_CLOSE = "m/file/close";
 	public static final String MENU_CMD_LIST = "m/file/cmdlist";
-	public static final String MENU_COLOR_SCHEME = "m/options/colorscheme";
+	private static final String MENU_COLOR_SCHEME = "m/options/colorscheme";
+	private static final String MENU_FULLSCREEN = "m/options/fullscreen";
 	private static final Font DEFAULT_CONSOLE_FONT = new Font("Monospaced", Font.PLAIN, 13);
 	private static final String DEFAULT_COLOR_SCHEME = "aperture";
 	private static final int CMD_HISTORY_SIZE = 25;
@@ -130,6 +132,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private boolean inputReady;
 	private String[] input;
 	private boolean echo;
+	private TextView textViewer;
 	
 	//declaring local ui elements
 	private JTextField consoleInput;
@@ -139,7 +142,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 
 	
 	//generic constructor
-	public TerminalUI(String title, ActionListener listener, String cmdNotFound)
+	public TerminalUI(String title, ActionListener listener, String cmdNotFound, boolean isFullScreen)
 	{
 		//set up main window frame
 		super(title);
@@ -155,6 +158,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		cmdMap = new TreeMap<String, String>();
 		echo = false;
 		lastCmd = "";
+		textViewer = null;
 		initColorMap();
 		
 		
@@ -263,8 +267,15 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		this.colorScheme(DEFAULT_COLOR_SCHEME);
 		try 
 		{
+			String flavor = "windowed mode...";
+			if(isFullScreen)
+			{
+				this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+				this.setUndecorated(true);
+				flavor = "fullscreen mode...";
+			}
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.1.0 on Thread <" + Thread.currentThread().getId() + ">...");
+			this.println("Starting TerminalUI v1.1.1 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -534,16 +545,48 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
-	//print the general help menu
-	public void printHelp(boolean all)
+	//return all commands + details
+	private String getAllCommandsAndDetails()
 	{
-		if(!all)
+		String s = "";
+		s += "--------------- COMMAND LIST ---------------";
+		Set<String> keys = cmdMap.keySet();
+		
+		//list all available commands
+		for(String cmd : keys)
+		{
+			//add command and details
+			s += cmd + "\n" + cmdMap.get(cmd) + "\n\n";
+		}
+		
+		s += "--------------------------------------------\n";
+		return s;
+	}
+	
+	
+	//print the general help menu
+	public void printHelpAllCommands(boolean details)
+	{
+		if(!details)
 		{
 			println("**Enter \"help <CMD>\" to view details on a specific command");
 		}
 		
 		println("--------------- COMMAND LIST ---------------");
-		println(allCommands);
+		Set<String> keys = cmdMap.keySet();
+		
+		//list all available commands
+		for(String cmd : keys)
+		{
+			//print command
+			println(cmd);
+			//print details
+			if(details)
+			{
+				println(cmdMap.get(cmd) + "\n");
+			}
+		}
+		
 		println("--------------------------------------------\n");
 	}
 	
@@ -553,7 +596,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		if(key.equals("all"))
 		{
-			this.printHelp(true);
+			this.printHelpAllCommands(true);
 		}
 		else
 		{
@@ -741,7 +784,21 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				
 			//command list menu item pressed
 			case(MENU_CMD_LIST):
-				//TODO
+				if (textViewer != null)
+				{
+					if(!textViewer.isDisplayable())
+					{
+						textViewer = new TextView(TERMINAL_NAME, getAllCommandsAndDetails(), consoleOutput.getForeground(), consoleOutput.getBackground());
+					}
+					else
+					{
+						textViewer.setFocusableWindowState(true);
+					}
+				}
+				else
+				{
+					textViewer = new TextView(TERMINAL_NAME, getAllCommandsAndDetails(), consoleOutput.getForeground(), consoleOutput.getBackground());
+				}
 				break;
 			
 			

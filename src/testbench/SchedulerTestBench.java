@@ -48,7 +48,7 @@ public class SchedulerTestBench extends TestBench
 		super.setUp();
 		scheduler = new Scheduler("Testing Scheduler");
 		println("Creating server to respond to commands...");
-		server = new MainServer();
+		server = new MainServer(false);
 		ServerEvent.hookDSKY(server.getDKSY());
 		server.start();
 		println("Server created on new thread!");
