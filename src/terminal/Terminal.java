@@ -78,7 +78,7 @@ import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
 import terminal.dialogs.TimeDialog;
-
+import server.datatypes.WeatherData;
 
 
 public class Terminal extends JFrame implements ActionListener
@@ -265,6 +265,8 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("timer", "Set a new timer to go off in a set amount of minutes\n"
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
+		
+		cmdMap.put("req current weather", "Request the current weather of Ottawa, Ontario");
 		
 		return cmdMap;
 	}
@@ -922,7 +924,29 @@ public class Terminal extends JFrame implements ActionListener
 				}
 				break;
 				
-
+			case("req current weather"):
+				try 
+				{
+					dataChannel.sendCmd("req current weather");
+					PacketWrapper wrapper = dataChannel.receivePacket(5000);
+					WeatherData weather = new WeatherData(wrapper.info());
+					
+					String[] weatherData = weather.getWeatherData();
+					ui.println("Weather data for Ottawa, Ontario.");
+					ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
+					ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
+					ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+				} 
+				catch (NetworkException e) 
+				{
+					ui.printError(e.getMessage());
+				}
+				catch (SocketException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+				
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);
