@@ -129,7 +129,24 @@ COMMAND MANIFEST
 	RESPONSE:		info-type packet with {IPv4:port} as UTF-8 character String.
 					error-type packet if the module cannot be found.
 
-												
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req np-events"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the all scheduled single-triggered (non-periodic events) from the server.
+	RESPONSE:		info-type packet with JSON formated UTF-8 character string representing all scheduled non-periodic events
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req p-events"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the all scheduled multi-triggered (periodic events) from the server.
+	RESPONSE:		info-type packet with JSON formated UTF-8 character string representing all scheduled periodic events
+	
+	
+	----------------------------				
 	
 
 					

@@ -2,14 +2,18 @@
 *Class:             Scheduler.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    06/03/2017                                              
+*Date of Update:    09/03/2017                                              
 *Version:           0.1.0                                         
 *                                                                                   
 *Purpose:           Real time is hard.
 *					
 * 
 *Update Log			v0.2.0
-*						-
+*						- lists added to store all active events
+*						- method for removing events implemented (based on event name)
+*						- add timer method tweaked
+*						- some generic accessors
+*						- method to clear scheduler added
 *					v0.1.0
 *						- added one timer timer event
 *						- added helper method to determine if event will occur later on todays date
@@ -22,8 +26,10 @@ package server;
 import java.util.Timer;
 import java.text.SimpleDateFormat;
 import java.time.DateTimeException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedList;
 
 //import packages
 import server.datatypes.ServerEvent;
@@ -48,6 +54,8 @@ public class Scheduler
 	//declaring local instance variables
 	public final String name;
 	private Timer scheduler;
+	private ArrayList<ServerEvent> periodicEvents;
+	private ArrayList<ServerEvent> nonPeriodicEvents;
 	
 	
 	//generic constructor
@@ -56,8 +64,32 @@ public class Scheduler
 		//create Timer thread as daemon thread
 		scheduler = new Timer(name, true);
 		this.name = name;
+		
+		//init
+		periodicEvents = new ArrayList<ServerEvent>();
+		nonPeriodicEvents = new ArrayList<ServerEvent>();
 	}
 	
+	
+	//generic accessors
+	public ArrayList<ServerEvent> getPeriodicEvents()
+	{
+		return periodicEvents;
+	}
+	public ArrayList<ServerEvent> getNonPeriodicEvents()
+	{
+		return nonPeriodicEvents;
+	}
+	
+	
+	//clear all scheduled events
+	public void clearAll()
+	{
+		scheduler.cancel();
+		scheduler = new Timer(name, true);
+		periodicEvents = new ArrayList<ServerEvent>();
+		nonPeriodicEvents = new ArrayList<ServerEvent>();
+	}
 	
 	//get current day of the week
 	private int getTodaysDate()
@@ -117,6 +149,8 @@ public class Scheduler
 	 */
 	public void scheduleTimer(ServerEvent event, int secondsUntilTrigger)
 	{
+		//TODO check that there sint already an event with that name
+		nonPeriodicEvents.add(event);
 		scheduler.schedule(event, secondsUntilTrigger*1000);
 	}
 	
@@ -148,4 +182,37 @@ public class Scheduler
 		//determine if event to occur later today, or on a new day
 		Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
 	}
+	
+	
+	//remove from a list of ServerEvents based on ServerEvent.name
+	private boolean remove(ArrayList<ServerEvent> events, String toRemove)
+	{
+		for(ServerEvent event : events)
+		{
+			if(event.getEventName().equals(toRemove))
+			{
+				//remove event from list, mark event to not run, purge from scheduler
+				events.remove(event);
+				event.cancel();
+				scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	//remove a single occurrence event (like a timer), based on event name
+	public boolean removeNonPeriodic(String eventName)
+	{
+		return remove(nonPeriodicEvents, eventName);
+	}
+	
+	
+	//remove a periodic event (like an alarm), based on event name
+	public boolean removePeriodic(String eventName)
+	{
+		return remove(periodicEvents, eventName);
+	}
+	
 }

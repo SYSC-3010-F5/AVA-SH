@@ -2,7 +2,7 @@
 *Class:             ServerDSKY.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    08/03/2017                                              
+*Date of Update:    09/03/2017                                              
 *Version:           2.1.0                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
@@ -15,7 +15,9 @@
 *					Are guaranteed thread safe.
 *					
 * 
-*Update Log			v2.1.0
+*Update Log			v2.1.1
+*						- changed pause/resume button to clear events
+*					v2.1.0
 *						- methods to print to display now thread safe
 *						  (as we now have DayScheduler daemon threads calling the print)
 *						- optional fullscreen mode added
@@ -74,7 +76,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public static final String BTN_CLEAR = "btn/cleardisplay";
 	public static final String BTN_UPDATE_REGISTRY = "btn/updateregistry";
 	public static final String BTN_ERASE_REGISTRY = "btn/eraseregistry";
-	public static final String BTN_PAUSE_OR_RESUME = "btn/pauseorresume";
+	public static final String BTN_CLEAR_EVENTS = "btn/clearevents";
 	private static final String WINDOW_TITLE = MainServer.SERVER_NAME;
 	private static final int DEFAULT_WINDOW_X = 1000;
 	private static final int DEFAULT_WINDOW_Y = 725;
@@ -86,7 +88,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//declaring local instance variables
 	private JTextArea display;
 	private JTextArea registryText;
-	private JButton btnPauseOrResume;
+	private JButton btnClearEvents;
 	
 	
 	//return current time
@@ -198,12 +200,12 @@ public class ServerDSKY extends JFrame implements ActionListener
 		btnSoftShutdown.setForeground(DEFAULT_TEXT_COLOR);
 		
 		
-		btnPauseOrResume = new JButton("<html>Pause<br />Server</html>");
-		btnPauseOrResume.setActionCommand(BTN_PAUSE_OR_RESUME);
-		btnPauseOrResume.addActionListener(listener);
-		btnPauseOrResume.setFont(BUTTON_FONT);
-		btnPauseOrResume.setBackground(DEFAULT_BACKGROUND_COLOR);
-		btnPauseOrResume.setForeground(DEFAULT_TEXT_COLOR);
+		btnClearEvents = new JButton("<html>Clear<br />Events</html>");
+		btnClearEvents.setActionCommand(BTN_CLEAR_EVENTS);
+		btnClearEvents.addActionListener(listener);
+		btnClearEvents.setFont(BUTTON_FONT);
+		btnClearEvents.setBackground(DEFAULT_BACKGROUND_COLOR);
+		btnClearEvents.setForeground(DEFAULT_TEXT_COLOR);
 		
 		buttonPanel.add(btnHardReset);
 		buttonPanel.add(btnSoftReset);
@@ -212,7 +214,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		buttonPanel.add(btnEraseRegistry);
 		buttonPanel.add(btnUpdateRegistry);
 		buttonPanel.add(btnClearDisplay);
-		buttonPanel.add(btnPauseOrResume);
+		buttonPanel.add(btnClearEvents);
 		
 
 		//set visible
@@ -278,20 +280,6 @@ public class ServerDSKY extends JFrame implements ActionListener
 	{
 		display.setText("");
 		display.setCaretPosition(display.getDocument().getLength());
-	}
-	
-	
-	//switch the text on the resume/pause button
-	public void setResumeClear(boolean resume)
-	{
-		if(resume)
-		{
-			btnPauseOrResume.setText("<html>Resume<br />Server</html>");
-		}
-		else
-		{
-			btnPauseOrResume.setText("<html>Pause<br />Server</html>");
-		}
 	}
 	
 	

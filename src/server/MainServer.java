@@ -2,7 +2,7 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    07/03/2017
+*Date of Update:    09/03/2017
 *Version:           0.2.0
 *
 *Purpose:           The main controller of the AVA system
@@ -41,7 +41,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import javax.swing.JOptionPane;
 
@@ -253,7 +255,7 @@ public class MainServer extends Thread implements ActionListener
 		Alarm alarm = new Alarm();
 		alarm.fromJSON(alarmJSON);
 		display.println("Alarm created!");
-		//TODO actually do something with the alarm
+		//TODO add alarm as a ServerEvent
 	}
 	
 	
@@ -267,6 +269,27 @@ public class MainServer extends Thread implements ActionListener
 			multiChannel.sendInfo(ServerDSKY.getCurrentTime());
 		} 
 		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
+	//send the JSON representation of non periodic events
+	private void sendEvents(boolean periodic, InetSocketAddress dest)
+	{
+		//get event list
+		ArrayList<ServerEvent> events;
+		if(periodic)
+		{
+			events = scheduler.getPeriodicEvents();
+		}
+		else
+		{
+			events = scheduler.getNonPeriodicEvents();
+		}
+		/*
+		 * TODO
+		 * I have discovered a truly marvelous algorithm for this, which this margin is too narrow to contain
+		 * (Its 1:00am and I have a 8:30 com theory lecture in the morning -- going to bed)
+		 */
 	}
 	
 	
@@ -412,6 +435,16 @@ public class MainServer extends Thread implements ActionListener
 							case("req ip"):
 								sendAddress(packet.source(), packet.extraInfo());
 								break;
+							
+							//return information on all scheduled single-triggered events
+							case("req np-events"):
+								sendEvents(true, packet.source());
+								break;
+							
+							//return information on all scheduled periodic events
+							case("req p-events"):
+								sendEvents(false, packet.source());
+								break;
 						}
 						break;
 					
@@ -486,8 +519,8 @@ public class MainServer extends Thread implements ActionListener
 				break;
 			
 			//pause of resume server
-			case(ServerDSKY.BTN_PAUSE_OR_RESUME):
-				display.println("BUTTON >> PAUSE/RESUME");
+			case(ServerDSKY.BTN_CLEAR_EVENTS):
+				display.println("BUTTON >> CLEAR EVENTS");
 				//TODO
 				break;
 		}
