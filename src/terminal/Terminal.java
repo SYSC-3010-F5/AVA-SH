@@ -12,6 +12,9 @@
 * 
 *Update Log			v0.5.1
 *						- terminal can set up timers (cmd or dialog)
+*						- terminal can remove timers
+*						- terminal can request list of all np-events
+*						- terminal can request current weather
 *					v0.5.0
 *						- pinging added
 *						- connection establishing with server added
@@ -262,9 +265,16 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: n/a   || Print the default module-registry name of terminal\n"
 				+ "\tparam1: <STR> || Set the default module-registry name of terminal to <STR>");
 		
-		cmdMap.put("timer", "Set a new timer to go off in a set amount of minutes\n"
+		cmdMap.put("timer-new", "Set a new timer to go off in a set amount of minutes\n"
+				+ "\tparam1: n/a   || Launch system dialog to set a new timer\n"
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
+		
+		cmdMap.put("timer-remove", "Remove a timer currently scheduled"
+				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
+				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
+		
+		cmdMap.put("timer-get", "Request list of all timers currently scheduled");
 		
 		cmdMap.put("weather", "Request the current weather of Ottawa, Ontario");
 		
@@ -879,8 +889,8 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 				
 				
-			//set up a timer
-			case("timer"):
+			//set up a timer					TODO a bit smelly, could use clean up
+			case("timer-new"):
 				if(input.length == 1)
 				{
 					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);
@@ -891,6 +901,21 @@ public class Terminal extends JFrame implements ActionListener
 						try 
 						{
 							dataChannel.sendCmd("set timer", json);
+							PacketWrapper response = dataChannel.receivePacket();
+							
+							//parse response
+							if(response.type() == DataChannel.TYPE_INFO)
+							{
+								ui.println("Timer added!");
+							}
+							else if (response.type() == DataChannel.TYPE_ERR)
+							{
+								ui.printError(response.errorMessage());
+							}
+							else
+							{
+								ui.printError("Unknown response from server!\n"+response.toString());
+							}
 						} 
 						catch (NetworkException e) 
 						{
@@ -907,6 +932,21 @@ public class Terminal extends JFrame implements ActionListener
 						//send timer command
 						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + seconds + "\n}";
 						dataChannel.sendCmd("set timer", json);
+						PacketWrapper response = dataChannel.receivePacket();
+						
+						//parse response
+						if(response.type() == DataChannel.TYPE_INFO)
+						{
+							ui.println("Timer added!");
+						}
+						else if (response.type() == DataChannel.TYPE_ERR)
+						{
+							ui.printError(response.errorMessage());
+						}
+						else
+						{
+							ui.printError("Unknown response from server!\n"+response.toString());
+						}
 					} 
 					catch (NetworkException e) 
 					{
@@ -922,25 +962,80 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+			
 				
+			//get current weather
 			case("weather"):
-				try 
+				if(input.length == 1)
 				{
-					dataChannel.sendCmd("req current weather");
-					PacketWrapper wrapper = dataChannel.receivePacket(5000);
-					WeatherData weather = new WeatherData(wrapper.info());
-					
-					String[] weatherData = weather.getWeatherData();
-					ui.println("Weather data for Ottawa, Ontario.");
-					ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
-					ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
-					ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
-				} 
-				catch (NetworkException e) 
-				{
-					ui.printError(e.getMessage());
+					try 
+					{
+						dataChannel.sendCmd("req current weather");
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						WeatherData weather = new WeatherData(wrapper.info());
+						
+						String[] weatherData = weather.getWeatherData();
+						ui.println("Weather data for Ottawa, Ontario.");
+						ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
+						ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
+						ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
 				}
-				catch (SocketException e)
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+			
+			//remove a non-periodic event (timer or reminder)
+			case("timer-remove"):
+				if(input.length == 1)
+				{
+					
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						//send and wait for response
+						dataChannel.sendCmd("del np-event", input[1]);
+						PacketWrapper response = dataChannel.receivePacket();
+						
+						//parse response
+						if(response.type() == DataChannel.TYPE_INFO)
+						{
+							ui.println("\"" + input[1] + "\" removed!");
+						}
+						else if (response.type() == DataChannel.TYPE_ERR)
+						{
+							ui.printError(response.errorMessage());
+						}
+						else
+						{
+							ui.printError("Unknown response from server!\n"+response.toString());
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				break;
+			
+			//get list of active non-periodic events
+			case("timer-get"):
+				try
+				{
+					dataChannel.sendCmd("req np-events");
+					PacketWrapper wrapper = dataChannel.receivePacket();
+					ui.println(wrapper.extraInfo());
+				}
+				catch (NetworkException e)
 				{
 					ui.printError(e.getMessage());
 				}

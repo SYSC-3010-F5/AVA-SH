@@ -15,7 +15,9 @@
 *					Are guaranteed thread safe.
 *					
 * 
-*Update Log			v2.1.1
+*Update Log			v2.1.2
+*						- east panel registered devices and header split into separate GUI objects
+*					v2.1.1
 *						- changed pause/resume button to clear events
 *					v2.1.0
 *						- methods to print to display now thread safe
@@ -66,7 +68,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 			"\t   /   | |  / /   |\n" +
 			"\t  / /| | | / / /| |\t\tModule\n" +
 			"\t / ___ | |/ / ___ |\t\tRegistry\n" +
-			"\t/_/  |_|___/_/  |_|\n\n\n" ;
+			"\t/_/  |_|___/_/  |_|\n\n" ;
 	
 	//declaring static class constants
 	public static final String BTN_SOFT_SHUTDOWN = "btn/softshutdown";
@@ -99,10 +101,10 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//generic constructor
-	public ServerDSKY(String title, ActionListener listener, boolean isFullScreen) 
+	public ServerDSKY(String title, String location, ActionListener listener, boolean isFullScreen) 
 	{
 		//set up main window frame
-		super(title);
+		super(title + "@" + location);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(ServerDSKY.class.getResource("/javax/swing/plaf/metal/icons/ocean/computer.gif")));
 		this.setBounds(100, 0, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -129,6 +131,18 @@ public class ServerDSKY extends JFrame implements ActionListener
 		eastPanel.setPreferredSize(new Dimension(350,1));
 		getContentPane().add(eastPanel, BorderLayout.EAST);
 		eastPanel.setLayout(new BorderLayout(0, 0));
+		
+		
+		//add header for east panel
+		JTextArea header = new JTextArea();
+		header.setTabSize(4);
+		header.setEditable(false);
+		header.setText(ASCII_MODULE_REGISTRY_HEADER + "\t@" + location);
+		header.setFont(DEFAULT_FONT);
+		header.setBackground(DEFAULT_BACKGROUND_COLOR);
+		header.setForeground(DEFAULT_TEXT_COLOR);
+		header.setCaretColor(DEFAULT_TEXT_COLOR);;
+		eastPanel.add(header, BorderLayout.NORTH);
 		
 		//add text area for registry info in scroll
 		JScrollPane registryScroll = new JScrollPane();
@@ -286,7 +300,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//update the registry overview
 	public void updateRegistry(HashMap<String,InetSocketAddress> registry)
 	{
-		String string = ASCII_MODULE_REGISTRY_HEADER;
+		String string = "\n";
 		
 		//iterate through all entries
 		if(registry != null)

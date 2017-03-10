@@ -114,6 +114,13 @@ COMMAND MANIFEST
 	
 	----------------------------
 	
+	COMMAND_KEY:	"req current weather"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the current weather from server
+	RESPONSE:		info-type packet JSON formated current weather
+	
+	
+	----------------------------
 	COMMAND_KEY:	"req time"
 	EXTRA_INFO:		false
 	PURPOSE:		Request the time from the server.
@@ -148,5 +155,12 @@ COMMAND MANIFEST
 	
 	----------------------------				
 	
+	COMMAND_KEY:	"del np-event"
+	EXTRA_INFO:		true
+					UTF-8 character string representing the event name of the event to remove.
+					EXTRA_INFO field for removing a mono-triggered event with the name "Timer_1" would be (excluding quotes): "Timer 1"
+	PURPOSE:		Delete a non-periodic event from the server (like removing a timer)
+	RESPONSE:		blank info-type packet as acknowledgment of successful removal
+					error-type packet if the event cannot be found
 
 					

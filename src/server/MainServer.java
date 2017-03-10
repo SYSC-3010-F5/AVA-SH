@@ -2,13 +2,20 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
+*					Henri Cheung
 *Date of Update:    09/03/2017
 *Version:           0.2.0
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.2.0
+*Update Log			v0.3.0
+*						- button for clearing all events added
+*						- getting current weather added
+*						- removing timers added
+*						- getting list of all timers added
+*						- checks for adding timers added
+*					v0.2.0
 *						- Scheduler hooked in
 *						- methods to schedule ServerEvents added
 *						- adding timers working
@@ -37,6 +44,7 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -46,6 +54,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import javax.swing.JOptionPane;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 //import packages
 import network.DataMultiChannel;
@@ -89,7 +100,7 @@ public class MainServer extends Thread implements ActionListener
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
 		scheduler = new Scheduler("AVA Scheduler");
-		display = new ServerDSKY(SERVER_NAME + " @ " + InetAddress.getLocalHost()+":"+PORT, this, isFullScreen);
+		display = new ServerDSKY(SERVER_NAME, InetAddress.getLocalHost().toString()+":"+PORT, this, isFullScreen);
 		runFlag = true;
 		pauseFlag = false;
 		
@@ -159,7 +170,7 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//schedual a new timer
-	public void setTimer(String json) throws JsonException
+	public boolean setTimer(String json) throws JsonException
 	{
 		String timerName;
 		int triggerTime;
@@ -212,15 +223,23 @@ public class MainServer extends Thread implements ActionListener
 		//create new ServerEvent for time, schedule it
 		PacketWrapper[] cmds = new PacketWrapper[0];			//TODO actually make it use alarm
 		ServerEvent event = new ServerEvent(timerName, cmds);
-		scheduler.scheduleTimer(event, triggerTime);
+		boolean success = scheduler.scheduleTimer(event, triggerTime);
 		
-		//print confirmation
-		int[] time = {0,0,0};
-		time[0] = triggerTime/(60*60);
-		time[1] = (triggerTime%(60*60))/60;
-		time[2] = (triggerTime%(60*60))%60;
-		String printTime = time[0]+":"+time[1]+":"+time[2];
-		display.println("Timer: \"" + timerName + "\" added! Will trigger in " + printTime);
+		if(success)
+		{
+			//print confirmation
+			int[] time = {0,0,0};
+			time[0] = triggerTime/(60*60);
+			time[1] = (triggerTime%(60*60))/60;
+			time[2] = (triggerTime%(60*60))%60;
+			String printTime = time[0]+":"+time[1]+":"+time[2];
+			display.println("Timer: \"" + timerName + "\" added! Will trigger in " + printTime);
+		}
+		else
+		{
+			display.println("Timer with name \"" + timerName + "\" already exists!\nSending error packet...");
+		}
+		return success;
 	}
 	
 	
@@ -245,6 +264,36 @@ public class MainServer extends Thread implements ActionListener
 			}
 		}
 		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
+	//send the current weather data as unformatted JSON
+	private void sendCurrentWeather(InetSocketAddress dest)
+	{
+		Weather weatherRequest = new Weather();
+		JSONObject weatherData = null;
+		try
+		{
+			weatherData = weatherRequest.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		catch(JSONException je)
+		{
+			je.printStackTrace();
+		}
+		try
+		{
+			display.println("Sending weather data...");
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			multiChannel.sendInfo(weatherData.toString());
+		}
+		catch(NetworkException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -273,7 +322,7 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//send the JSON representation of non periodic events
-	private void sendEvents(boolean periodic, InetSocketAddress dest)
+	private void sendEvents(boolean periodic, InetSocketAddress dest) throws NetworkException				//TODO this is janked up
 	{
 		//get event list
 		ArrayList<ServerEvent> events;
@@ -285,11 +334,18 @@ public class MainServer extends Thread implements ActionListener
 		{
 			events = scheduler.getNonPeriodicEvents();
 		}
-		/*
-		 * TODO
-		 * I have discovered a truly marvelous algorithm for this, which this margin is too narrow to contain
-		 * (Its 1:00am and I have a 8:30 com theory lecture in the morning -- going to bed)
-		 */
+		
+		//convert to JSON
+		String json = "{\n";
+		for(ServerEvent event : events)
+		{
+			json += event.toJSON("\t").toString();
+		}
+		json += "}\n";
+		System.out.println(json);
+		//send
+		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+		multiChannel.sendInfo(json);
 	}
 	
 	
@@ -385,23 +441,20 @@ public class MainServer extends Thread implements ActionListener
 						//determine what to do based on command key
 						switch(packet.commandKey())
 						{
-							//new event being scheduled
-							case("sch event"):
-								try
-								{
-									scheduleEvent(packet.extraInfo());
-								}
-								catch (JsonException e)
-								{
-									display.println("ERROR >> " + e.getMessage());
-								}
-								break;
-								
 							//new basic timer is being added
 							case("set timer"):
 								try
 								{
-									setTimer(packet.extraInfo());
+									boolean s = setTimer(packet.extraInfo());
+									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
+									if(s)
+									{
+										multiChannel.sendInfo("");
+									}
+									else
+									{
+										multiChannel.sendErr("Timer with selected name already exists");
+									}
 								}
 								catch (JsonException e)
 								{
@@ -412,6 +465,11 @@ public class MainServer extends Thread implements ActionListener
 							//somebody is pinging server, respond
 							case("ping"):
 								sendPing(packet.source());
+								break;
+								
+							//the current weather is requested
+							case("req current weather"):
+								sendCurrentWeather(packet.source());
 								break;
 								
 							//new alarm added
@@ -435,6 +493,18 @@ public class MainServer extends Thread implements ActionListener
 							case("req ip"):
 								sendAddress(packet.source(), packet.extraInfo());
 								break;
+								
+							//new event being scheduled
+							case("sch event"):
+								try
+								{
+									scheduleEvent(packet.extraInfo());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+								}
+								break;
 							
 							//return information on all scheduled single-triggered events
 							case("req np-events"):
@@ -445,6 +515,26 @@ public class MainServer extends Thread implements ActionListener
 							case("req p-events"):
 								sendEvents(false, packet.source());
 								break;
+							
+							//remove a non-periodic event
+							case("del np-event"):
+								String toRemove = packet.extraInfo();
+								display.println("Attemping to remove non-periodic event \"" + toRemove + "\"");
+								boolean removed = scheduler.removeNonPeriodic(toRemove);
+								if(removed)
+								{
+									display.println("Sending empty info packet...");
+									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
+									multiChannel.sendInfo("");
+								}
+								else
+								{
+									String err = "No event with name \"" + packet.extraInfo() + "\" found";
+									display.println(err + "\nSending error packet...");
+									multiChannel.sendErr("No event with name \"" + packet.extraInfo() + "\" found");
+								}
+								break;
+								
 						}
 						break;
 					
@@ -521,7 +611,7 @@ public class MainServer extends Thread implements ActionListener
 			//pause of resume server
 			case(ServerDSKY.BTN_CLEAR_EVENTS):
 				display.println("BUTTON >> CLEAR EVENTS");
-				//TODO
+				scheduler.clearAll();
 				break;
 		}
 		

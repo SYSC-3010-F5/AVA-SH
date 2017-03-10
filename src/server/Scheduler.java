@@ -8,7 +8,9 @@
 *Purpose:           Real time is hard.
 *					
 * 
-*Update Log			v0.2.0
+*Update Log			v0.2.1
+*						- add timer modified so no duplicate names can exist
+*					v0.2.0
 *						- lists added to store all active events
 *						- method for removing events implemented (based on event name)
 *						- add timer method tweaked
@@ -87,8 +89,8 @@ public class Scheduler
 	{
 		scheduler.cancel();
 		scheduler = new Timer(name, true);
-		periodicEvents = new ArrayList<ServerEvent>();
-		nonPeriodicEvents = new ArrayList<ServerEvent>();
+		periodicEvents.clear();
+		nonPeriodicEvents.clear();
 	}
 	
 	//get current day of the week
@@ -147,11 +149,22 @@ public class Scheduler
 	/* schedule a single event to occur after a delay (like a timer)
 	 * ignores any internal time information in event
 	 */
-	public void scheduleTimer(ServerEvent event, int secondsUntilTrigger)
+	public boolean scheduleTimer(ServerEvent event, int secondsUntilTrigger)
 	{
-		//TODO check that there sint already an event with that name
+		//check if timer with name already exists
+		String eventName = event.getEventName();
+		for(ServerEvent liveEvent : nonPeriodicEvents)
+		{
+			if(liveEvent.getEventName().equals(eventName))
+			{
+				return false;
+			}
+		}
+		
+		//schedule timer
 		nonPeriodicEvents.add(event);
 		scheduler.schedule(event, secondsUntilTrigger*1000);
+		return true;
 	}
 	
 	

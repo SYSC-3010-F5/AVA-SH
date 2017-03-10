@@ -13,6 +13,7 @@
 *						- optional fullscreen added
 *						- separate command-list window added
 *						- print all command details patched
+*						- colorMap changed from HashMap --> TreeMap & new scheme added
 *					v1.1.0
 *						- statusOverview shrunk to just display connection status
 *						- new JText area added for predictive command help
@@ -128,7 +129,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private String allCommands;
 	private String lastCmd;
 	private TreeMap<String, String> cmdMap;				
-	private HashMap<String, Color[]> colorMap;
+	private TreeMap<String, Color[]> colorMap;
 	private boolean inputReady;
 	private String[] input;
 	private boolean echo;
@@ -390,7 +391,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	//initialize color scheme map
 	private void initColorMap()
 	{
-		colorMap = new HashMap<String, Color[]>();
+		colorMap = new TreeMap<String, Color[]>();
 		
 		colorMap.put("aperture", new Color[]{Color.BLACK, Color.ORANGE});
 		colorMap.put("bluescreen", new Color[]{Color.BLUE, Color.WHITE});
@@ -398,9 +399,11 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		colorMap.put("dark", new Color[]{Color.BLACK, Color.WHITE});
 		colorMap.put("light", new Color[]{Color.WHITE, Color.BLACK});
 		colorMap.put("matrix", new Color[]{Color.BLACK, Color.GREEN});
-		colorMap.put("ocean", new Color[]{Color.CYAN, Color.DARK_GRAY});
+		colorMap.put("ocean", new Color[]{Color.BLUE, Color.CYAN});
 		colorMap.put("prettyinpink", new Color[]{Color.BLACK, Color.MAGENTA});
 		colorMap.put("xmas", new Color[]{Color.RED, Color.GREEN});
+		colorMap.put("50shades", new Color[]{Color.DARK_GRAY, Color.LIGHT_GRAY});
+		colorMap.put("flamingo", new Color[]{Color.DARK_GRAY, Color.PINK});
 	}
 	
 	
