@@ -1,5 +1,5 @@
 class WeightSensor:
-    weight = 0
+    weight = 0  #weight in grams
     
     def __init__(self):
         self.weight = 0
