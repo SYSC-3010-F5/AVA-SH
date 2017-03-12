@@ -50,6 +50,17 @@ public class DataChannelTestBench extends TestBench
 		super.setUp();
 		channel = new DataChannel();
 	}
+	
+	
+	public void testSend() throws Exception
+	{
+		network.DataMultiChannel dmc = new network.DataMultiChannel();
+		dmc.hijackChannel(InetAddress.getLocalHost(), 9999);
+		dmc.sendPacket(new byte[]{(byte)0});
+		dmc.sendPacket(new byte[]{(byte)1});
+		dmc.sendPacket(new byte[]{(byte)2});
+		dmc.sendPacket(new byte[]{(byte)0});
+	}
 
 	
 	@Override

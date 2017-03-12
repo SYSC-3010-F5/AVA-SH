@@ -3,7 +3,7 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    09/03/2017                                              
-*Version:           2.1.0                                         
+*Version:           2.2.0                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
 *					Displays registry for server.
@@ -15,8 +15,9 @@
 *					Are guaranteed thread safe.
 *					
 * 
-*Update Log			v2.1.2
+*Update Log			v2.2.0
 *						- east panel registered devices and header split into separate GUI objects
+*						- soft reset replaced with update for events
 *					v2.1.1
 *						- changed pause/resume button to clear events
 *					v2.1.0
@@ -39,12 +40,16 @@ import java.awt.Font;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+
+import server.datatypes.ServerEvent;
+
 import java.awt.GridLayout;
 import java.awt.Window.Type;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
@@ -73,7 +78,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//declaring static class constants
 	public static final String BTN_SOFT_SHUTDOWN = "btn/softshutdown";
 	public static final String BTN_HARD_SHUTDOWN = "btn/hardshutdown";
-	public static final String BTN_SOFT_RESET = "btn/softreset";
+	public static final String BTN_UPDATE_EVENTS = "btn/updateevents";
 	public static final String BTN_HARD_RESET = "btn/hardreset";
 	public static final String BTN_CLEAR = "btn/cleardisplay";
 	public static final String BTN_UPDATE_REGISTRY = "btn/updateregistry";
@@ -89,7 +94,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	//declaring local instance variables
 	private JTextArea display;
-	private JTextArea registryText;
+	private JTextArea registryText, eventText;
 	private JButton btnClearEvents;
 	
 	
@@ -144,6 +149,26 @@ public class ServerDSKY extends JFrame implements ActionListener
 		header.setCaretColor(DEFAULT_TEXT_COLOR);;
 		eastPanel.add(header, BorderLayout.NORTH);
 		
+		
+		//add split pane for registry/live events
+		JSplitPane eastSplit = new JSplitPane();
+		eastSplit.setOrientation(JSplitPane.VERTICAL_SPLIT);
+		eastSplit.setResizeWeight(0.5);
+		eastPanel.add(eastSplit, BorderLayout.CENTER);
+		
+		
+		//add text area for event info in scroll
+		JScrollPane eventScroll = new JScrollPane();
+		eventText = new JTextArea();
+		eventText.setTabSize(4);
+		eventText.setEditable(false);
+		eventText.setFont(DEFAULT_FONT);
+		eventText.setBackground(DEFAULT_BACKGROUND_COLOR);
+		eventText.setForeground(DEFAULT_TEXT_COLOR);
+		eventText.setCaretColor(DEFAULT_TEXT_COLOR);;
+		eventScroll.setViewportView(eventText);
+		eastSplit.setBottomComponent(eventScroll);
+		
 		//add text area for registry info in scroll
 		JScrollPane registryScroll = new JScrollPane();
 		registryText = new JTextArea();
@@ -154,7 +179,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		registryText.setForeground(DEFAULT_TEXT_COLOR);
 		registryText.setCaretColor(DEFAULT_TEXT_COLOR);;
 		registryScroll.setViewportView(registryText);
-		eastPanel.add(registryScroll, BorderLayout.CENTER);
+		eastSplit.setTopComponent(registryScroll);
 		
 		
 		//add panel for buttons in south area of eastern panel
@@ -164,12 +189,12 @@ public class ServerDSKY extends JFrame implements ActionListener
 		buttonPanel.setBackground(DEFAULT_BACKGROUND_COLOR);
 		eastPanel.add(buttonPanel, BorderLayout.SOUTH);
 		
-		JButton btnSoftReset = new JButton("<html>Soft<br />Reset</html>");
-		btnSoftReset.setActionCommand(BTN_SOFT_RESET);
-		btnSoftReset.addActionListener(listener);
-		btnSoftReset.setFont(BUTTON_FONT);
-		btnSoftReset.setBackground(DEFAULT_BACKGROUND_COLOR);
-		btnSoftReset.setForeground(DEFAULT_TEXT_COLOR);
+		JButton btnUpdateEvents = new JButton("<html>Soft<br />Reset</html>");
+		btnUpdateEvents.setActionCommand(BTN_UPDATE_EVENTS);
+		btnUpdateEvents.addActionListener(listener);
+		btnUpdateEvents.setFont(BUTTON_FONT);
+		btnUpdateEvents.setBackground(DEFAULT_BACKGROUND_COLOR);
+		btnUpdateEvents.setForeground(DEFAULT_TEXT_COLOR);
 		
 		JButton btnHardReset = new JButton("<html>Hard<br />Reset</html>");
 		btnHardReset.setActionCommand(BTN_HARD_RESET);
@@ -222,7 +247,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		btnClearEvents.setForeground(DEFAULT_TEXT_COLOR);
 		
 		buttonPanel.add(btnHardReset);
-		buttonPanel.add(btnSoftReset);
+		buttonPanel.add(btnUpdateEvents);
 		buttonPanel.add(btnSoftShutdown);
 		buttonPanel.add(btnHardShutdown);
 		buttonPanel.add(btnEraseRegistry);
@@ -315,7 +340,23 @@ public class ServerDSKY extends JFrame implements ActionListener
 		//set the text
 		registryText.setText(string);
 		registryText.setCaretPosition(0);
-		
+	}
+	
+	
+	//update the event overview
+	public void updateEvent(ArrayList<ServerEvent> npe, ArrayList<ServerEvent> pe)
+	{
+		String s = "Update @ " + getCurrentTime() + "\n\n";
+		for(ServerEvent event : npe)
+		{
+			s += event.toString() +"\n";
+		}
+		for(ServerEvent event : pe)
+		{
+			s += event.toString() + "\n";
+		}
+		eventText.setText(s);
+		eventText.setCaretPosition(0);
 	}
 	
 

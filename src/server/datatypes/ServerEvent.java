@@ -51,27 +51,22 @@ import io.json.ToJSONFile;
 public class ServerEvent extends TimerTask implements ToJSONFile
 {
 	//static class constants
-	private static final int PORT = MainServer.PORT;
-	private static final String PREFIX = "EVENT >> ";
+	protected static final int PORT = MainServer.PORT;
+	protected static final String PREFIX = "EVENT >> ";
 	
 	//local class variables
-	private static ServerDSKY display = null;
+	protected static ServerDSKY display = null;
 	
 	//declaring local instance variables
-	private String eventName;
+	protected String eventName;
 	private TimeAndDate trigger;
-	private PacketWrapper[] commands;
+	protected PacketWrapper[] commands;
 	
 
 	//null constructor
 	public ServerEvent()
 	{
 		this("", new PacketWrapper[0], new TimeAndDate());
-	}
-	//constructor with no time (used for timers)
-	public ServerEvent(String eventName, PacketWrapper[] commands)
-	{
-		this(eventName, commands, new TimeAndDate());
 	}
 	//generic constructor
 	public ServerEvent(String eventName, PacketWrapper[] commands, TimeAndDate trigger)
@@ -173,7 +168,15 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 	//marks the ServerEvent to not trigger
 	public boolean cancel()
 	{
-		println(this.toString() + "Canceled!");
+		return cancel(true);
+	}
+	//marks the ServerEvent to not trigger without print
+	protected boolean cancel(boolean print)
+	{
+		if(print)
+		{
+			println(this.toString() + " Canceled!");
+		}
 		return super.cancel();
 	}
 	

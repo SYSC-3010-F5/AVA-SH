@@ -2,13 +2,18 @@
 *Class:             Scheduler.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    09/03/2017                                              
+*Date of Update:    12/03/2017                                              
 *Version:           0.1.0                                         
 *                                                                                   
 *Purpose:           Real time is hard.
 *					
 * 
-*Update Log			v0.2.1
+*Update Log			v0.2.2
+*						- timers added using standard schedule method
+*						- timers now use subclass of ServerEvent <|--- ServerTimer
+*						- Scheduler instances now have special Event that runs every 30 seconds to
+*						  run a purge
+*					v0.2.1
 *						- add timer modified so no duplicate names can exist
 *					v0.2.0
 *						- lists added to store all active events
@@ -35,6 +40,7 @@ import java.util.LinkedList;
 
 //import packages
 import server.datatypes.ServerEvent;
+import server.datatypes.ServerTimer;
 import server.datatypes.TimeAndDate;
 
 
@@ -146,54 +152,51 @@ public class Scheduler
 	}
 	
 	
-	/* schedule a single event to occur after a delay (like a timer)
-	 * ignores any internal time information in event
-	 */
-	public boolean scheduleTimer(ServerEvent event, int secondsUntilTrigger)
-	{
-		//check if timer with name already exists
-		String eventName = event.getEventName();
-		for(ServerEvent liveEvent : nonPeriodicEvents)
-		{
-			if(liveEvent.getEventName().equals(eventName))
-			{
-				return false;
-			}
-		}
-		
-		//schedule timer
-		nonPeriodicEvents.add(event);
-		scheduler.schedule(event, secondsUntilTrigger*1000);
-		return true;
-	}
-	
-	
 	//schedule event to occur using internal information
-	public void schedule(ServerEvent event)
+	public boolean schedule(ServerEvent event)
 	{
-		//determine if the event will occur daily
-		boolean[] days = event.getTrigger().getDays();
-		boolean dailyEvent = true;
-		for(boolean day : days)
+		if(event instanceof ServerTimer)
 		{
-			dailyEvent = dailyEvent && day;
+			ServerTimer timerEvent = (ServerTimer)event;
+			
+			//check if timer with name already exists
+			String eventName = timerEvent.getEventName();
+			for(ServerEvent liveEvent : nonPeriodicEvents)
+			{
+				if(liveEvent.getEventName().equals(eventName))
+				{
+					return false;
+				}
+			}
+			//schedule timer
+			nonPeriodicEvents.add(event);
+			scheduler.schedule(timerEvent, timerEvent.getSecondsUntilTrigger()*1000);
+			return true;
 		}
-		
-		//special case, daily event
-		if(dailyEvent)
-		{
-			TimeAndDate trigger = event.getTrigger();
-			int[] currentTime = this.getCurrentTime();
-			boolean today = false;
-		}
-		//event occurs on less than 7 days a week
 		else
 		{
+			//determine if the event will occur daily
+			boolean[] days = event.getTrigger().getDays();
+			boolean dailyEvent = true;
+			for(boolean day : days)
+			{
+				dailyEvent = dailyEvent && day;
+			}
 			
+			//special case, daily event
+			if(dailyEvent)
+			{
+				TimeAndDate trigger = event.getTrigger();
+				int[] currentTime = this.getCurrentTime();
+				boolean today = false;
+			}
+			//event occurs on less than 7 days a week
+			else
+			{
+				
+			}
 		}
-		
-		//determine if event to occur later today, or on a new day
-		Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+		return false;//TODO Remove
 	}
 	
 	

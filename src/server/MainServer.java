@@ -3,13 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *					Henri Cheung
-*Date of Update:    09/03/2017
-*Version:           0.2.0
+*Date of Update:    12/03/2017
+*Version:           0.3.1
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.3.0
+*Update Log			v0.3.1
+*						- changed to use new ServerTimer subclass
+*						- added button functionality for updating event info
+*					v0.3.0
 *						- button for clearing all events added
 *						- getting current weather added
 *						- removing timers added
@@ -64,6 +67,7 @@ import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
+import server.datatypes.ServerTimer;
 import io.json.JsonException;
 import network.DataChannel;
 
@@ -221,9 +225,8 @@ public class MainServer extends Thread implements ActionListener
 		}
 		
 		//create new ServerEvent for time, schedule it
-		PacketWrapper[] cmds = new PacketWrapper[0];			//TODO actually make it use alarm
-		ServerEvent event = new ServerEvent(timerName, cmds);
-		boolean success = scheduler.scheduleTimer(event, triggerTime);
+		ServerTimer event = new ServerTimer(timerName, triggerTime, scheduler);
+		boolean success = scheduler.schedule(event);
 		
 		if(success)
 		{
@@ -239,6 +242,7 @@ public class MainServer extends Thread implements ActionListener
 		{
 			display.println("Timer with name \"" + timerName + "\" already exists!\nSending error packet...");
 		}
+		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 		return success;
 	}
 	
@@ -521,6 +525,7 @@ public class MainServer extends Thread implements ActionListener
 								String toRemove = packet.extraInfo();
 								display.println("Attemping to remove non-periodic event \"" + toRemove + "\"");
 								boolean removed = scheduler.removeNonPeriodic(toRemove);
+								display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 								if(removed)
 								{
 									display.println("Sending empty info packet...");
@@ -598,9 +603,9 @@ public class MainServer extends Thread implements ActionListener
 				break;
 			
 			//soft reset of system
-			case(ServerDSKY.BTN_SOFT_RESET):
-				display.println("BUTTON >> SOFT RESET");
-				//TODO
+			case(ServerDSKY.BTN_UPDATE_EVENTS):
+				display.println("BUTTON >> UPDATE EVENTS");
+				display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 				break;
 			
 			//hard reset of system
