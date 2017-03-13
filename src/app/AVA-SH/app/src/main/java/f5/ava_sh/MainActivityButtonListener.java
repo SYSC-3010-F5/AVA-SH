@@ -17,9 +17,20 @@ public class MainActivityButtonListener implements OnClickListener {
 
     @Override
     public void onClick(View view) {
-        if (id == "Terminal") {
-            Intent myIntent = new Intent(view.getContext(), TerminalActivity.class);
-            view.getContext().startActivity(myIntent);
+        switch(id){
+            case "Terminal":
+                Intent myIntent = new Intent(view.getContext(), TerminalActivity.class);
+                view.getContext().startActivity(myIntent);
+                break;
+
+            case "Ping Server":
+                break;
+
+            case "New Alarm":
+                break;
+
+            case "Request Time":
+                break;
         }
     }
 

@@ -18,6 +18,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    //Adds an external file
+    sourceSets {
+        main.java.srcDirs += 'src/../../../../network'
+        main.java.srcDirs += 'src/../../../../io'
+    }
 }
 
 dependencies {

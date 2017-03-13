@@ -5,8 +5,8 @@
 *Date of Update:    20/01/2016                                              
 *Version:           1.1.0                                                      
 *                                                                                   
-*Purpose:           Helper class to assemble a .json file as a String
-*					Basically a controller to help structure a .json file.
+*Purpose:           Helper class to assemble a .io.json file as a String
+*					Basically a controller to help structure a .io.json file.
 * 
 *Update Log:		v1.1.1
 *						- added field for boolean array
@@ -128,7 +128,7 @@ public class JsonFile
 	}
 	
 	
-	//uncontrolled add. Use for adding another pre-formatted .json file
+	//uncontrolled add. Use for adding another pre-formatted .io.json file
 	public void addField(String fieldName, JsonFile subFile)
 	{
 		this.add("\"" + fieldName + "\" : " + subFile.toString());
