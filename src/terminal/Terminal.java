@@ -2,7 +2,7 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    07/03/2017                                              
+*Date of Update:    13/03/2017                                              
 *Version:           0.5.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
@@ -10,7 +10,9 @@
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.1
+*Update Log			v0.5.2
+*						- terminal disconnect error bug patched (issue #15 on github)
+*					v0.5.1
 *						- terminal can set up timers (cmd or dialog)
 *						- terminal can remove timers
 *						- terminal can request list of all np-events
@@ -101,6 +103,7 @@ public class Terminal extends JFrame implements ActionListener
 	private int 		defaultServerPort;
 	
 	private boolean runFlag;
+	private boolean connecting;
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
@@ -123,6 +126,7 @@ public class Terminal extends JFrame implements ActionListener
 			defaultServerAddress = InetAddress.getLocalHost();
 			defaultDeviceName = "terminal";
 			defaultServerPort = 3010;
+			connecting = false;
 		} 
 		catch (SocketException e) 
 		{
@@ -174,7 +178,10 @@ public class Terminal extends JFrame implements ActionListener
 		ui.println("Closing terminal...");
 		try 
 		{
-			dataChannel.disconnect("user");
+			if(dataChannel.getConnected())
+			{
+				dataChannel.disconnect("user");
+			}
 		} 
 		catch (NetworkException e) 
 		{
@@ -287,6 +294,7 @@ public class Terminal extends JFrame implements ActionListener
 	{
 		if(!dataChannel.getConnected())
 		{
+			connecting = true;
 			try
 			{
 				for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
@@ -315,6 +323,7 @@ public class Terminal extends JFrame implements ActionListener
 			{
 				ui.printError(e.getMessage());
 			}
+			connecting = false;
 		}
 		else
 		{
@@ -1123,16 +1132,24 @@ public class Terminal extends JFrame implements ActionListener
 	{
 		//determine source via cmd parse
 		String src = e.getActionCommand();
-		switch(src)
+		
+		/* only respond to action events if not attempting to connect (leads to unknown and bad states
+		 * due to the fact that action events basically act like interrupts
+		 * (bug patch for git issue #15)
+		 */
+		if(!connecting)
 		{
-			//"file-close" button pressed
-			case(TerminalUI.MENU_CLOSE):
-				boolean closed = ui.reqClose();
-				if(closed)
-				{
-					this.close(CLOSE_OPTION_USER);
-				}
-				break;
+			switch(src)
+			{
+				//"file-close" button pressed
+				case(TerminalUI.MENU_CLOSE):
+					boolean closed = ui.reqClose();
+					if(closed)
+					{
+						this.close(CLOSE_OPTION_USER);
+					}
+					break;
+			}
 		}
 	}
 	

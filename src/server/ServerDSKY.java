@@ -2,7 +2,7 @@
 *Class:             ServerDSKY.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    09/03/2017                                              
+*Date of Update:    13/03/2017                                              
 *Version:           2.2.0                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
@@ -68,11 +68,11 @@ import javax.swing.JOptionPane;
 public class ServerDSKY extends JFrame implements ActionListener
 {
 	//ASCII art
-	private static final String ASCII_MODULE_REGISTRY_HEADER = 
+	private static final String ASCII_HEADER = 
 			"\t    ___ _    _____ \n" +
 			"\t   /   | |  / /   |\n" +
-			"\t  / /| | | / / /| |\t\tModule\n" +
-			"\t / ___ | |/ / ___ |\t\tRegistry\n" +
+			"\t  / /| | | / / /| |\tMain\n" +
+			"\t / ___ | |/ / ___ |\tServer\n" +
 			"\t/_/  |_|___/_/  |_|\n\n" ;
 	
 	//declaring static class constants
@@ -142,7 +142,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		JTextArea header = new JTextArea();
 		header.setTabSize(4);
 		header.setEditable(false);
-		header.setText(ASCII_MODULE_REGISTRY_HEADER + "\t@" + location);
+		header.setText(ASCII_HEADER + "\t@" + location);
 		header.setFont(DEFAULT_FONT);
 		header.setBackground(DEFAULT_BACKGROUND_COLOR);
 		header.setForeground(DEFAULT_TEXT_COLOR);
@@ -189,7 +189,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 		buttonPanel.setBackground(DEFAULT_BACKGROUND_COLOR);
 		eastPanel.add(buttonPanel, BorderLayout.SOUTH);
 		
-		JButton btnUpdateEvents = new JButton("<html>Soft<br />Reset</html>");
+		JButton btnUpdateEvents = new JButton("<html>Update<br />Events</html>");
 		btnUpdateEvents.setActionCommand(BTN_UPDATE_EVENTS);
 		btnUpdateEvents.addActionListener(listener);
 		btnUpdateEvents.setFont(BUTTON_FONT);
@@ -268,6 +268,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 			}
 			this.setVisible(true);
 			this.updateRegistry(null);
+			this.updateEvent(null, null);
 			this.println("DSKY running " + flavor);
 		} 
 		catch (Exception e) 
@@ -347,13 +348,19 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public void updateEvent(ArrayList<ServerEvent> npe, ArrayList<ServerEvent> pe)
 	{
 		String s = "Update @ " + getCurrentTime() + "\n\n";
-		for(ServerEvent event : npe)
+		if(npe != null)
 		{
-			s += event.toString() +"\n";
+			for(ServerEvent event : npe)
+			{
+				s += event.toString() +"\n";
+			}
 		}
-		for(ServerEvent event : pe)
+		if(pe != null)
 		{
-			s += event.toString() + "\n";
+			for(ServerEvent event : pe)
+			{
+				s += event.toString() + "\n";
+			}
 		}
 		eventText.setText(s);
 		eventText.setCaretPosition(0);

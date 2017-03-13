@@ -2,8 +2,7 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*					Henri Cheung
-*Date of Update:    12/03/2017
+*Date of Update:    13/03/2017
 *Version:           0.3.1
 *
 *Purpose:           The main controller of the AVA system
