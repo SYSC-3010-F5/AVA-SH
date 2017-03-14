@@ -39,17 +39,19 @@ public class CommandHelper {
 
     private AlertDialog.Builder alertDialogBuilder;
     final EditText et;
+    private AlertDialog alertDialog;
     private DataChannel dataChannel;
     private MainActivity main;
-    private AlertDialog alertDialog;
+
 
     public CommandHelper(Context c, MainActivity main){
         this.main = main;
+        dataChannel = main.getDataChannel();
 
         alertDialogBuilder = new AlertDialog.Builder(c);
         et = new EditText(c);
 
-        dataChannel = main.getDataChannel();
+
 
         // set prompts.xml to alertdialog builder
         alertDialogBuilder.setView(et);
