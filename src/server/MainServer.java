@@ -375,6 +375,36 @@ public class MainServer extends Thread implements ActionListener
 						{
 							//add to registry
 							display.println("Device handshake correct!\nAdding to registry...");
+							String deviceName = packet.deviceName();
+							
+							//check if the name is already registered
+							if(registry.containsKey(deviceName))
+								deviceName = packet.deviceName() + "_1";
+
+							int i = 2;
+							
+							//if the name is still registered, append larger and larger numbers until a non-registered name is found
+							while(registry.containsKey(deviceName))
+							{
+								deviceName = packet.deviceName() + "_" + i;
+							}
+							
+							//deviceName should now be unique in the registry
+							registry.put(deviceName, packet.source());
+							display.println("Device added to registry under name \"" + deviceName + "\", value: \"" + packet.source().toString() + "\"");
+							
+							//respond to the handshake with an empty handshake
+							try
+							{
+								multiChannel.respondHandshake(packet.source().getAddress(), packet.source().getPort());
+							}
+							catch(NetworkException e)
+							{
+								display.println("EXCEPTION >> " + e.getMessage());
+							}
+							
+							/*
+							legacy code that only sent an error packet if the name was already registered
 							if(!registry.containsKey(packet.deviceName()))
 							{
 								registry.put(packet.deviceName(), packet.source());
@@ -405,6 +435,7 @@ public class MainServer extends Thread implements ActionListener
 	
 								}
 							}
+							*/
 						}
 						else
 						{
