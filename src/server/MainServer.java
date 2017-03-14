@@ -93,6 +93,7 @@ public class MainServer extends Thread implements ActionListener
 	private boolean pauseFlag;
 	private boolean runFlag;
 	private int closeMode;
+	private int locationID;
 	private ServerDSKY display;
 	
 	
@@ -106,6 +107,7 @@ public class MainServer extends Thread implements ActionListener
 		display = new ServerDSKY(SERVER_NAME, InetAddress.getLocalHost().toString()+":"+PORT, this, isFullScreen);
 		runFlag = true;
 		pauseFlag = false;
+		locationID = Weather.OTTAWA_OPENWEATHER_ID;
 		
 		ServerEvent.hookDSKY(display);
 		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
@@ -277,7 +279,7 @@ public class MainServer extends Thread implements ActionListener
 		JSONObject weatherData = null;
 		try
 		{
-			weatherData = weatherRequest.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
+			weatherData = weatherRequest.currentWeatherAtCity(locationID);
 		}
 		catch(IOException e)
 		{
@@ -375,7 +377,6 @@ public class MainServer extends Thread implements ActionListener
 						{
 							//add to registry
 							display.println("Device handshake correct!\nAdding to registry...");
-							
 							if(!registry.containsKey(packet.deviceName()))
 							{
 								registry.put(packet.deviceName(), packet.source());
