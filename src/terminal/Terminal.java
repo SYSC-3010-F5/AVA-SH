@@ -984,7 +984,7 @@ public class Terminal extends JFrame implements ActionListener
 						WeatherData weather = new WeatherData(wrapper.info());
 						
 						String[] weatherData = weather.getWeatherData();
-						ui.println("Weather data for Ottawa, Ontario.");
+						ui.println("Weather data for Ottawa, Ontario.");		//TODO change this line! Dont hard code it
 						ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
 						ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
 						ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
