@@ -3,14 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    20/02/2017                                              
-*Version:           2.0.0                                         
+*Version:           2.1.1                                         
 *                                                                                   
 *Purpose:           Outlines what anything following the outlined Coms Protocol
 *					must be able to do.
 *					
 * 
-*Update Log			v2.0.0
-*						- revised version
+*Update Log			v2.1.1
+*						- update to reflect revision 2.1.1 of protocol
+*					v2.0.0
+*						- revised version 2.0.0
 *					v1.0.0
 *						- null
 */
@@ -33,6 +35,9 @@ public interface ComsProtocol
 	
 	//contact paired connection via handshake protocol
 	public void connect(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException, IOException;
+	
+	//disconnect from paired connection
+	public void disconnect(String reason) throws NetworkException;
 	
 	//responds to a handshake, finalizing the connection
 	public void respondHandshake(InetAddress toPair, int listeningPort) throws NetworkException;

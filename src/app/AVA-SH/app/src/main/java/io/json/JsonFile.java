@@ -2,13 +2,15 @@
 *Class:             ToJSONFile.java
 *Project:           AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    20/01/2016                                              
+*Date of Update:    04/03/2017                                              
 *Version:           1.1.0                                                      
 *                                                                                   
 *Purpose:           Helper class to assemble a .io.json file as a String
 *					Basically a controller to help structure a .io.json file.
 * 
-*Update Log:		v1.1.1
+*Update Log:		v1.1.2
+*						- bug fix for adding empty string field
+*					v1.1.1
 *						- added field for boolean array
 *					v1.1.0
 *						- minor fix with bracket positioning
@@ -79,15 +81,9 @@ public class JsonFile
 	
 	
 	//add a named field to current block, field is of type String
-	//fieldValue = "" to denote the value will be in a new block
 	public void addField(String fieldName, String fieldValue)
 	{
-		if (fieldValue != "")
-		{
-			fieldValue ="\"" + fieldValue +"\"\n";
-		}
-
-		this.add("\"" + fieldName + "\" : " + fieldValue);
+		this.add("\"" + fieldName + "\" : \"" + fieldValue + "\"\n");
 	}
 	
 	
@@ -167,7 +163,7 @@ public class JsonFile
 	//new block, but with field name
 	public void newBlock(String fieldName)
 	{
-		file += "\"" + fieldName + "\" : {\n";
+		add("\"" + fieldName + "\" : {\n");
 		offset += "\t";
 	}
 	

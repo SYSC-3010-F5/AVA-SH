@@ -2,21 +2,33 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/02/2017                                              
-*Version:           0.5.0                                         
+*Date of Update:    13/03/2017                                              
+*Version:           0.5.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.0
+*Update Log			v0.5.2
+*						- terminal disconnect error bug patched (issue #15 on github)
+*					v0.5.1
+*						- terminal can set up timers (cmd or dialog)
+*						- terminal can remove timers
+*						- terminal can request list of all np-events
+*						- terminal can request current weather
+*					v0.5.0
 *						- pinging added
 *						- connection establishing with server added
 *						- connection command and associated method re-written
 *						- default server address/port added, default device name added
 *						- alarm setting added (we actually send to the server now)
 *						- request time command functionality added
+*						- auto attempts to connect at startup
+*						- disconnect functionality added (+ disconnect on reboot/close)
+*						- ip command implemented
+*						- setters and getters for default serverIPv4/port/registry name
+*						- color command launchs dialog instead of setting to default
 *					v0.4.0
 *						- reboot capability added
 *						- alarm setting adding (doesn't do anything with the data, just gets it)
@@ -54,30 +66,24 @@
 package terminal;
 
 
-import java.awt.Image;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
 import java.util.TreeMap;
-
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.UIManager;
 
 //import packages
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.datatypes.Alarm;
-import terminal.dialogs.DayAndTimeDialog;
-
+import terminal.dialogs.TimeDialog;
+import server.datatypes.WeatherData;
 
 
 public class Terminal extends JFrame implements ActionListener
@@ -97,16 +103,17 @@ public class Terminal extends JFrame implements ActionListener
 	private int 		defaultServerPort;
 	
 	private boolean runFlag;
+	private boolean connecting;
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
 	
 	
 	//generic constructor
-	public Terminal()
+	public Terminal(boolean isFullScreen)
 	{	
 		//init ui
-		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND);
+		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
 		
@@ -119,6 +126,7 @@ public class Terminal extends JFrame implements ActionListener
 			defaultServerAddress = InetAddress.getLocalHost();
 			defaultDeviceName = "terminal";
 			defaultServerPort = 3010;
+			connecting = false;
 		} 
 		catch (SocketException e) 
 		{
@@ -143,29 +151,11 @@ public class Terminal extends JFrame implements ActionListener
 	//main run-loop of the terminal
 	public int run()
 	{
-		/*
-		//initial setup
-		if(establishConnection(null))
-		{
-			ui.println("Connection established!");
-		}
-		else
-		{
-			ui.println("Connection FAILED");
-		}
-		*/
-		
-		
-		//wait before clearing log
-		try 
-		{
-			Thread.sleep(3000);
-		} 
-		catch (InterruptedException e) {e.printStackTrace();}
-		ui.clear();
+		//initial handshake
+		establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
 		
 		//main input-parse loop
-		ui.println("Waiting for input...");
+		ui.println("\n************************* INIT COMPLETE *************************\nWaiting for input...");
 		while(runFlag)
 		{
 			String[] in = ui.getInput();
@@ -186,7 +176,18 @@ public class Terminal extends JFrame implements ActionListener
 	public void close(int reason)
 	{
 		ui.println("Closing terminal...");
-		//TODO disconnect from server
+		try 
+		{
+			if(dataChannel.getConnected())
+			{
+				dataChannel.disconnect("user");
+			}
+		} 
+		catch (NetworkException e) 
+		{
+			ui.printError("Error disconnecting from server\n" + e.getMessage());
+		}
+		dataChannel.close();
 		closeReason = reason;
 		ui.close();
 		runFlag = false;
@@ -207,7 +208,7 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("close", "Exit the local terminal");
 		
-		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"										//TODO implement this
+		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
 					+ "\tparam1= n/a             || Attempt to establish server connection at default server address\n"
 					+ "\tparam1= default ::      || Attempt to establish server connection at default server address\n"
 					+ "\tparam1= local ::        || Attempt to establish server conncetion at the local IPv4 address\n"
@@ -215,18 +216,18 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam2= n/a ::          || Attempt to establish server connect to the default port\n"
 					+ "\tparam2= <INT> ::        || Attempt to establish server connection to port <INT>");
 		
-		cmdMap.put("disconnect", "Disconnect from main server");															//TODO implement this
+		cmdMap.put("disconnect", "Disconnect from main server");
 		
-		cmdMap.put("ip", "Request and return the IP of a module\n"															//TODO implement this
+		cmdMap.put("ip", "Request and return the IP of a module\n"	
 					+ "\tparam1= n/a    || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= local  || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= server || Print the IPv4 address of the connected server\n"
 					+ "\tparam1= <STR>  || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
 		
 		cmdMap.put("color", "Change the color theme of the terminal\n"
-					+ "\tparam1= n/a   || Set the color scheme to the default\n"
-					+ "\tparam1= all   || Show all color schemes\n"
-					+ "\tparam1= <STR> || Set the color schemes to <STR>\n"
+					+ "\tparam1= n/a   || Set the color scheme via dialog\n"
+					+ "\tparam1= all   || Demo all color schemes\n"
+					+ "\tparam1= <STR> || Set the color scheme to <STR>\n"
 					+ "\tTHEMES:          aperture, bluescreen, bumblebee, dark,\n" 
 					+ "\t                 light, matrix, ocean, prettyinpink, xmas");
 		
@@ -259,6 +260,31 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("time", "Get and print the current time from the server");
 		
+		cmdMap.put("d-serverport", "Get or set the default server port\n"
+					+ "\tparam1: n/a   || Print the default server port\n"
+					+ "\tparam1: <INT> || Set the default server port to <INT>");
+		
+		cmdMap.put("d-serverip", "Get or set the default server IPv4 address\n"
+				+ "\tparam1: n/a             || Print the default server IPv4 address\n"
+				+ "\tparam1: xxx.xxx.xxx.xxx || Set the default server IPv4 address to xxx.xxx.xxx.xxx");
+		
+		cmdMap.put("d-name", "Get or set the default module-registry name of terminal\n"
+				+ "\tparam1: n/a   || Print the default module-registry name of terminal\n"
+				+ "\tparam1: <STR> || Set the default module-registry name of terminal to <STR>");
+		
+		cmdMap.put("timer-new", "Set a new timer to go off in a set amount of minutes\n"
+				+ "\tparam1: n/a   || Launch system dialog to set a new timer\n"
+				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
+				+ "\tparam2: <STR> || The name for the timer");
+		
+		cmdMap.put("timer-remove", "Remove a timer currently scheduled"
+				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
+				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
+		
+		cmdMap.put("timer-get", "Request list of all timers currently scheduled");
+		
+		cmdMap.put("weather", "Request the current weather of Ottawa, Ontario");
+		
 		return cmdMap;
 	}
 	
@@ -268,6 +294,7 @@ public class Terminal extends JFrame implements ActionListener
 	{
 		if(!dataChannel.getConnected())
 		{
+			connecting = true;
 			try
 			{
 				for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
@@ -296,10 +323,28 @@ public class Terminal extends JFrame implements ActionListener
 			{
 				ui.printError(e.getMessage());
 			}
+			connecting = false;
 		}
 		else
 		{
 			ui.printError("Already connected!\nPlease disconnect first");
+		}
+		ui.updateStatus(statusToString());
+	}
+	
+	
+	//disconnect from server
+	private void disconnect(String msg)
+	{
+		try 
+		{
+			dataChannel.disconnect(msg);
+			ui.updateStatus(this.statusToString());
+			ui.println("Sucessfully disconnected from main AVA Server!");
+		} 
+		catch (NetworkException e) 
+		{
+			ui.printError(e.getMessage());
 		}
 	}
 	
@@ -328,7 +373,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("help"):
 				if(length == 1)
 				{
-					ui.printHelp(false);
+					ui.printHelpAllCommands(false);
 				}
 				else if (length == 2)
 				{
@@ -377,7 +422,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("color"):
 				if (length == 1)
 				{
-					ui.colorScheme(null);
+					ui.colorDialog();
 				}
 				else if (length == 2)
 				{
@@ -452,19 +497,33 @@ public class Terminal extends JFrame implements ActionListener
 						} 
 						catch (UnknownHostException e) {e.printStackTrace();}
 					}
+					//print server ip
 					else if(input[1].equals("server") || input[1].equals("ava"))
 					{
-						//TODO
-						ui.println("TODO >> dataChannel.ip");
+						ui.println(dataChannel.getPairedAddress()+":"+dataChannel.getPairedPort());
 					}
 					//request ip of module
 					else
 					{
 						String moduleString = input[1];
-						ui.println("TODO");
-						/*
-						 * TODO request ip of module
-						 */
+						//send and receive info
+						try 
+						{
+							dataChannel.sendCmd("req ip", moduleString);
+							PacketWrapper packet = dataChannel.receivePacket();
+							if(packet.type() == DataChannel.TYPE_INFO)
+							{
+								ui.println("\"" + moduleString + "\" @ " + packet.info());
+							}
+							else
+							{
+								ui.println(packet.errorMessage());
+							}
+						}
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
 					}
 				}
 				//command not found
@@ -540,25 +599,25 @@ public class Terminal extends JFrame implements ActionListener
 						switch(day)
 						{
 							case("mon"):
-								daysArr[0] = true;
-								break;
-							case("tue"):
 								daysArr[1] = true;
 								break;
-							case("wed"):
+							case("tue"):
 								daysArr[2] = true;
 								break;
-							case("thu"):
+							case("wed"):
 								daysArr[3] = true;
 								break;
-							case("fri"):
+							case("thu"):
 								daysArr[4] = true;
 								break;
-							case("sat"):
+							case("fri"):
 								daysArr[5] = true;
 								break;
-							case("sun"):
+							case("sat"):
 								daysArr[6] = true;
+								break;
+							case("sun"):
+								daysArr[0] = true;
 								break;
 							default:
 								ui.printError("Unknown date");
@@ -683,7 +742,7 @@ public class Terminal extends JFrame implements ActionListener
 							}
 							catch (NumberFormatException|UnknownHostException e)
 							{
-								ui.printError("Invalid IPAddress -- must be of form \"xxx.xxx.xxx.xxx\"");
+								ui.printError("Invalid IPAddress\nMust be of form \"xxx.xxx.xxx.xxx\"");
 								return;
 							}	
 						}
@@ -703,7 +762,7 @@ public class Terminal extends JFrame implements ActionListener
 								}
 								catch (NumberFormatException e)
 								{
-									ui.printError("Invalid Port -- must be a valid 32bit integer");
+									ui.printError("Invalid Port\nMust be a valid 32bit integer");
 									return;
 								}
 							}
@@ -751,8 +810,246 @@ public class Terminal extends JFrame implements ActionListener
 					ui.printError(e.getMessage());
 				}
 				break;
+				
+				
+			//disconnect
+			case("disconnect"):
+				disconnect("user request");
+				break;
+				
+				
+			//get/set default server port
+			case("d-serverport"):
+				if(input.length == 1)
+				{
+					ui.println(defaultServerPort+"");
+				}
+				else if (input.length == 2)
+				{
+					//set default server port
+					try
+					{
+						defaultServerPort = Integer.parseInt(input[1]);
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Invalid Port\nMust be a valid 32bit integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			
+			//get/set the default server IPv4
+			case("d-serverip"):
+				if(input.length == 1)
+				{
+					ui.println(defaultServerAddress.toString());
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						//declaring temporary method variables
+						byte[] addr;
+						String subStrBytes[];
+
+						//parse address
+						subStrBytes = (input[1]).split("\\.");
+						
+						addr = new byte[subStrBytes.length];
+						for(int i=0; i<subStrBytes.length; i++)
+						{
+							addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
+						}
+						
+						//save as ip
+						defaultServerAddress = InetAddress.getByAddress(addr);
+					}
+					catch (NumberFormatException|UnknownHostException e)
+					{
+						ui.printError("Invalid IPAddress\nMust be of form \"xxx.xxx.xxx.xxx\"");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
 			
 			
+			//get/set the default module-registry name
+			case("d-name"):
+				if(input.length == 1)
+				{
+					ui.println(defaultDeviceName);
+				}
+				else if (input.length == 2)
+				{
+					defaultDeviceName = input[1];
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+				
+			//set up a timer					TODO a bit smelly, could use clean up
+			case("timer-new"):
+				if(input.length == 1)
+				{
+					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);
+					if (d.getCloseMode() == TimeDialog.OK_OPTION)
+					{
+						//send timer command
+						String json = "{\n\t\"name\" : \"" + d.getTimerName() + "\"\n\t\"timeUntilTrigger\" : " + d.getTimeInSeconds() + "\n}";
+						try 
+						{
+							dataChannel.sendCmd("set timer", json);
+							PacketWrapper response = dataChannel.receivePacket();
+							
+							//parse response
+							if(response.type() == DataChannel.TYPE_INFO)
+							{
+								ui.println("Timer added!");
+							}
+							else if (response.type() == DataChannel.TYPE_ERR)
+							{
+								ui.printError(response.errorMessage());
+							}
+							else
+							{
+								ui.printError("Unknown response from server!\n"+response.toString());
+							}
+						} 
+						catch (NetworkException e) 
+						{
+							ui.printError(e.getMessage());
+						}
+					}
+				}
+				else if(input.length == 3)
+				{
+					try 
+					{
+						//check that minute param is valid int
+						int seconds = 60*Integer.parseInt(input[1]);
+						//send timer command
+						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + seconds + "\n}";
+						dataChannel.sendCmd("set timer", json);
+						PacketWrapper response = dataChannel.receivePacket();
+						
+						//parse response
+						if(response.type() == DataChannel.TYPE_INFO)
+						{
+							ui.println("Timer added!");
+						}
+						else if (response.type() == DataChannel.TYPE_ERR)
+						{
+							ui.printError(response.errorMessage());
+						}
+						else
+						{
+							ui.printError("Unknown response from server!\n"+response.toString());
+						}
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Invalid Time\nMust be a valid 32bit integer");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+				
+			//get current weather
+			case("weather"):
+				if(input.length == 1)
+				{
+					try 
+					{
+						dataChannel.sendCmd("req current weather");
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						WeatherData weather = new WeatherData(wrapper.info());
+						
+						String[] weatherData = weather.getWeatherData();
+						ui.println("Weather data for Ottawa, Ontario.");
+						ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
+						ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
+						ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+			
+			//remove a non-periodic event (timer or reminder)
+			case("timer-remove"):
+				if(input.length == 1)
+				{
+					
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						//send and wait for response
+						dataChannel.sendCmd("del np-event", input[1]);
+						PacketWrapper response = dataChannel.receivePacket();
+						
+						//parse response
+						if(response.type() == DataChannel.TYPE_INFO)
+						{
+							ui.println("\"" + input[1] + "\" removed!");
+						}
+						else if (response.type() == DataChannel.TYPE_ERR)
+						{
+							ui.printError(response.errorMessage());
+						}
+						else
+						{
+							ui.printError("Unknown response from server!\n"+response.toString());
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				break;
+			
+			//get list of active non-periodic events
+			case("timer-get"):
+				try
+				{
+					dataChannel.sendCmd("req np-events");
+					PacketWrapper wrapper = dataChannel.receivePacket();
+					ui.println(wrapper.extraInfo());
+				}
+				catch (NetworkException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+				
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);
@@ -783,7 +1080,7 @@ public class Terminal extends JFrame implements ActionListener
 				
 				//wait for response
 				PacketWrapper wrapper = dataChannel.receivePacket(5000);
-				if(wrapper.type == DataChannel.TYPE_INFO)
+				if(wrapper.type() == DataChannel.TYPE_INFO)
 				{
 					post = System.currentTimeMillis();
 					ui.println("Response from server, delay of " + (post-pre) + "ms");
@@ -814,7 +1111,8 @@ public class Terminal extends JFrame implements ActionListener
 		if(dataChannel.getConnected())
 		{
 			status += "Server: CONNECTED\n"
-					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n" ;
+					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n"
+					+ "        under \"" + dataChannel.getRegisteredName() + "\"\n";
 		}
 		else
 		{
@@ -834,16 +1132,24 @@ public class Terminal extends JFrame implements ActionListener
 	{
 		//determine source via cmd parse
 		String src = e.getActionCommand();
-		switch(src)
+		
+		/* only respond to action events if not attempting to connect (leads to unknown and bad states
+		 * due to the fact that action events basically act like interrupts
+		 * (bug patch for git issue #15)
+		 */
+		if(!connecting)
 		{
-			//"file-close" button pressed
-			case(TerminalUI.MENU_CLOSE):
-				boolean closed = ui.reqClose();
-				if(closed)
-				{
-					this.close(CLOSE_OPTION_USER);
-				}
-				break;
+			switch(src)
+			{
+				//"file-close" button pressed
+				case(TerminalUI.MENU_CLOSE):
+					boolean closed = ui.reqClose();
+					if(closed)
+					{
+						this.close(CLOSE_OPTION_USER);
+					}
+					break;
+			}
 		}
 	}
 	
@@ -855,9 +1161,8 @@ public class Terminal extends JFrame implements ActionListener
 		while(relaunch)
 		{
 			//start terminal, enter main loop
-			Terminal terminal = new Terminal();
+			Terminal terminal = new Terminal(false);		//true=fullscreen, false=windowed
 			int close = terminal.run();
-			terminal = null;
 			
 			//determine and handle reason for close
 			switch(close)

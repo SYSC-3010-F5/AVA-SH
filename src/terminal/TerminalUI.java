@@ -2,15 +2,30 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    19/02/2017                                              
-*Version:           0.3.2                                         
+*Date of Update:    09/03/2017                                              
+*Version:           1.1.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
-*					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.3.2
+*Update Log			v1.1.1
+*						- optional fullscreen added
+*						- separate command-list window added
+*						- print all command details patched
+*						- colorMap changed from HashMap --> TreeMap & new scheme added
+*					v1.1.0
+*						- statusOverview shrunk to just display connection status
+*						- new JText area added for predictive command help
+*						- key events added for predictive command help
+*						- default window size increased
+*					v1.0.0
+*						- UI finalized
+*						- splitPane replaced with static sized JPanels
+*						- menu items added
+*						- initialization now calls colorScheme method with a default scheme name instead of
+*						  manually initializing each component color
+*					v0.3.2
 *						- error dialog altered so multi-line in dialog will appear as a -- in console
 *						- icon added
 *					v0.3.1
@@ -50,25 +65,25 @@ package terminal;
 
 //external imports
 import java.awt.Font;
-import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.File;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JSplitPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -76,7 +91,7 @@ import javax.swing.JTextField;
 //import packages
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
-import java.awt.Toolkit;
+import terminal.dialogs.TextView;
 
 
 
@@ -94,12 +109,16 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	//declaring class constants
 	public static final String CONSOLE_IN = "txt/in";
 	public static final String MENU_CLOSE = "m/file/close";
+	public static final String MENU_CMD_LIST = "m/file/cmdlist";
+	private static final String MENU_COLOR_SCHEME = "m/options/colorscheme";
+	private static final String MENU_FULLSCREEN = "m/options/fullscreen";
 	private static final Font DEFAULT_CONSOLE_FONT = new Font("Monospaced", Font.PLAIN, 13);
-	private static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
-	private static final Color DEFAULT_TEXT_COLOR = Color.ORANGE;
+	private static final String DEFAULT_COLOR_SCHEME = "aperture";
 	private static final int CMD_HISTORY_SIZE = 25;
-	private static final int DEFAULT_WINDOW_X = 1250;
-	private static final int DEFAULT_WINDOW_Y = 600;
+	private static final int DEFAULT_WINDOW_X = 1400;
+	private static final int DEFAULT_WINDOW_Y = 750;
+	private static final int AUX_PANEL_WIDTH = 275;
+	private static final int STATUS_PANE_HEIGHT = 250;
 	
 	//declaring local instance constants
 	private final String TERMINAL_NAME;
@@ -107,30 +126,31 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	
 	//declaring local instance variables
 	private CappedBuffer inputBuffer;
-	private TreeMap<String, String> cmdMap;					
-	private HashMap<String, Color[]> colorMap;
+	private String allCommands;
+	private String lastCmd;
+	private TreeMap<String, String> cmdMap;				
+	private TreeMap<String, Color[]> colorMap;
 	private boolean inputReady;
 	private String[] input;
 	private boolean echo;
+	private TextView textViewer;
 	
 	//declaring local ui elements
 	private JTextField consoleInput;
 	private JTextArea consoleOutput;
 	private JTextArea statusOverview;
-	private JMenuItem mntmClose;
+	private JTextArea cmdHelp;
 
 	
 	//generic constructor
-	public TerminalUI(String title, ActionListener listener, String cmdNotFound)
+	public TerminalUI(String title, ActionListener listener, String cmdNotFound, boolean isFullScreen)
 	{
 		//set up main window frame
 		super(title);
 		this.setBounds(100, 100, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.getContentPane().setBackground(DEFAULT_BACKGROUND_COLOR);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(TerminalUI.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 
-		
 		
 		//initialize non-gui elements
 		TERMINAL_NAME = title;
@@ -138,6 +158,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		inputBuffer = new CappedBuffer(CMD_HISTORY_SIZE);
 		cmdMap = new TreeMap<String, String>();
 		echo = false;
+		lastCmd = "";
+		textViewer = null;
 		initColorMap();
 		
 		
@@ -159,26 +181,35 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		
 		
 		//add to "File" category
-		mntmClose = new JMenuItem("Close");
+		JMenuItem mntmClose = new JMenuItem("Close");
 		mntmClose.setActionCommand(MENU_CLOSE);
 		mntmClose.addActionListener(listener);
 		mnFile.add(mntmClose);
 		
 		
-		//set up plane for status/console
-		JSplitPane mainSplitPane = new JSplitPane();
-		mainSplitPane.setResizeWeight(0.14);
-		mainSplitPane.setBounds(10, 37, 1174, 524);
-		this.getContentPane().add(mainSplitPane);
+		//add to "Options" category
+		JMenuItem mntmColor = new JMenuItem("Color Scheme");
+		mntmColor.setActionCommand(MENU_COLOR_SCHEME);
+		mntmColor.addActionListener(this);
+		mnOptions.add(mntmColor);
+		
+		
+		//add to "Help" category
+		JMenuItem mntmCmds = new JMenuItem("Command List");
+		mntmCmds.setActionCommand(MENU_CMD_LIST);
+		mntmCmds.addActionListener(this);
+		mnHelp.add(mntmCmds);
+		
+		
+		//set up content pane for console/aux split
+		JPanel contentPane = (JPanel)this.getContentPane();
+		contentPane.setLayout(new BorderLayout(0,0));
 		
 		
 		//set up pane for console i/o
-		JSplitPane consolePane = new JSplitPane();
-		JScrollPane outputPane = new JScrollPane();
-		consolePane.setOrientation(JSplitPane.VERTICAL_SPLIT);
-		consolePane.setLeftComponent(outputPane);
-		consolePane.setResizeWeight(1.00);
-		mainSplitPane.setRightComponent(consolePane);
+		JPanel consolePane = new JPanel();
+		consolePane.setLayout(new BorderLayout(0, 0));
+		contentPane.add(consolePane, BorderLayout.CENTER);
 		
 		
 		//set up input text to console pane
@@ -186,12 +217,8 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleInput.setActionCommand(CONSOLE_IN);
 		consoleInput.addActionListener(this);
 		consoleInput.addKeyListener(this);
-		consoleInput.setColumns(10);
-		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
-		consoleInput.setBackground(DEFAULT_BACKGROUND_COLOR);
-		consoleInput.setForeground(DEFAULT_TEXT_COLOR);
-		consoleInput.setCaretColor(DEFAULT_TEXT_COLOR);
-		consolePane.setRightComponent(consoleInput);
+		JScrollPane outputPane = new JScrollPane();
+		consolePane.add(outputPane, BorderLayout.CENTER);
 		
 		
 		//set up output text to console pane
@@ -200,30 +227,56 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		consoleOutput.setWrapStyleWord(true);
 		consoleOutput.setLineWrap(true);
 		consoleOutput.setFont(DEFAULT_CONSOLE_FONT);
-		consoleOutput.setBackground(DEFAULT_BACKGROUND_COLOR);
-		consoleOutput.setForeground(DEFAULT_TEXT_COLOR);
-		consoleOutput.setCaretColor(DEFAULT_TEXT_COLOR);
 		outputPane.setViewportView(consoleOutput);
+		consoleInput.setColumns(10);
+		consoleInput.setFont(DEFAULT_CONSOLE_FONT);
+		consolePane.add(consoleInput, BorderLayout.SOUTH);
 		
 		
-		//set up Pane+textArea for status overview
+		//set up auxiliary panel
+		JPanel auxPanel = new JPanel();
+		auxPanel.setLayout(new BorderLayout(0,0));
+		getContentPane().add(auxPanel, BorderLayout.WEST);
+		
+		
+		//set up scroll+textArea for status overview
 		JScrollPane statusPane = new JScrollPane();
-		mainSplitPane.setLeftComponent(statusPane);
+		statusPane.setPreferredSize(new Dimension(AUX_PANEL_WIDTH,STATUS_PANE_HEIGHT));
+		auxPanel.add(statusPane, BorderLayout.NORTH);
 		statusOverview = new JTextArea();
 		statusOverview.setLineWrap(true);
 		statusOverview.setEditable(false);
 		statusOverview.setWrapStyleWord(true);
 		statusOverview.setFont(DEFAULT_CONSOLE_FONT);
-		statusOverview.setBackground(DEFAULT_BACKGROUND_COLOR);
-		statusOverview.setForeground(DEFAULT_TEXT_COLOR);
-		statusOverview.setCaretColor(DEFAULT_TEXT_COLOR);
 		statusPane.setViewportView(statusOverview);
 		
-		//set visible
+		
+		//set up textArea for predictive cmd help
+		JScrollPane cmdPane = new JScrollPane();
+		cmdPane.setPreferredSize(new Dimension(AUX_PANEL_WIDTH,0));
+		auxPanel.add(cmdPane, BorderLayout.CENTER);
+		cmdHelp = new JTextArea();
+		cmdHelp.setEditable(false);
+		cmdHelp.setTabSize(2);
+		cmdHelp.setLineWrap(true);
+		cmdHelp.setWrapStyleWord(true);
+		cmdHelp.setFont(DEFAULT_CONSOLE_FONT);
+		cmdPane.setViewportView(cmdHelp);
+		
+		
+		//set visible and color
+		this.colorScheme(DEFAULT_COLOR_SCHEME);
 		try 
 		{
+			String flavor = "windowed mode...";
+			if(isFullScreen)
+			{
+				this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+				this.setUndecorated(true);
+				flavor = "fullscreen mode...";
+			}
 			this.setVisible(true);
-			this.println("Starting interfaces on Thread <" + Thread.currentThread().getId() + ">...");
+			this.println("Starting TerminalUI v1.1.1 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -256,7 +309,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 			scheme = scheme.toLowerCase();
 			
 			//check if special case all
-			if(scheme.equals("all"))							//TODO why doesn't this work?
+			if(scheme.equals("all"))
 			{
 				//iterate through all colors
 				Set<String> keys = colorMap.keySet();
@@ -286,6 +339,10 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				return;
 			}
 		}
+		else
+		{
+			scheme = DEFAULT_COLOR_SCHEME;
+		}
 		
 		//search mapping for scheme
 		Color[] colors = colorMap.get(scheme);
@@ -305,6 +362,11 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 			statusOverview.setBackground(colors[0]);
 			statusOverview.setForeground(colors[1]);
 			statusOverview.setCaretColor(colors[1]);
+			
+			//set command help
+			cmdHelp.setBackground(colors[0]);
+			cmdHelp.setForeground(colors[1]);
+			cmdHelp.setCaretColor(colors[1]);
 		}
 		else
 		{
@@ -317,24 +379,31 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void initCmdMap(TreeMap<String,String> cmdMap)
 	{
 		this.cmdMap = cmdMap;
+		String all = "";
+		for(String key : cmdMap.keySet())
+		{
+			all += key+"\n";
+		}
+		allCommands = all;
 	}
 	
 	
 	//initialize color scheme map
 	private void initColorMap()
 	{
-		colorMap = new HashMap<String, Color[]>();
+		colorMap = new TreeMap<String, Color[]>();
 		
-		colorMap.put(null, new Color[]{DEFAULT_BACKGROUND_COLOR, DEFAULT_TEXT_COLOR});
 		colorMap.put("aperture", new Color[]{Color.BLACK, Color.ORANGE});
 		colorMap.put("bluescreen", new Color[]{Color.BLUE, Color.WHITE});
 		colorMap.put("bumblebee", new Color[]{Color.BLACK, Color.YELLOW});
 		colorMap.put("dark", new Color[]{Color.BLACK, Color.WHITE});
 		colorMap.put("light", new Color[]{Color.WHITE, Color.BLACK});
 		colorMap.put("matrix", new Color[]{Color.BLACK, Color.GREEN});
-		colorMap.put("ocean", new Color[]{Color.CYAN, Color.DARK_GRAY});
+		colorMap.put("ocean", new Color[]{Color.BLUE, Color.CYAN});
 		colorMap.put("prettyinpink", new Color[]{Color.BLACK, Color.MAGENTA});
 		colorMap.put("xmas", new Color[]{Color.RED, Color.GREEN});
+		colorMap.put("50shades", new Color[]{Color.DARK_GRAY, Color.LIGHT_GRAY});
+		colorMap.put("flamingo", new Color[]{Color.DARK_GRAY, Color.PINK});
 	}
 	
 	
@@ -479,10 +548,29 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
-	//print the general help menu
-	public void printHelp(boolean all)
+	//return all commands + details
+	private String getAllCommandsAndDetails()
 	{
-		if(!all)
+		String s = "";
+		s += "--------------- COMMAND LIST ---------------";
+		Set<String> keys = cmdMap.keySet();
+		
+		//list all available commands
+		for(String cmd : keys)
+		{
+			//add command and details
+			s += cmd + "\n" + cmdMap.get(cmd) + "\n\n";
+		}
+		
+		s += "--------------------------------------------\n";
+		return s;
+	}
+	
+	
+	//print the general help menu
+	public void printHelpAllCommands(boolean details)
+	{
+		if(!details)
 		{
 			println("**Enter \"help <CMD>\" to view details on a specific command");
 		}
@@ -493,10 +581,10 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		//list all available commands
 		for(String cmd : keys)
 		{
+			//print command
 			println(cmd);
-			
 			//print details
-			if(all)
+			if(details)
 			{
 				println(cmdMap.get(cmd) + "\n");
 			}
@@ -511,7 +599,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		if(key.equals("all"))
 		{
-			this.printHelp(true);
+			this.printHelpAllCommands(true);
 		}
 		else
 		{
@@ -532,7 +620,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void updateStatus(String newStatus)
 	{
 		//status string
-		String status = ASCII_AVA_LOGO + "\n\n*****************************\n" + newStatus;
+		String status = ASCII_AVA_LOGO + "\n\n\n" + newStatus;
 		
 		//set the text to the string
 		statusOverview.setText(status);
@@ -582,6 +670,30 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
+	//get a color via dialog
+	public void colorDialog()
+	{
+		//get a valid color scheme using system dialog
+		String[] keys = colorMap.keySet().toArray(new String[0]);
+		String selected = (String)JOptionPane.showInputDialog
+		(
+			this, 
+			"Select a color scheme to use", 
+			TERMINAL_NAME,
+			JOptionPane.QUESTION_MESSAGE,
+			null,
+			keys,
+			keys[0]
+		);
+		
+		//change to the selected scheme
+		if(selected != null)
+		{
+			colorScheme(selected);
+		}
+	}
+	
+	
 	@Override
 	//handle key press
 	public void keyPressed(KeyEvent ke)
@@ -614,11 +726,37 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 
 
 	@Override
-	public void keyReleased(KeyEvent arg0) {}
+	public void keyReleased(KeyEvent arg0) 							//TODO needs formating!
+	{
+		//check if input matchs any commands
+		try
+		{
+			String currentCmd = consoleInput.getText().split(" ")[0];
+			if(!lastCmd.equals(currentCmd))
+			{
+				String output = allCommands;
+		    	Set<String> keys = cmdMap.keySet();
+		    	for(String key : keys)
+		    	{
+		    		if(key.equals(currentCmd))
+		    		{
+		    			output = key + "\n" + cmdMap.get(key);
+		    			break;
+		    		}
+		    	}
+		    	cmdHelp.setText("\n".concat(output));
+			}
+			lastCmd = currentCmd;
+		}
+		catch (ArrayIndexOutOfBoundsException e){};
+	}
 
 
 	@Override
-	public void keyTyped(KeyEvent arg0) {}
+	public void keyTyped(KeyEvent arg0)
+	{
+ 
+	}
 
 	
 	//set the state of input and inputReady
@@ -635,10 +773,44 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	
 	@Override
 	//respond to user input
-	public void actionPerformed(ActionEvent arg0) 
+	public void actionPerformed(ActionEvent ae) 
 	{
-		//get and parse input
-		input = this.getParsedInput();
-		setInputState(input);
+		//determine actions based on command 
+		String cmd = ae.getActionCommand();
+		switch(cmd)
+		{
+			//color scheme menu item pressed
+			case(MENU_COLOR_SCHEME):
+				colorDialog();
+				break;
+			
+				
+			//command list menu item pressed
+			case(MENU_CMD_LIST):
+				if (textViewer != null)
+				{
+					if(!textViewer.isDisplayable())
+					{
+						textViewer = new TextView(TERMINAL_NAME, getAllCommandsAndDetails(), consoleOutput.getForeground(), consoleOutput.getBackground());
+					}
+					else
+					{
+						textViewer.setFocusableWindowState(true);
+					}
+				}
+				else
+				{
+					textViewer = new TextView(TERMINAL_NAME, getAllCommandsAndDetails(), consoleOutput.getForeground(), consoleOutput.getBackground());
+				}
+				break;
+			
+			
+			//normal text input
+			default:
+				//get and parse input
+				input = this.getParsedInput();
+				setInputState(input);
+				break;
+		};
 	}
 }

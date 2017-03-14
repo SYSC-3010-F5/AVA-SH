@@ -17,9 +17,25 @@ ABSTRACT
 	
 	This document contains the current list of accepted COMMAND_KEY's, as well as what they cause the server to do. It also lists if the command contains anything in the optional EXTRA_INFO field, and if so, what should be included.
 
+	
+	
+
+ILLEGAL CHARACTERS
+===============================
+
+	Illegal characters must not be used in the COMMAND_KEY or the EXTRA_INFO field.
+	The list includes:
+	
+		|-------------------|--------------|------------------|
+		|UTF-8 CHARACTER    |     NAME     |    HEX VALUE     |
+		|-------------------|--------------|------------------|
+		| \0                | null         | 0x00             |
+		| $                 | dollar sign  | 0x24             |
+		|-------------------|--------------|------------------| 
+		
 
 
-
+	
 	
 COMMAND MANIFEST
 ===============================
@@ -27,6 +43,59 @@ COMMAND MANIFEST
 	COMMAND_KEY:	"ping"
 	EXTRA_INFO: 	false
 	PURPOSE:		Request an empty info-type packet from the server to act as a ping.
+	RESPONSE:		info-type packet
+		
+		
+	----------------------------
+	
+	COMMAND_KEY:	"sch event"
+	EXTRA_INFO:		true
+					Formated using JSON using UTF-8 character encoding, includes information denoting the trigger of the event (ie what time of day, and what days per week), and an array of the commands to fire upon event triger. A sample of this looks like:
+					{
+						"eventName" : "Make Evening Coffee"
+						"trigger" : {
+							"hour" : 17
+							"minute" : 45
+							"days" : [false, true, true, true, true, true, false]
+						}
+						"commands" : {
+							{
+								"type" : 1
+								"sField1" : "ping"
+								"sField2" : ""
+								"source" : "null"
+							}
+							{
+								"type" : 1
+								"sField1" : "req time"
+								"sField2" : ""
+								"source" : "null"
+							}
+							{
+								"type" : 1
+								"sField1" : "ping"
+								"sField2" : ""
+								"source" : "null"
+							}
+						}
+					}
+	PURPOSE:		Schedule a new event to trigger at a certain time on certain days of the week.
+					On trigger the event will wake a daemon thread and fire the commands to the server (more generally to whatever address the Scheduler is running on, on port 3010).
+	RESPONSE		N/A
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"set timer"
+	EXTRA_INFO:		true
+					Formated JSON using UTF-8 encoding, includes information denoting a name for the timer, and the amount of time until the Timer is triggered (in minutes)
+					{
+						"name" : "Take food out of oven"
+						"timeUntilTrigger" : 30
+					}
+	PURPOSE:		Set a timer to trigger in a certain amount of minutes
+	RESPONSE		N/A
+	
 	
 	----------------------------
 	
@@ -40,10 +109,58 @@ COMMAND MANIFEST
 						"name" : "wake up"
 					}
 	PURPOSE:		Set a new alarm to trigger at a particular time on certain days of the week.
+	RESPONSE		N/A
+	
 	
 	----------------------------
 	
+	COMMAND_KEY:	"req current weather"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the current weather from server
+	RESPONSE:		info-type packet JSON formated current weather
+	
+	
+	----------------------------
 	COMMAND_KEY:	"req time"
 	EXTRA_INFO:		false
 	PURPOSE:		Request the time from the server.
+	RESPONSE:		info-type packet with time as UTF-8 character String
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req ip"
+	EXTRA_INFO:		true
+					UTF-8 encoded character String. The name of the module we want the IP of.
+	PURPOSE:		Return the address of module registered under name String
+	RESPONSE:		info-type packet with {IPv4:port} as UTF-8 character String.
+					error-type packet if the module cannot be found.
+
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req np-events"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the all scheduled single-triggered (non-periodic events) from the server.
+	RESPONSE:		info-type packet with JSON formated UTF-8 character string representing all scheduled non-periodic events
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"req p-events"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the all scheduled multi-triggered (periodic events) from the server.
+	RESPONSE:		info-type packet with JSON formated UTF-8 character string representing all scheduled periodic events
+	
+	
+	----------------------------				
+	
+	COMMAND_KEY:	"del np-event"
+	EXTRA_INFO:		true
+					UTF-8 character string representing the event name of the event to remove.
+					EXTRA_INFO field for removing a mono-triggered event with the name "Timer_1" would be (excluding quotes): "Timer 1"
+	PURPOSE:		Delete a non-periodic event from the server (like removing a timer)
+	RESPONSE:		blank info-type packet as acknowledgment of successful removal
+					error-type packet if the event cannot be found
+
 					
