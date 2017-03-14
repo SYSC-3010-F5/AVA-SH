@@ -146,6 +146,7 @@ public class Scheduler
 	
 	
 	//calculate the amount of milliseconds until a certain date-time
+	//returns -1 if the given trigger doesn't have a trigger day (i.e. there are no days set to true)
 	public long computeDelay(TimeAndDate trigger)
 	{
 		boolean[] days = trigger.getDays();
@@ -274,17 +275,6 @@ public class Scheduler
 	public boolean removePeriodic(String eventName)
 	{
 		return remove(periodicEvents, eventName);
-	}
-	
-	public static void main(String[] args)
-	{
-		Scheduler scheduler = new Scheduler("BOI");
-		TimeAndDate testDate = new TimeAndDate(23, 0, new boolean[]{false,false,false,false,false,true,false});
-		long delay = scheduler.computeDelay(testDate);
-		System.out.println(delay + "");
-		TimeAndDate testDate2 = new TimeAndDate(23, 0, new boolean[]{true,false,false,false,false,false,false});
-		delay = scheduler.computeDelay(testDate2);
-		System.out.println(delay + "");
 	}
 	
 }
