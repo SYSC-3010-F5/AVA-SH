@@ -1,4 +1,5 @@
 package f5.ava_sh;
+import android.content.Context;
 import android.content.Intent;
 import android.view.View.OnClickListener;
 import android.view.View;
@@ -10,28 +11,20 @@ import android.view.View;
 public class MainActivityButtonListener implements OnClickListener {
 
     private String id;
+    private CommandHelper commandHelper;
+    Context c;
+    MainActivity main;
 
-    MainActivityButtonListener(String id){
+    MainActivityButtonListener(String id, Context c, MainActivity main){
         this.id = id;
+        this.c = c;
+        this.main = main;
+        commandHelper = new CommandHelper(c, main);
     }
 
     @Override
     public void onClick(View view) {
-        switch(id){
-            case "Terminal":
-                Intent myIntent = new Intent(view.getContext(), TerminalActivity.class);
-                view.getContext().startActivity(myIntent);
-                break;
-
-            case "Ping Server":
-                break;
-
-            case "New Alarm":
-                break;
-
-            case "Request Time":
-                break;
-        }
+        commandHelper.interpret(view, id);
     }
 
 

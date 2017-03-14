@@ -33,11 +33,14 @@ public class ButtonAdapter extends BaseAdapter {
     private Context mContext;
     private CommandHelper commandHelper;
     private String[] commands;
+    MainActivity main;
 
-    public ButtonAdapter(Context c) {
+    public ButtonAdapter(Context c, MainActivity main) {
         mContext = c;
-        commandHelper = new CommandHelper();
+        this.main = main;
+        commandHelper = new CommandHelper(c, main);
         commands = commandHelper.getCommands();
+
     }
 
 
@@ -71,7 +74,7 @@ public class ButtonAdapter extends BaseAdapter {
         btn.setTextColor(Color.BLACK);
         btn.setBackgroundColor(Color.LTGRAY);
         btn.setId(position);
-        btn.setOnClickListener(new MainActivityButtonListener(commands[position]));
+        btn.setOnClickListener(new MainActivityButtonListener(commands[position], mContext, main));
 
 
         return btn;

@@ -10,6 +10,10 @@ import android.widget.GridView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
+import java.net.InetAddress;
+
+import network.DataChannel;
+
 /**
  *Class:                MainActivity.java
  *Project:          	AVA Smart Home
@@ -29,6 +33,14 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class MainActivity extends AppCompatActivity {
 
+    DataChannel dataChannel;
+
+    //declaring local instance variables
+    private String 		defaultDeviceName;
+    private InetAddress defaultServerAddress;
+    private int 		defaultServerPort;
+
+
 
 
     @Override
@@ -38,10 +50,24 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         GridView gridview = (GridView) findViewById(R.id.gridview);
-        gridview.setAdapter(new ButtonAdapter(this));
+        gridview.setAdapter(new ButtonAdapter(this,this));
+
+        try{
+            dataChannel = new DataChannel();
+            defaultServerAddress = InetAddress.getLocalHost();
+            defaultDeviceName = "terminal";
+            defaultServerPort = 3010;
+
+        } catch(Exception e){
+
+        }
+
+
         this.setTitle("AVA-SH");
+    }
 
-
+    public DataChannel getDataChannel(){
+        return dataChannel;
     }
 
 }
