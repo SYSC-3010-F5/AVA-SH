@@ -1,5 +1,6 @@
 package server;
 
+import server.database.CrudeDatabase;
 import server.datatypes.WeatherData;
 
 import org.json.JSONException;
@@ -21,6 +22,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 public class Weather 
 {
+	public static final CrudeDatabase db = new CrudeDatabase();
 	public static final int OTTAWA_OPENWEATHER_ID = 6094817;
 	public static final String DEFAULT_APP_ID = "222b4b01c634f66b93422eb43f8ed354";
 	public static final String APPID_HEADER = "x-api-key";
@@ -40,6 +42,35 @@ public class Weather
 		appID = appid;
 	}
 	
+	
+	//get the current weather of a city + country
+	public JSONObject currentWeatherAtCity(String city, String country) throws IOException, JSONException
+	{
+		Integer code = db.query(city, country);
+		if(code != null)
+		{
+			return currentWeatherAtCity(code);
+		}
+		else
+		{
+			return null;
+		}
+	}
+	//get the current weather of a city using default country
+	public JSONObject currentWeatherAtCity(String city) throws IOException, JSONException
+	{
+		Integer code = db.query(city);
+		if(code != null)
+		{
+			return currentWeatherAtCity(code);
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	
 	//get the current weather of the indicated city, by their city ID
 	public JSONObject currentWeatherAtCity(int cityID) throws IOException, JSONException
 	{
@@ -47,6 +78,7 @@ public class Weather
 		JSONObject response = doQuery(subURL);
 		return response;
 	}
+	
 	
 	private JSONObject doQuery(String subUrl) throws JSONException, IOException
 	{

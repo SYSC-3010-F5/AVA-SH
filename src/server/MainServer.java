@@ -2,15 +2,16 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    13/03/2017
+*Date of Update:    14/03/2017
 *Version:           0.3.1
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.3.1
+*Update Log			v0.4.0
 *						- changed to use new ServerTimer subclass
 *						- added button functionality for updating event info
+*						- changing location for weather added
 *					v0.3.0
 *						- button for clearing all events added
 *						- getting current weather added
@@ -64,6 +65,7 @@ import org.json.JSONObject;
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.database.CrudeDatabase;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
 import server.datatypes.ServerTimer;
@@ -272,6 +274,44 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
+	//set the location
+	private void setLocation(String cc, InetSocketAddress dest) throws JsonException
+	{
+		String[] loc = new String[2];
+		if(cc.contains(","))
+		{
+			loc = cc.split(",");
+			if(loc.length != 2)
+			{
+				throw new JsonException("Invalid city,country format", JsonException.ERR_FORMAT);
+			}
+		}
+		else
+		{
+			loc[0] = cc;
+			loc[1] = CrudeDatabase.COUNTRY_CODE;
+		}
+		try
+		{
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			display.println("Querying database for \"" + loc[0] + ", " + loc[1] + "\"");
+			Integer code = Weather.db.query(loc[0], loc[1]);
+			if(code != null)
+			{
+				display.println("Query success! Setting location ID = " + code + "\nSending empty info packet...");
+				locationID = code;
+				multiChannel.sendInfo("");
+			}
+			else
+			{
+				display.println("Query failure!\nSending error packet...");
+				multiChannel.sendErr("Location: \"" + loc[0] + ", " + loc[1] + "\" not in database");
+			}
+		}
+		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
 	//send the current weather data as unformatted JSON
 	private void sendCurrentWeather(InetSocketAddress dest)
 	{
@@ -293,7 +333,15 @@ public class MainServer extends Thread implements ActionListener
 		{
 			display.println("Sending weather data...");
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			multiChannel.sendInfo(weatherData.toString());
+			if(weatherData == null)
+			{
+				display.println("Weather data not found! Sending error packet...");
+				multiChannel.sendErr("Weather data not found");
+			}
+			else
+			{
+				multiChannel.sendInfo(weatherData.toString());
+			}
 		}
 		catch(NetworkException e)
 		{
@@ -477,6 +525,20 @@ public class MainServer extends Thread implements ActionListener
 								sendCurrentWeather(packet.source());
 								break;
 								
+							//change the current server location
+							case("set location"):
+								try
+								{
+									setLocation(packet.extraInfo(), packet.source());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
+									multiChannel.sendErr(e.getMessage());
+								}
+								break;
+								
 							//new alarm added
 							case("new alarm"):
 								try
@@ -626,7 +688,7 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//main method
-	public static void main(String[] args) throws SocketException
+	public static void main(String[] arg)
 	{
 		try 
 		{

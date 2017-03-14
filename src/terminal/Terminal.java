@@ -1034,19 +1034,70 @@ public class Terminal extends JFrame implements ActionListener
 						ui.printError(e.getMessage());
 					}
 				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 			
 			//get list of active non-periodic events
 			case("timer-get"):
-				try
+				if(input.length == 1)
 				{
-					dataChannel.sendCmd("req np-events");
-					PacketWrapper wrapper = dataChannel.receivePacket();
-					ui.println(wrapper.extraInfo());
+					try
+					{
+						dataChannel.sendCmd("req np-events");
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						ui.println(wrapper.extraInfo());
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
 				}
-				catch (NetworkException e)
+				else
 				{
-					ui.printError(e.getMessage());
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+			case("location"):
+				if(input.length == 2 || input.length == 3)
+				{
+					try
+					{
+						//send information and command
+						if(input.length == 2)
+						{
+							dataChannel.sendCmd("set location", input[1]);
+						}
+						else
+						{
+							dataChannel.sendCmd("set location", input[1] + "," + input[2]);
+						}
+						
+						//wait for response
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						if(wrapper.type() != DataChannel.TYPE_INFO)
+						{
+							if(wrapper.type() == DataChannel.TYPE_ERR)
+							{
+								ui.printError(wrapper.errorMessage());
+							}
+							else
+							{
+								ui.printError("Received invalid packet type!");
+							}
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
 				}
 				break;
 				

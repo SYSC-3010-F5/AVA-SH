@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 public class CrudeDatabase 
 {
 	//declaring local class constants
-	public static final Path DB_LOC = Paths.get("").toAbsolutePath().resolve("src/server/database/citylist.pdf");
+	public static final Path DB_LOC = Paths.get("").toAbsolutePath().resolve("src/server/database/citylist.json.butletspretenditsapdf.pdf");
 	public static final String COUNTRY_CODE = "CA";
 
 	
