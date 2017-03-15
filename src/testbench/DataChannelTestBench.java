@@ -2,13 +2,16 @@
 *Class:             DataChannelTestBench.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    22/02/2017                                              
-*Version:           1.0.0                                         
+*Date of Update:    15/03/2017                                              
+*Version:           1.1.0                                         
 *                                                                                   
 *Purpose:           Test bench for methods in DataChannel.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.1.0
+*						- 10 new tests added testing JUST packing packets
+*						- 2 new tests for testing unpacking disconnect packets added
+*					v1.0.0
 *						- test for toByteArray(...) method implemented
 *						- test for fromByteArray(..) method implemented
 *						- test for moving between byte[]-->int and int-->byte[] implemented
@@ -24,6 +27,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 //import external libraries
 import java.util.Arrays;
+import java.util.LinkedList;
 
 //import packages
 import network.DataChannel;
@@ -36,6 +40,7 @@ public class DataChannelTestBench extends TestBench
 {
 	//test variables
 	DataChannel channel;
+	boolean e;
 
 	
 	public DataChannelTestBench(String name) 
@@ -69,6 +74,221 @@ public class DataChannelTestBench extends TestBench
 		super.tearDown();
 		channel = null;
 	}
+	
+	
+	//test packing command with no extra info
+	public void testPackCommand1()
+	{
+		printHeader("Testing packCommand(...) method w/ extra info field... x1/2");
+		
+		String key = "This is the Key";
+		String ex = "This is the info";
+		byte[] expected = ("\u0001" + key + "\0" + ex + "\0").getBytes();
+		println("Packing command packet with key: \"" + key + "\", info: \"" + ex + "\"");
+		println("Expected:");
+		println(expected);
+		println();
+		
+		byte[] obtained = channel.packCmd(key.getBytes(), ex.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing command with extra info
+	public void testPackCommand2()
+	{
+		printHeader("Testing packCommand(...) method w/o extra info field... x2/2");
+
+		String key = "burnin\' love";
+		String ex = "";
+		byte[] expected = ("\u0001" + key + "\0" + ex + "\0").getBytes();
+		println("Packing command packet with key: \"" + key + "\", info: \"" + ex + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packCmd(key.getBytes(), ex.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing info with msg
+	public void testPackInfo1()
+	{
+		printHeader("Testing packInfo(...) method w/ message field... x1/2");
+
+		String info = "This is a test message :)";
+		byte[] expected = ("\u0002" + info).getBytes();
+		println("Packing info packet with infoMsg: \"" + info + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packInfo(info.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing info with msg
+	public void testPackInfo2()
+	{
+		printHeader("Testing packInfo(...) method w/o message field... x2/2");
+
+		String info = "";
+		byte[] expected = ("\u0002" + info).getBytes();
+		println("Packing info packet with infoMsg: \"" + info + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packInfo(info.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing error with msg
+	public void testPackError1()
+	{
+		printHeader("Testing packError(...) method w/ erorr msg... x1/2");
+
+		String error = "404 error message not found";
+		byte[] expected = ("\u0003" + error).getBytes();
+		println("Packing error packet with errorMsg: \"" + error + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packError(error.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing error with no msg
+	public void testPackError2()
+	{
+		printHeader("Testing packError(...) method w/o error msg... x2/2");
+
+		String error = "";
+		byte[] expected = ("\u0003" + error).getBytes();
+		println("Packing error packet with errorMsg: \"" + error + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packError(error.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing disconnect with reason
+	public void testPackDisconnect1()
+	{
+		printHeader("Testing packDisconnect(...) method w/ reason x1/2");
+
+		String msg = "User Request";
+		byte[] expected = ("\u0004" + msg).getBytes();
+		println("Packing disconnect packet with reason: \"" + msg + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packDisconnect(msg.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing disconnect w/o reason
+	public void testPackDisconnect2()
+	{
+		printHeader("Testing packDisconnect(...) method w/o reason x2/2");
+
+		String msg = "";
+		byte[] expected = ("\u0004" + msg).getBytes();
+		println("Packing disconnect packet with reason: \"" + msg + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packDisconnect(msg.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing handshake w/ fields
+	public void testPackHandshake1()
+	{
+		printHeader("Testing packHandshake(...) method w/ fields x1/2");
+
+		String key = "THIS IS THE KEY";
+		String name = "Some tester";
+		byte[] expected = ("\u0000" + key + "\0" + name).getBytes();
+		println("Packing handshake packet with key: \"" + key + "\", name: \"" + name + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packHandshake(key.getBytes(), name.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
+	
+	
+	//test packing handshake w/ fields
+	public void testPackHandshake2()
+	{
+		printHeader("Testing packHandshake(...) method w/o fields x2/2");
+
+		String key = "";
+		String name = "";
+		byte[] expected = ("\u0000" + key + "\0" + name).getBytes();
+		println("Packing handshake packet with key: \"" + key + "\", name: \"" + name + "\"");
+		println("Expected:");
+		println(expected);
+		
+		byte[] obtained = channel.packHandshake(key.getBytes(), name.getBytes());
+		println("Actual:");
+		println(obtained);
+		
+		e = Arrays.equals(obtained, expected);
+		printTest(e);
+		assertTrue(e);
+	}
 
 	
 	//test unpacking a improper packet
@@ -78,7 +298,6 @@ public class DataChannelTestBench extends TestBench
 		//local test variables
 		DatagramPacket packet;
 		byte[] packetData;
-		boolean e;
 
 		//test 1
 		//make packet
@@ -112,14 +331,13 @@ public class DataChannelTestBench extends TestBench
 	}
 	
 	
-	//test unpacking a command packet
-	public void testUnpackCommand() throws UnknownHostException
+	//test unpacking a command packet with extra info
+	public void testUnpackCommand1() throws UnknownHostException
 	{
-		printHeader("Testing unpack(...) method for command packet...");
+		printHeader("Testing unpack(...) method for command packet x1/2...");
 		//local test variables
 		DatagramPacket packet;
 		byte[] packetData;
-		boolean e;
 		int i=0;
 
 		//test 1
@@ -168,17 +386,21 @@ public class DataChannelTestBench extends TestBench
 			assertTrue(false);
 		}
 		println();
+	}
 		
 		
+	//test unpacking a command packet with extra info
+	public void testUnpackCommand2() throws UnknownHostException
+	{	
+		printHeader("Testing unpack(...) method for command packet x2/2...");
 		
-		//test 2
 		//make packet
-		commandKey = "toggle light";
-		keyBytes = commandKey.getBytes();
+		String commandKey = "toggle light";
+		byte[] keyBytes = commandKey.getBytes();
 		println("Creating command packet with \"" + commandKey + "\" as command key, and no extra info...");
-		packetData = new byte[keyBytes.length + 3];
+		byte[] packetData = new byte[keyBytes.length + 3];
 		packetData[0] = DataChannel.TYPE_CMD;
-		i=1;
+		int i=1;
 		for(byte b : keyBytes)
 		{
 			packetData[i] = b;
@@ -187,7 +409,7 @@ public class DataChannelTestBench extends TestBench
 		packetData[i] = (byte)0x00;
 		i++;
 		packetData[i] = (byte)0x00;
-		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		DatagramPacket packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -212,14 +434,14 @@ public class DataChannelTestBench extends TestBench
 	}
 	
 	
-	//test unpacking an error packet
-	public void testUnpackError() throws UnknownHostException
+	//test unpacking an error packet with msg
+	public void testUnpackError1() throws UnknownHostException
 	{
-		printHeader("Testing unpack(...) method for error packet...");
+		printHeader("Testing unpack(...) method for error packet x1/2...");
 		//local test variables
 		DatagramPacket packet;
 		byte[] packetData;
-		boolean e;
+		 ;
 
 		//test 1
 		//make packet
@@ -255,20 +477,23 @@ public class DataChannelTestBench extends TestBench
 			assertTrue(false);
 		}
 		println();
+	}
 		
+	//test unpack error with no msg
+	public void testUnpackError2() throws UnknownHostException
+	{
+		printHeader("Testing unpack(...) method for error packet x2/2...");
 		
-		
-		//test 2
 		//make packet
-		msgByte = "".getBytes();
+		byte[] msgByte = "".getBytes();
 		println("Creating info packet with blank string as message field...");
-		packetData = new byte[msgByte.length + 1];
+		byte[] packetData = new byte[msgByte.length + 1];
 		packetData[0] = DataChannel.TYPE_ERR;
 		for(int i=0; i< msgByte.length; i++)
 		{
 			packetData[i+1] = msgByte[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		DatagramPacket packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -294,14 +519,14 @@ public class DataChannelTestBench extends TestBench
 	
 	
 	
-	//test unpacking an info packet
-	public void testUnpackInfo() throws UnknownHostException
+	//test unpacking an info packet with msg
+	public void testUnpackInfo1() throws UnknownHostException
 	{
-		printHeader("Testing unpack(...) method for info packet...");
+		printHeader("Testing unpack(...) method for info packet... x1/2");
 		//local test variables
 		DatagramPacket packet;
 		byte[] packetData;
-		boolean e;
+		 ;
 
 		//test 1
 		//make packet
@@ -336,20 +561,22 @@ public class DataChannelTestBench extends TestBench
 			assertTrue(false);
 		}
 		println();
+	}
 		
+	public void testUnpackInfo2() throws UnknownHostException
+	{
+		printHeader("Testing unpack(...) method for info packet... x2/2");
 		
-		
-		//test 2
 		//make packet
-		infoString = "".getBytes();
+		byte[] infoString = "".getBytes();
 		println("Creating info packet with blank string as info field...");
-		packetData = new byte[infoString.length + 1];
+		byte[] packetData = new byte[infoString.length + 1];
 		packetData[0] = DataChannel.TYPE_INFO;
 		for(int i=0; i< infoString.length; i++)
 		{
 			packetData[i+1] = infoString[i];
 		}
-		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		DatagramPacket packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -374,14 +601,14 @@ public class DataChannelTestBench extends TestBench
 	}
 	
 	
-	//test the handshake
-	public void testHandshake() throws NetworkException, IOException
+	//test the handshake with fields
+	public void testUnpackHandshake1() throws NetworkException, IOException
 	{
-		printHeader("Testing unpack(...) method for handshake packet...");
+		printHeader("Testing unpack(...) method for handshake packet... x1/2");
 		//local test variables
 		DatagramPacket packet;
 		byte[] packetData;
-		boolean e;
+		 ;
 		int i=0;
 
 		//test 1
@@ -430,19 +657,23 @@ public class DataChannelTestBench extends TestBench
 			assertTrue(false);
 		}
 		println();
+	}
 		
+	
+	//test unpack empty handshake
+	public void testUnpackHandshake2() throws UnknownHostException
+	{
+		printHeader("Testing unpack(...) method for handshake packet... x2/2");
 		
-		
-		//test 2
 		//make packet
-		handshake = "";
-		deviceName = "";
-		handShakeByte = handshake.getBytes();
-		nameBytes = deviceName.getBytes();
+		String handshake = "";
+		String deviceName = "";
+		byte[] handShakeByte = handshake.getBytes();
+		byte[] nameBytes = deviceName.getBytes();
 		println("Creating handshake packet with empty handshake/device name fields...");
-		packetData = new byte[handShakeByte.length + 3 + nameBytes.length];
+		byte[] packetData = new byte[handShakeByte.length + 3 + nameBytes.length];
 		packetData[0] = DataChannel.TYPE_HANDSHAKE;
-		i=1;
+		int i=1;
 		for(byte b : handShakeByte)
 		{
 			packetData[i] = b;
@@ -456,7 +687,7 @@ public class DataChannelTestBench extends TestBench
 			i++;
 		}
 		packetData[i] = (byte)0x00;
-		packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
+		DatagramPacket packet = new DatagramPacket(packetData, packetData.length, InetAddress.getLocalHost(), 1234);
 		println("Packet contents:");
 		println(packet.getData());
 		
@@ -482,160 +713,65 @@ public class DataChannelTestBench extends TestBench
 	}
 	
 	
-	
-	
-	
-	
-	
-	/* these methods were used in a previous revision, no longer needed but leaving the code in
-	 * case we need it in the future
-	 */
-	/*
-	public void testToByteArray()
+	//test unpacking a disconnect packet
+	public void testUnpackDisconnect1() throws UnknownHostException
 	{
-		printHeader("Testing toByteArray(...) method...");
-		//local test variables
-		byte[] retArr;
-		boolean e;
+		printHeader("Testing unpack(...) method for disconnect packet w/ message... x1/2");
 		
-		//test 1
-		retArr = channel.toByteArray(0xFFFFFFFF);
-		println("Convert 0xFFFFFFFF to byte[]...");
-		println("Result: ");
-		println(retArr);
-		e = Arrays.equals(retArr, new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
-		printTest(e);
-		assertTrue("Convert 0xFFFFFFF to byte[]", e);
-		println();
+		String msg = "some disconnect reason here";
+		byte[] data = ("\u0004"+msg).getBytes();
+		DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 1234);
+		println("Expected: Type: 4, Msg: \"" + msg + "\"");
 		
-		//test 2
-		retArr = channel.toByteArray(0x12345678);
-		println("Convert 0x12345678 to byte[]...");
-		println("Result: ");
-		println(retArr);
-		e = Arrays.equals(retArr, new byte[]{(byte)0x12, (byte)0x34, (byte)0x56, (byte)0x78});
-		printTest(e);
-		assertTrue("Convert 0x12345678 to byte[]", e);
-		println();
-		
-		//test 3
-		retArr = channel.toByteArray(0);
-		println("Convert 0 to byte[]...");
-		println("Result: ");
-		println(retArr);
-		e = Arrays.equals(retArr, new byte[]{(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00});
-		printTest(e);
-		assertTrue("Convert 0 to byte[]", e);
-		println();
-		
-		//test 4
-		retArr = channel.toByteArray(3010);
-		println("Convert 3010 to byte[]...");
-		println("Result: ");
-		println(retArr);
-		e = Arrays.equals(retArr, new byte[]{(byte)0x00, (byte)0x00, (byte)0x0B, (byte)0xC2});
-		printTest(e);
-		assertTrue("Convert 3010 to byte[]", e);
-		println("\n\n");
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = wrapper.disconnectMessage().equals(msg) && wrapper.type() == DataChannel.TYPE_DISCONNECT;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
 	}
 	
 	
-	public void testfromByteArray()
+	//test unpacking a disconnect packet w/o msg
+	public void testUnpackDisconnect2() throws UnknownHostException
 	{
-		printHeader("Testing fromByteArray(...) method...");
+		printHeader("Testing unpack(...) method for disconnect packet w/o message... x2/2");
 		
-		//declaring method variables
-		int retInt;
-		boolean e;
+		String msg = "";
+		byte[] data = ("\u0004"+msg).getBytes();
+		DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 1234);
+		println("Expected: Type: 4, Msg: \"" + msg + "\"");
 		
-		//test 1
-		retInt = channel.fromByteArray(new byte[]{(byte)0x00, (byte)0x00, (byte)0x0B, (byte)0xC2});
-		println("Convert 00-00-0B-C2 to int...");
-		println("Result: ");
-		println(retInt+"");
-		e = (retInt == 3010);
-		printTest(e);
-		assertTrue("Convert 00-00-0B-C2 to int", e);
-		println();
-		
-		//test 2
-		retInt = channel.fromByteArray(new byte[]{(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00});
-		println("Convert 00-00-00-00 to int...");
-		println("Result: ");
-		println(retInt+"");
-		e = (retInt == 0);
-		printTest(e);
-		assertTrue("Convert 00-00-00-00 to int", e);
-		println();
-		
-		//test 3
-		retInt = channel.fromByteArray(new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
-		println("Convert FF-FF-FF-FF to int...");
-		println("Result: ");
-		println(retInt+"");
-		e = (retInt == 0xFFFFFFFF);
-		printTest(e);
-		assertTrue("Convert FF-FF-FF-FF to int", e);
-		println();
-		
-		//test 4 
-		retInt = channel.fromByteArray(new byte[]{(byte)0x00, (byte)0x00, (byte)0x10, (byte)0xFF});
-		println("Convert 00-00-10-FF to int...");
-		println("Result: ");
-		println(retInt+"");
-		e = (retInt == 0x10FF);
-		printTest(e);
-		assertTrue("Convert 00-00-10-FF to int", e);
-		println("\n\n");
+		//unpack packet (or i guess you could say unpack-it)
+		println("Unpacking packet...");
+		try 
+		{
+			PacketWrapper wrapper = channel.unpack(packet);
+			println("Result:" + wrapper.toString());
+			
+			e = wrapper.disconnectMessage().equals(msg) && wrapper.type() == DataChannel.TYPE_DISCONNECT;
+			printTest(e);
+			assertTrue(e);
+		} 
+		catch (NetworkException e1) 
+		{
+			println("EXCEPTION >> " + e1.getMessage());
+			e1.printStackTrace();
+			printTest(false);
+			assertTrue(false);
+		}
 	}
 	
-	
-	//test from int --> byte[], and byte[] --> int
-	public void testIntByteArrConversion()
-	{
-		printHeader("Testing X-->[toByteArray]-->[fromByteArray]-->X\n"
-				  + "        Y-->[fromByteArray]-->[toByteArray]-->Y ...");
-		
-		//declaring test variables
-		int startInt = 1969;
-		byte[] byteArr;
-		int endInt;
-		boolean e;
-		
-		//test int-->byte[]
-		byteArr = channel.toByteArray(startInt);
-		println("Convert " + startInt + " to byte[]...");
-		println("Result:");
-		println(byteArr);
-		println("Converting byte[] to int...");
-		endInt = channel.fromByteArray(byteArr);
-		println("Result:");
-		println(endInt+"");
-		e = (startInt == endInt);
-		printTest(e);
-		assertTrue("Testing X-->[toByeArr]-->[fromByteArray]-->X", e);
-		println();
-		
-		
-		//declaring test variables
-		byte[] startArr = {(byte)0xDE, (byte)0xAF, (byte)0xDA, (byte)0xD5};
-		int interm;
-		byte[] endArr;
-		
-		//test byte[] --> int
-		println("Converting this from byte[]:");
-		println(startArr);
-		interm = channel.fromByteArray(startArr);
-		println("Result:");
-		println(""+interm);
-		println("Converting byte[] to int...");
-		endArr = channel.toByteArray(interm);
-		e = (Arrays.equals(startArr, endArr));
-		println("Result:");
-		println(endArr);
-		printTest(e);
-		assertTrue("Testing Y-->[toByteArr]-->[fromByteArr]-->Y", e);
-		println("\n\n");
-	}
-	*/
 }

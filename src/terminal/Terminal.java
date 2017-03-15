@@ -2,8 +2,8 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    13/03/2017                                              
-*Version:           0.5.1                                         
+*Date of Update:    15/03/2017                                              
+*Version:           0.5.2                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
@@ -11,7 +11,10 @@
 *					
 * 
 *Update Log			v0.5.2
-*						- terminal disconnect error bug patched (issue #15 on github)
+*						- terminal disconnect error bug patched (issue #15)
+*						- switching location for weather added
+*						- help menu updated
+*						- weather location printing bug patched (issue #18)
 *					v0.5.1
 *						- terminal can set up timers (cmd or dialog)
 *						- terminal can remove timers
@@ -93,7 +96,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.5.0";
+	private static final String VERSION = "v0.5.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	
@@ -283,7 +286,13 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("timer-get", "Request list of all timers currently scheduled");
 		
-		cmdMap.put("weather", "Request the current weather of Ottawa, Ontario");
+		cmdMap.put("weather", "Request the current weather");
+		
+		cmdMap.put("location", "Set the current location to a particular city\n"
+				+ "\tparam1: <STR> || The city you want to set location to\n"
+				+ "\tparam2: n/a   || Use default 2 character country code (Canada)\n"
+				+ "\tparam2: <STR> || The country-code you want to set locaiton to (2 character)\n"
+				+ "\t                 CA=Canada, USA=US, Australia=AU, Britain=GB, New Zealand=NZ, etc.");
 		
 		return cmdMap;
 	}
