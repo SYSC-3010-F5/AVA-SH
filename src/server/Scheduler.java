@@ -234,15 +234,35 @@ public class Scheduler
 			{
 				TimeAndDate trigger = event.getTrigger();
 				int[] currentTime = this.getCurrentTime();
-				boolean today = false;
+				long delay = computeDelay(trigger);
+				
+				//due to the logic in computeDelay, the delay returned will be to the next Sunday, at the trigger time
+				//to reduce the delay to the next trigger time (which could be either today or tomorrow if the time has passed), take the delay modulus the period of 1 day
+				
+				delay = delay % MS_DAY;
+				
+				scheduler.scheduleAtFixedRate(event, delay, MS_DAY);
+				periodicEvents.add(event);
+				return true;
 			}
 			//event occurs on less than 7 days a week
 			else
 			{
-				
+				for(int i = 0; i < 7; i++)
+				{
+					if(days[i])
+					{
+						boolean[] triggerDay = new boolean[]{false,false,false,false,false,false,false};
+						triggerDay[i] = true;
+						TimeAndDate trigger = event.getTrigger();
+						trigger.setDays(triggerDay);
+						scheduler.scheduleAtFixedRate(event, computeDelay(trigger), MS_WEEK);
+						periodicEvents.add(event);
+					}
+				}
+				return true;
 			}
 		}
-		return false;//TODO Remove
 	}
 	
 	
