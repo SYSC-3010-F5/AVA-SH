@@ -174,5 +174,45 @@ COMMAND MANIFEST
 	PURPOSE:		Delete a non-periodic event from the server (like removing a timer)
 	RESPONSE:		blank info-type packet as acknowledgment of successful removal
 					error-type packet if the event cannot be found
+	
+	----------------------------
+	
+	COMMAND_KEY:	"led on"
+	EXTRA_INFO:		false
+	PURPOSE:		remote turn on of LED to full.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"led off"
+	EXTRA_INFO:		false
+	PURPOSE:		remote turn off led.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"led pwm"
+	EXTRA_INFO:		true
+					time in sec from led off to on
+	PURPOSE:		led slowly brightening
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"alarm on"
+	EXTRA_INFO:		false
+	PURPOSE:		sound alarm.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"cofee on"
+	EXTRA_INFO:		false
+	PURPOSE:		turn on coffee maker.
+	RESPONSE:		false
+	
+	
+	----------------------------
 
 					
