@@ -10,7 +10,9 @@
 *
 *
 * 
-*Update Log			v1.0.0
+*Update Log			v1.1.0
+*						- actually triggers an alarm now
+*					v1.0.0
 *						- null
 */
 package server.datatypes;
@@ -29,7 +31,9 @@ import server.Scheduler;
 public class ServerTimer extends ServerEvent 
 {
 	//declaring static class constants
-	private static final PacketWrapper[] CMDS = new PacketWrapper[0];//TODO actually make it use alarm
+	private static final PacketWrapper[] CMDS = new PacketWrapper[]{
+			new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null),
+	};//TODO actually make it use alarm
 	
 	//declaring instance variable
 	private final long timeOfCreation;

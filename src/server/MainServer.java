@@ -8,7 +8,12 @@
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.4.0
+*Update Log			v0.5.0
+*						- method added for forwarding commands to hardware modules/external controllers
+*						- server can remotely turn light on alarm controller on/off/PWM
+*						- server can remotely turn alarm on alarm controller on/off
+*						- server timers now trigger alarm
+*					v0.4.0
 *						- changed to use new ServerTimer subclass
 *						- added button functionality for updating event info
 *						- changing location for weather added
@@ -55,6 +60,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -86,7 +92,8 @@ public class MainServer extends Thread implements ActionListener
 	public static final byte TYPE_DISCONNECT = 4;
 	public static final int MAX_PACKET_SIZE = 1024;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
-
+	private static final String ALARM_CONTROLLER = "Alarm Controller";
+	
 	
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
@@ -271,6 +278,37 @@ public class MainServer extends Thread implements ActionListener
 			}
 		}
 		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
+	//forward a packet to alarm controller
+	private void forwardCommandPacket(PacketWrapper packet, String destinationRegistry)
+	{
+		boolean alarmFound = false;
+		
+		//look for alarm controller(s)
+		display.println("Scanning registry for variation of \"" + destinationRegistry + "\"...");
+		Set<String> keys = registry.keySet();
+		for(String key : keys)
+		{
+			if(key.contains(destinationRegistry))
+			{
+				try
+				{
+					InetSocketAddress alarm = registry.get(key);
+					display.println("Alarm controller \"" + key + "\" found @ "  + alarm.toString() + "\nForwarding command packet...");
+					multiChannel.hijackChannel(alarm.getAddress(), alarm.getPort());
+					multiChannel.sendCmd(packet.commandKey(), packet.extraInfo());
+					alarmFound = true;
+				}
+				catch (NetworkException e){e.printStackTrace();}
+			}
+		}
+		
+		if(!alarmFound)
+		{
+			display.printError("No registered alarm controller found!");
+		}
 	}
 	
 	
@@ -599,10 +637,18 @@ public class MainServer extends Thread implements ActionListener
 								{
 									String err = "No event with name \"" + packet.extraInfo() + "\" found";
 									display.println(err + "\nSending error packet...");
-									multiChannel.sendErr("No event with name \"" + packet.extraInfo() + "\" found");
+									multiChannel.sendErr(err);
 								}
 								break;
-								
+							
+							//commands forwarded to alarm
+							case("alarm on"):
+							case("alarm off"):
+							case("led on"):
+							case("led off"):
+							case("led pwm"):
+								forwardCommandPacket(packet, ALARM_CONTROLLER);
+								break;
 						}
 						break;
 					

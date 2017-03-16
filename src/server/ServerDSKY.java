@@ -298,6 +298,13 @@ public class ServerDSKY extends JFrame implements ActionListener
 	}
 	
 	
+	//print an error that was not supposed to happen
+	public void printError(String string)
+	{
+		println("ERROR >> " + string);
+	}
+	
+	
 	//generic print
 	public synchronized void println(String string)
 	{

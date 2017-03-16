@@ -294,6 +294,15 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam2: <STR> || The country-code you want to set locaiton to (2 character)\n"
 				+ "\t                 CA=Canada, USA=US, Australia=AU, Britain=GB, New Zealand=NZ, etc.");
 		
+		cmdMap.put("lights", "Set the lights ON, OFF, or to gradually increase luminance\n"
+				+ "\tparam1: on    || Turn the lights fully on\n"
+				+ "\tparam1: off   || Turn the lights fully off\n"
+				+ "\tparam1: <INT> || Linearly increase the lights luminance over a period of <INT> second");
+		
+		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"			//TODO implement alarm enable/disable
+				+ "\tparam1: on  || Turn the alarm on\n"
+				+ "\tparam1: off || Turn the alarm off");
+		
 		return cmdMap;
 	}
 	
@@ -1109,6 +1118,74 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+			
+			//change the light status
+			case("lights"):
+				if(input.length == 2)
+				{
+					try
+					{
+						//turn on light
+						if(input[1].equals("on") || input[1].equals("1"))
+						{
+							dataChannel.sendCmd("led on");
+						}
+						//turn light off
+						else if (input[1].equals("off") || input[1].equals("0"))
+						{
+							dataChannel.sendCmd("led off");
+						}
+						//set PWM
+						else
+						{
+							//check PWM period is valid number
+							Integer.parseInt(input[1]);
+							dataChannel.sendCmd("led pwm", input[1]);
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Number must be valid 32bit integer\n\"" + input[1] + "\" not valid time");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			//turn alarm on or off
+			case("alarm-set"):
+				if(input.length == 2)
+				{
+					try
+					{
+						if(input[1].equals("on") || input[1].equals("1"))
+						{
+							dataChannel.sendCmd("alarm on", "");
+						}
+						else if (input[1].equals("on") || input[1].equals("0"))
+						{
+							dataChannel.sendCmd("alarm off", "");
+						}
+						else
+						{
+							ui.println(CMD_NOT_FOUND);
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				
 			//cmd not found
 			default:
