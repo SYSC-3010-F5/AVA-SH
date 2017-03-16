@@ -193,7 +193,9 @@ COMMAND MANIFEST
 	----------------------------
 	COMMAND_KEY:	"led pwm"
 	EXTRA_INFO:		true
-					time in sec from led off to on
+					Time in seconds from led off to on. Encoded as a UTF-8 character string.
+					An example of having a period of 1234 seconds would be the UTF-8 characters:
+					1234
 	PURPOSE:		led slowly brightening
 	RESPONSE:		false
 	
@@ -207,9 +209,17 @@ COMMAND MANIFEST
 	
 	----------------------------
 	
-	COMMAND_KEY:	"cofee on"
+	COMMAND_KEY:	"coffee on"
 	EXTRA_INFO:		false
-	PURPOSE:		turn on coffee maker.
+	PURPOSE:		turn ON coffee maker.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"coffee off"
+	EXTRA_INFO:		false
+	PURPOSE:		turn OFF coffee maker.
 	RESPONSE:		false
 	
 	
