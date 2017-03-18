@@ -87,7 +87,7 @@ public class DataChannel implements ComsProtocol
 	protected static final int TIMEOUT_MS = 4000;
 	protected static final byte[] HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
 	
-	//declaring local instance variables
+	//declaring local instance	 variables
 	protected boolean connected;
 	protected DatagramSocket gpSocket;
 	protected InetAddress pairedAddress;

@@ -80,6 +80,7 @@ public class CrudeDatabase
 	}
 	
 	
+	/*
 	//tests
 	public static void main(String[] args)
 	{
@@ -91,4 +92,5 @@ public class CrudeDatabase
 		System.out.println(db.query("Toronto", "CA"));
 		System.out.println(db.query("New York", "US"));
 	}
+	*/
 }

@@ -10,7 +10,9 @@
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.2
+*Update Log			v0.5.3
+*						- added prefix i\
+*					v0.5.2
 *						- terminal disconnect error bug patched (issue #15)
 *						- switching location for weather added
 *						- help menu updated
@@ -84,6 +86,7 @@ import javax.swing.JFrame;
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.MainServer;
 import server.datatypes.Alarm;
 import terminal.dialogs.TimeDialog;
 import server.datatypes.WeatherData;
@@ -95,6 +98,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_RESET = 0;
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
+	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
 	private static final String VERSION = "v0.5.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
@@ -212,12 +216,15 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("close", "Exit the local terminal");
 		
 		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
-					+ "\tparam1= n/a             || Attempt to establish server connection at default server address\n"
-					+ "\tparam1= default ::      || Attempt to establish server connection at default server address\n"
-					+ "\tparam1= local ::        || Attempt to establish server conncetion at the local IPv4 address\n"
-					+ "\tparam1= xxx.xxx.xxx.xxx || Attempt to establish server connection to this IPv4 address\n"
-					+ "\tparam2= n/a ::          || Attempt to establish server connect to the default port\n"
-					+ "\tparam2= <INT> ::        || Attempt to establish server connection to port <INT>");
+					+ "\tparam1= n/a             || Connect to server using default IPv4 address\n"
+					+ "\tparam1= default         || Connect to server using default IPv4 address\n"
+					+ "\tparam1= local           || Connect to server using the local IPv4 address\n"
+					+ "\tparam1= xxx.xxx.xxx.xxx || Connect to server using this IPv4 address\n"
+					+ "\tparam2= n/a             || Use default port\n"
+					+ "\tparam2= default         || Use default port\n"
+					+ "\tparam2= <INT>           || Use port <INT>"
+					+ "\tparam3= n/a             || Connect under name \""+defaultDeviceName+"\""
+					+ "\tparam3= <STR>           || Connect under name <STR>");
 		
 		cmdMap.put("disconnect", "Disconnect from main server");
 		
@@ -240,7 +247,7 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= na     || Show the current state of voice echo\n"
 					+ "\tparam1= true   || Set the terminal to synthesize all text as voice\n"
 					+ "\tparam1= false  || Set the terminal to stop synthesis of all text as voice\n"
-					+ "\tparam1 = <STR> || Synthesize the entered String to voice");
+					+ "\tparam1 = <STR> || Synthesize the entered String <STR> to voice");
 		
 		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															
 					+ "\tparam1: n/a      || Launch dialog to schedual alarm\n"
@@ -299,7 +306,7 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: off   || Turn the lights fully off\n"
 				+ "\tparam1: <INT> || Linearly increase the lights luminance over a period of <INT> second");
 		
-		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"			//TODO implement alarm enable/disable
+		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"
 				+ "\tparam1: on  || Turn the alarm on\n"
 				+ "\tparam1: off || Turn the alarm off");
 		
@@ -320,7 +327,7 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println("Establishing connection...");
 					try 
 					{
-						dataChannel.connect(address, port, name);
+						dataChannel.connect(address, port, PREFIX+name);
 					} 
 					catch (IOException e1) 
 					{

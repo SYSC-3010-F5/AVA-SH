@@ -3,7 +3,7 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *Date of Update:    02/03/2017
-*Version:           1.2.1
+*Version:           1.2.2
 *
 *Purpose:           "Sends" packets to server at certain time over a certain period
 *					Can be used to schedule commands, info, or errors.
@@ -12,7 +12,9 @@
 *
 *
 * 
-*Update Log			v1.2.1
+*Update Log			v1.2.2
+*						- printing to DSKY fixed (typo)
+*					v1.2.1
 *						- override clear method
 *						- toJSON added
 *						- fromJSON added
@@ -105,7 +107,7 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 	{
 		if(display != null)
 		{
-			display.println(PREFIX + printable);
+			display.println(PREFIX + printable + "\n");
 		}
 		else
 		{

@@ -2,13 +2,19 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    14/03/2017
-*Version:           0.3.1
+*Date of Update:    18/03/2017
+*Version:           0.6.0
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.5.0
+*Update Log			v0.6.0
+*						- packet forwarding based on prefix
+*						- packet forwarding made generic to allow forwarding to any module
+*						- server now forwards info packets to interfaces (when info packet is what it
+*						  (fetches during fetch-execute loop)
+*						- prefixes added
+*					v0.5.0
 *						- method added for forwarding commands to hardware modules/external controllers
 *						- server can remotely turn light on alarm controller on/off/PWM
 *						- server can remotely turn alarm on alarm controller on/off
@@ -83,7 +89,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.1.1";
+	public static final String SERVER_NAME = "AVA Server v0.6.0";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -92,8 +98,9 @@ public class MainServer extends Thread implements ActionListener
 	public static final byte TYPE_DISCONNECT = 4;
 	public static final int MAX_PACKET_SIZE = 1024;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
-	private static final String ALARM_CONTROLLER = "Alarm Controller";
-	
+	public static final String PREFIX_ALARM = 			"a";
+	public static final String PREFIX_COFEEE_MAKER = 	"c";
+	public static final String PREFIX_INTERFACE = 		"i";
 	
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
@@ -281,33 +288,51 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//forward a packet to alarm controller
-	private void forwardCommandPacket(PacketWrapper packet, String destinationRegistry)
+	//forward a packet
+	private void forwardPacket(PacketWrapper packet, String targetPrefix)
 	{
-		boolean alarmFound = false;
+		boolean found = false;
 		
 		//look for alarm controller(s)
-		display.println("Scanning registry for variation of \"" + destinationRegistry + "\"...");
+		display.println("Attempting packet forward...\nScanning registry for prefix \"" + targetPrefix + "\\\"...");
 		Set<String> keys = registry.keySet();
 		for(String key : keys)
 		{
-			if(key.contains(destinationRegistry))
+			if(key.contains("\\"))
 			{
-				try
+				String prefix = key.split("\\\\")[0];		// WHY ORACLE WHY WOULD YOU DO THIS
+				if(prefix.equals(targetPrefix))
 				{
-					InetSocketAddress alarm = registry.get(key);
-					display.println("Alarm controller \"" + key + "\" found @ "  + alarm.toString() + "\nForwarding command packet...");
-					multiChannel.hijackChannel(alarm.getAddress(), alarm.getPort());
-					multiChannel.sendCmd(packet.commandKey(), packet.extraInfo());
-					alarmFound = true;
+					try
+					{
+						InetSocketAddress alarm = registry.get(key);
+						display.println("\"" + key + "\" found @ "  + alarm.toString());
+						multiChannel.hijackChannel(alarm.getAddress(), alarm.getPort());
+						switch(packet.type())
+						{
+							case(DataChannel.TYPE_CMD):
+								multiChannel.sendCmd(packet.commandKey(), packet.extraInfo());
+								break;
+							case(DataChannel.TYPE_ERR):
+								multiChannel.sendErr(packet.errorMessage());
+								break;
+							case(DataChannel.TYPE_INFO):
+								multiChannel.sendInfo(packet.info());
+								break;
+							default:
+								display.printError("Unknown packet type for forwarding: " + packet.type());
+								break;
+						}
+						found = true;
+					}
+					catch (NetworkException e){e.printStackTrace();}
 				}
-				catch (NetworkException e){e.printStackTrace();}
 			}
 		}
 		
-		if(!alarmFound)
+		if(!found)
 		{
-			display.printError("No registered alarm controller found!");
+			display.printError("No device registered with prefix \"" + targetPrefix + "\\\" found!");
 		}
 	}
 	
@@ -647,8 +672,10 @@ public class MainServer extends Thread implements ActionListener
 							case("led on"):
 							case("led off"):
 							case("led pwm"):
-								forwardCommandPacket(packet, ALARM_CONTROLLER);
+								forwardPacket(packet, PREFIX_ALARM);
 								break;
+								
+							//commands forwarding
 						}
 						break;
 					
@@ -656,6 +683,7 @@ public class MainServer extends Thread implements ActionListener
 						
 					//some info from an interface
 					case(DataChannel.TYPE_INFO):
+						forwardPacket(packet, PREFIX_INTERFACE);
 						break;
 					
 					
@@ -742,7 +770,7 @@ public class MainServer extends Thread implements ActionListener
 			server.run();
 		}
 		catch (UnknownHostException e) 
-		{			
+		{	
 			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());
 			e.printStackTrace();
 		}
