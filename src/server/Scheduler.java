@@ -252,12 +252,13 @@ public class Scheduler
 				{
 					if(days[i])
 					{
+						ServerEvent scheduleEvent = new ServerEvent(event.getEventName(), event.getCommands(), event.getTrigger());
 						boolean[] triggerDay = new boolean[]{false,false,false,false,false,false,false};
 						triggerDay[i] = true;
-						TimeAndDate trigger = event.getTrigger();
+						TimeAndDate trigger = scheduleEvent.getTrigger();
 						trigger.setDays(triggerDay);
-						scheduler.scheduleAtFixedRate(event, computeDelay(trigger), MS_WEEK);
-						periodicEvents.add(event);
+						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
+						periodicEvents.add(scheduleEvent);
 					}
 				}
 				return true;
