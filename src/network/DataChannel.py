@@ -14,14 +14,14 @@ class DataChannel():
 	connected = False
 	pairedAddress ='134.117.58.116'
 	pairedPort = 3010
-	registeredName = "Alarm Controller"
+	registeredName = ""
 	gpSocket = 0
 	
-	def __init__(self):
+	def __init__(self, deviceName):
 		self.gpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.gpSocket.bind(("", self.PORT))
 		self.gpSocket.setblocking(1)
-		
+		self.registeredName = deviceName
 	
 	#generic accessors
 	def getPairedAddress(self):
