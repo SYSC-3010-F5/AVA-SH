@@ -2,24 +2,19 @@ package f5.ava_sh;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Activity;
 
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.GridView;
-import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import network.DataChannel;
-import network.NetworkException;
 
 /**
  *Class:                MainActivity.java
@@ -47,11 +42,12 @@ public class MainActivity extends AppCompatActivity {
     private InetAddress defaultServerAddress;
     private int 		defaultServerPort;
     private boolean connecting;
-    private static final int RETRY_QUANTUM = 5;
+
 
     private AlertDialog.Builder alertDialogBuilder;
     private EditText et;
     private AlertDialog alertDialog;
+    private DataChannelSetup setup;
 
 
 
@@ -70,6 +66,14 @@ public class MainActivity extends AppCompatActivity {
         et = new EditText(this);
 
 
+        if (android.os.Build.VERSION.SDK_INT > 9) {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+        }
+
+
+
+
 
         // set prompts.xml to alertdialog builder
         alertDialogBuilder.setView(et);
@@ -82,78 +86,54 @@ public class MainActivity extends AppCompatActivity {
 
         // create alert dialog
         alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
 
+        setup = new DataChannelSetup();
+        setup.execute();
 
-
-        try{
-            dataChannel = new DataChannel();
-            defaultServerAddress = InetAddress.getLocalHost();
-            defaultDeviceName = "app";
-            defaultServerPort = 3010;
-
-        }
-        catch (SocketException e)
-        {
-            e.printStackTrace();
-            System.exit(0);
-        }
-        catch (UnknownHostException e)
-        {
-            e.printStackTrace();
-            System.exit(0);
-        }
-
-        establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
 
 
         this.setTitle("AVA-SH");
     }
 
+
+
+
     public DataChannel getDataChannel(){
         return dataChannel;
     }
 
-    //connect to server
-    private void establishConnection(InetAddress address, int port, String name)
-    {
-        if(!dataChannel.getConnected())
-        {
-            connecting = true;
-            try
-            {
-                for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
-                {
-                    et.append("Establishing connection..."+"\n");
-                    try
-                    {
-                        dataChannel.connect(address, port, name);
-                    }
-                    catch (IOException e1)
-                    {
-                        //timeout has occurred
-                    }
-                }
 
-                if(dataChannel.getConnected())
-                {
-                    et.append("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
-                }
-                else
-                {
-                    et.append("Connection could not be established!");
-                }
+
+    private class DataChannelSetup extends AsyncTask<Void,Void,Void>{
+        @Override
+        protected Void doInBackground(Void... params){
+            try{
+                dataChannel = new DataChannel();
+
+
             }
-            catch (NetworkException e)
+            catch (SocketException e)
             {
-                et.append(e.getMessage());
+                e.printStackTrace();
+                System.exit(0);
             }
-            connecting = false;
+
+
+            /*
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
+                }
+            });
+            */
+
+            runOnUiThread(new ConnectionHelper(et, dataChannel));
+
+            return null;
         }
-        else
-        {
-            et.append("Already connected!\nPlease disconnect first");
-        }
-        alertDialog.show();
+
     }
 
 }

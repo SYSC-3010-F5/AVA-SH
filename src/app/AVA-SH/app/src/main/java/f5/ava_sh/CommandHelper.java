@@ -79,42 +79,7 @@ public class CommandHelper {
                 break;
 
             case "ping":
-                //declaring method variables
-                long pre, post;
 
-                int amount = 3;
-
-                //ping 5 times
-                for(int i=0; i<amount; i++) {
-                    //pause between pinging
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-
-                    try {
-                        //send ping
-                        pre = System.currentTimeMillis();
-                        dataChannel.sendCmd("ping");
-
-                        //wait for response
-                        PacketWrapper wrapper = dataChannel.receivePacket(5000);
-                        if (wrapper.type == DataChannel.TYPE_INFO) {
-                            post = System.currentTimeMillis();
-                            et.append("Response from server, delay of " + (post - pre) + "ms" + "\n");
-                        } else {
-                            et.append("Unexpected packet received! " + "\n");
-                        }
-                    } catch (NetworkException e) {
-                        et.append(e.getMessage()+"\n");
-                    } catch (SocketException e) {
-                        et.append("No response"+"\n");
-                    }
-                }
-
-                // show it
-                alertDialog.show();
                 break;
 
             case "sch event":
