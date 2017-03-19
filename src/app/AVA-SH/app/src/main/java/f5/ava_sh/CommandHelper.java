@@ -2,23 +2,13 @@ package f5.ava_sh;
 
 import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.view.View;
 
-import java.net.SocketException;
-
 import network.DataChannel;
-import network.NetworkException;
-import network.PacketWrapper;
 
 import android.app.AlertDialog;
-import android.widget.EditText;
 import android.widget.TextView;
-
-import static android.R.attr.data;
-import static android.R.attr.id;
 
 /**
  * Created by Slate on 2017-03-13.
@@ -73,18 +63,25 @@ public class CommandHelper {
                 break;
 
             case "sch event":
-                connectionHelper.getWeather();
+
                 break;
 
             case "set timer":
-                DialogFragment newFragment = new TimePickerFragment();
-                newFragment.show(main.getFragmentManager(), "timePicker");
+                DialogFragment timerPicker = new TimerTimePickerFragment();
+                timerPicker.show(main.getFragmentManager(), "timerTimePicker");
                 break;
 
             case "new alarm":
+                //Need to pull master and get alarm type
+                DialogFragment datePicker = new DatePickerFragment();
+                datePicker.show(main.getFragmentManager(), "datePicker");
+                DialogFragment timePicker = new AlarmTimePickerFragment();
+                timePicker.show(main.getFragmentManager(), "alarmTimePicker");
+
                 break;
 
             case "req current weather":
+                connectionHelper.getWeather();
                 break;
 
             case "req time":
@@ -96,7 +93,7 @@ public class CommandHelper {
             case "req np-events":
                 break;
 
-            case  "req p-events":
+            case "req p-events":
                 break;
 
             case "del np-event":
