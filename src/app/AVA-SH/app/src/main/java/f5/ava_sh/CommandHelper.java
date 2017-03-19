@@ -1,5 +1,6 @@
 package f5.ava_sh;
 
+import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -45,11 +46,13 @@ public class CommandHelper {
     private DataChannel dataChannel;
     private MainActivity main;
 
+    private Context c;
     private ConnectionHelper connectionHelper;
 
 
     public CommandHelper(Context c, MainActivity main){
         this.main = main;
+        this.c = c;
         connectionHelper = main.getConnectionHelper();
     }
 
@@ -70,9 +73,12 @@ public class CommandHelper {
                 break;
 
             case "sch event":
+                connectionHelper.getWeather();
                 break;
 
             case "set timer":
+                DialogFragment newFragment = new TimePickerFragment();
+                newFragment.show(main.getFragmentManager(), "timePicker");
                 break;
 
             case "new alarm":

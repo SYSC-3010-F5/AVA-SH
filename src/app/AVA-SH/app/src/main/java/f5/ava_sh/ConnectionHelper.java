@@ -1,8 +1,11 @@
 package f5.ava_sh;
 
+import android.content.Context;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,7 +23,7 @@ import static android.icu.lang.UCharacter.GraphemeClusterBreak.L;
 
 public class ConnectionHelper implements Runnable {
 
-    private TextView et;
+    private AlertBuilder alertBuilder;
 
     private DataChannel dataChannel;
     private static final int RETRY_QUANTUM = 5;
@@ -28,9 +31,12 @@ public class ConnectionHelper implements Runnable {
     private String 		defaultDeviceName;
     private InetAddress defaultServerAddress;
     private int 		defaultServerPort;
+    private TextView et;
 
-    public ConnectionHelper(TextView updateField){
-        et = updateField;
+    public ConnectionHelper(Context c){
+        alertBuilder = new AlertBuilder(c);
+        et = alertBuilder.getTextView();
+
         defaultDeviceName = "i\\app";
         defaultServerPort = 3010;
 
@@ -51,6 +57,7 @@ public class ConnectionHelper implements Runnable {
     //connect to server
     private void establishConnection(InetAddress address, int port, String name)
     {
+        alertBuilder.clear();
         if(!dataChannel.getConnected())
         {
             try
@@ -86,11 +93,13 @@ public class ConnectionHelper implements Runnable {
         {
             et.append("Already connected!\nPlease disconnect first");
         }
+        alertBuilder.showAlert();
     }
 
     public void ping(){
         //declaring method variables
         long pre, post;
+        alertBuilder.clear();
         try
         {
             //send ping
@@ -102,11 +111,11 @@ public class ConnectionHelper implements Runnable {
             if(wrapper.type == DataChannel.TYPE_INFO)
             {
                 post = System.currentTimeMillis();
-                et.append("Response from server, delay of " + (post-pre) + "ms");
+                et.append("Response from server, delay of " + (post-pre) + "ms" + "\n");
             }
             else
             {
-                et.append("Unexpected packet recieved!");
+                et.append("Unexpected packet recieved!" + "\n");
             }
         }
         catch (NetworkException e)
@@ -115,8 +124,31 @@ public class ConnectionHelper implements Runnable {
         }
         catch (SocketException e)
         {
-            et.append("No response");
+            et.append("No response" + "\n" );
         }
+        alertBuilder.showAlert();
+
+    }
+
+    public void getWeather(){
+        /*
+        try
+        {
+            dataChannel.sendCmd("req current weather" + "\n" );
+            PacketWrapper wrapper = dataChannel.receivePacket();
+            WeatherData weather = new WeatherData(wrapper.info());
+
+            String[] weatherData = weather.getWeatherData();
+            et.append("Weather data for Ottawa, Ontario.");
+            et.append("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
+            et.append("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
+            et.append("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+        }
+        catch (NetworkException e)
+        {
+            ui.printError(e.getMessage());
+        }
+        */
     }
 
     public DataChannel getDataChannel(){

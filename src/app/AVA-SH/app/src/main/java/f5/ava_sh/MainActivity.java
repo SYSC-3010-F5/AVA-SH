@@ -47,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     private DataChannelSetup setup;
     private ConnectionHelper connectionHelper;
 
+    private AlertBuilder alertBuilder;
+
 
 
 
@@ -58,13 +60,9 @@ public class MainActivity extends AppCompatActivity {
 
         GridView gridview = (GridView) findViewById(R.id.gridview);
 
-        alertDialogBuilder = new AlertDialog.Builder(this);
-        et = new EditText(this);
-        et.setEnabled(false);
-        et.setTextColor(Color.parseColor("#000000"));
-        initFields();
+        alertBuilder = new AlertBuilder(this);
 
-        connectionHelper = new ConnectionHelper(et);
+        connectionHelper = new ConnectionHelper(this);
 
         gridview.setAdapter(new ButtonAdapter(this,this));
 
@@ -72,34 +70,16 @@ public class MainActivity extends AppCompatActivity {
         setup.execute();
 
 
-
+        //Ensures wide network permissions
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
 
 
-
-
-
-
         this.setTitle("AVA-SH");
     }
 
-    private void initFields(){
-        // set prompts.xml to alertdialog builder
-        alertDialogBuilder.setView(et);
-
-        // set dialog message
-        alertDialogBuilder.setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-
-        // create alert dialog
-        alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
 
     public ConnectionHelper getConnectionHelper(){
         return connectionHelper;
