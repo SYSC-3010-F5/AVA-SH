@@ -1,12 +1,18 @@
 package f5.ava_sh;
 
+import android.util.Log;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import network.DataChannel;
 import network.NetworkException;
+import network.PacketWrapper;
+
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.L;
 
 /**
  * Created by Slate on 2017-03-19.
@@ -14,7 +20,8 @@ import network.NetworkException;
 
 public class ConnectionHelper implements Runnable {
 
-    private EditText et;
+    private TextView et;
+
     private DataChannel dataChannel;
     private static final int RETRY_QUANTUM = 5;
 
@@ -22,22 +29,23 @@ public class ConnectionHelper implements Runnable {
     private InetAddress defaultServerAddress;
     private int 		defaultServerPort;
 
-    public ConnectionHelper(EditText updateField, DataChannel dc){
+    public ConnectionHelper(TextView updateField){
         et = updateField;
-        dataChannel = dc;
+        defaultDeviceName = "i\\app";
+        defaultServerPort = 3010;
+
         try {
             defaultServerAddress = InetAddress.getByName("192.168.0.102");
+            dataChannel = new DataChannel();
         } catch(Exception e){
 
         }
-        defaultDeviceName = "i\\app";
-        defaultServerPort = 3010;
+
     }
 
     @Override
     public void run(){
         establishConnection(defaultServerAddress, defaultServerPort,defaultDeviceName);
-
     }
 
     //connect to server
@@ -78,5 +86,40 @@ public class ConnectionHelper implements Runnable {
         {
             et.append("Already connected!\nPlease disconnect first");
         }
+    }
+
+    public void ping(){
+        //declaring method variables
+        long pre, post;
+        try
+        {
+            //send ping
+            pre = System.currentTimeMillis();
+            dataChannel.sendCmd("ping");
+
+            //wait for response
+            PacketWrapper wrapper = dataChannel.receivePacket(5000);
+            if(wrapper.type == DataChannel.TYPE_INFO)
+            {
+                post = System.currentTimeMillis();
+                et.append("Response from server, delay of " + (post-pre) + "ms");
+            }
+            else
+            {
+                et.append("Unexpected packet recieved!");
+            }
+        }
+        catch (NetworkException e)
+        {
+            et.append(e.getMessage());
+        }
+        catch (SocketException e)
+        {
+            et.append("No response");
+        }
+    }
+
+    public DataChannel getDataChannel(){
+        return dataChannel;
     }
 }

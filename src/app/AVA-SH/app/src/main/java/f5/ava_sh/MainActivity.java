@@ -2,6 +2,7 @@ package f5.ava_sh;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -9,10 +10,12 @@ import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.TextView;
 
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.sql.Connection;
 
 import network.DataChannel;
 
@@ -35,19 +38,14 @@ import network.DataChannel;
 
 public class MainActivity extends AppCompatActivity {
 
-    DataChannel dataChannel;
 
-    //declaring local instance variables
-    private String 		defaultDeviceName;
-    private InetAddress defaultServerAddress;
-    private int 		defaultServerPort;
-    private boolean connecting;
 
 
     private AlertDialog.Builder alertDialogBuilder;
-    private EditText et;
+    private TextView et;
     private AlertDialog alertDialog;
     private DataChannelSetup setup;
+    private ConnectionHelper connectionHelper;
 
 
 
@@ -59,11 +57,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         GridView gridview = (GridView) findViewById(R.id.gridview);
-        gridview.setAdapter(new ButtonAdapter(this,this));
-
 
         alertDialogBuilder = new AlertDialog.Builder(this);
         et = new EditText(this);
+        et.setEnabled(false);
+        et.setTextColor(Color.parseColor("#000000"));
+        initFields();
+
+        connectionHelper = new ConnectionHelper(et);
+
+        gridview.setAdapter(new ButtonAdapter(this,this));
+
+        setup = new DataChannelSetup(connectionHelper);
+        setup.execute();
+
 
 
         if (android.os.Build.VERSION.SDK_INT > 9) {
@@ -75,6 +82,11 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+        this.setTitle("AVA-SH");
+    }
+
+    private void initFields(){
         // set prompts.xml to alertdialog builder
         alertDialogBuilder.setView(et);
 
@@ -87,37 +99,27 @@ public class MainActivity extends AppCompatActivity {
         // create alert dialog
         alertDialog = alertDialogBuilder.create();
         alertDialog.show();
-
-        setup = new DataChannelSetup();
-        setup.execute();
-
-
-
-        this.setTitle("AVA-SH");
     }
 
+    public ConnectionHelper getConnectionHelper(){
+        return connectionHelper;
 
-
-
-    public DataChannel getDataChannel(){
-        return dataChannel;
     }
+
 
 
 
     private class DataChannelSetup extends AsyncTask<Void,Void,Void>{
+
+        private ConnectionHelper connectionHelper;
+
+        public DataChannelSetup(ConnectionHelper ch){
+            connectionHelper = ch;
+        }
+
         @Override
         protected Void doInBackground(Void... params){
-            try{
-                dataChannel = new DataChannel();
 
-
-            }
-            catch (SocketException e)
-            {
-                e.printStackTrace();
-                System.exit(0);
-            }
 
 
             /*
@@ -128,8 +130,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             */
+            runOnUiThread(connectionHelper);
 
-            runOnUiThread(new ConnectionHelper(et, dataChannel));
+
 
             return null;
         }

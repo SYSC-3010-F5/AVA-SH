@@ -3,6 +3,7 @@ package f5.ava_sh;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.View;
 
 import java.net.SocketException;
@@ -13,6 +14,7 @@ import network.PacketWrapper;
 
 import android.app.AlertDialog;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import static android.R.attr.data;
 import static android.R.attr.id;
@@ -38,32 +40,17 @@ public class CommandHelper {
     };
 
     private AlertDialog.Builder alertDialogBuilder;
-    final EditText et;
+    private TextView et;
     private AlertDialog alertDialog;
     private DataChannel dataChannel;
     private MainActivity main;
 
+    private ConnectionHelper connectionHelper;
+
 
     public CommandHelper(Context c, MainActivity main){
         this.main = main;
-        dataChannel = main.getDataChannel();
-
-        alertDialogBuilder = new AlertDialog.Builder(c);
-        et = new EditText(c);
-
-
-
-        // set prompts.xml to alertdialog builder
-        alertDialogBuilder.setView(et);
-
-        // set dialog message
-        alertDialogBuilder.setCancelable(false).setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-
-        // create alert dialog
-        alertDialog = alertDialogBuilder.create();
+        connectionHelper = main.getConnectionHelper();
     }
 
     public String[] getCommands(){
@@ -79,7 +66,7 @@ public class CommandHelper {
                 break;
 
             case "ping":
-
+                connectionHelper.ping();
                 break;
 
             case "sch event":
@@ -113,6 +100,8 @@ public class CommandHelper {
 
 
     }
+
+
 
 
 }
