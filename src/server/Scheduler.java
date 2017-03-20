@@ -146,9 +146,55 @@ public class Scheduler
 	
 	
 	//calculate the amount of milliseconds until a certain date-time
+	//returns -1 if the given trigger doesn't have a trigger day (i.e. there are no days set to true)
 	public long computeDelay(TimeAndDate trigger)
 	{
-		return 5;
+		boolean[] days = trigger.getDays();
+		
+		//get the day of the trigger
+		int i = 0;
+		boolean noTrigger = true;
+		for(;i < 7; i++)
+		{
+			if(days[i])
+			{
+				noTrigger = false;
+				break;
+			}
+			
+		}
+		
+		//ensure that the TimeAndDate given actually has a trigger day
+		if(noTrigger)
+		{
+			//no trigger day given, return -1 as no delay can be calculated
+			return -1;
+		}
+		//get 2 Calendar objects set to the current time and time zone
+		Calendar now = Calendar.getInstance();
+		Calendar triggerDate = Calendar.getInstance();
+		
+		//Set the day of the trigger date. Calendars use SUNDAY = 1, MONDAY = 2, TUESDAY = 3 etc.
+		triggerDate.set(Calendar.DAY_OF_WEEK, i+1);
+		triggerDate.set(Calendar.WEEK_OF_MONTH, now.get(Calendar.WEEK_OF_MONTH));
+		//this sets the week of the month to today's week of the month.
+		//this means that if today is friday, and the trigger date is a sunday, the computed delay will end up being negative
+		//checking if the delay is negative and adding the milliseconds in a week should fix this, which is done lower down
+		
+		//Set the hour and minute of the trigger
+		triggerDate.set(Calendar.MINUTE, trigger.getMinute());
+		triggerDate.set(Calendar.HOUR_OF_DAY, trigger.getHour());
+		
+		//find the difference in milliseconds
+		long delay = triggerDate.getTimeInMillis() - now.getTimeInMillis();
+		
+		//if the delay is negative, then that means the Calendar object was set to the weekday before, not the weekday after today
+		if(delay < 0)
+		{
+			//add the period of a week to advance to the weekday after today
+			delay += MS_WEEK;
+		}
+		return delay;
 	}
 	
 	
@@ -188,15 +234,36 @@ public class Scheduler
 			{
 				TimeAndDate trigger = event.getTrigger();
 				int[] currentTime = this.getCurrentTime();
-				boolean today = false;
+				long delay = computeDelay(trigger);
+				
+				//due to the logic in computeDelay, the delay returned will be to the next Sunday, at the trigger time
+				//to reduce the delay to the next trigger time (which could be either today or tomorrow if the time has passed), take the delay modulus the period of 1 day
+				
+				delay = delay % MS_DAY;
+				
+				scheduler.scheduleAtFixedRate(event, delay, MS_DAY);
+				periodicEvents.add(event);
+				return true;
 			}
 			//event occurs on less than 7 days a week
 			else
 			{
-				
+				for(int i = 0; i < 7; i++)
+				{
+					if(days[i])
+					{
+						ServerEvent scheduleEvent = new ServerEvent(event.getEventName(), event.getCommands(), event.getTrigger());
+						boolean[] triggerDay = new boolean[]{false,false,false,false,false,false,false};
+						triggerDay[i] = true;
+						TimeAndDate trigger = scheduleEvent.getTrigger();
+						trigger.setDays(triggerDay);
+						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
+						periodicEvents.add(scheduleEvent);
+					}
+				}
+				return true;
 			}
 		}
-		return false;//TODO Remove
 	}
 	
 	
