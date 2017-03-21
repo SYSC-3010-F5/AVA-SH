@@ -2,13 +2,16 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    18/03/2017
-*Version:           0.6.0
+*Date of Update:    21/03/2017
+*Version:           0.6.1
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.6.0
+*Update Log			v0.6.1
+*						- error for database missing handled
+*						- commenting for get weather method
+*					v0.6.0
 *						- packet forwarding based on prefix
 *						- packet forwarding made generic to allow forwarding to any module
 *						- server now forwards info packets to interfaces (when info packet is what it
@@ -58,6 +61,7 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -65,11 +69,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Set;
-
-import javax.swing.JOptionPane;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -340,15 +340,18 @@ public class MainServer extends Thread implements ActionListener
 	//set the location
 	private void setLocation(String cc, InetSocketAddress dest) throws JsonException
 	{
-		String[] loc = new String[2];
+		String[] loc = new String[2];	
+		//check if there is comma separator for city,country_code
 		if(cc.contains(","))
 		{
 			loc = cc.split(",");
 			if(loc.length != 2)
 			{
+				//invalid format (ie not of city,country)
 				throw new JsonException("Invalid city,country format", JsonException.ERR_FORMAT);
 			}
 		}
+		//no country code given, use default
 		else
 		{
 			loc[0] = cc;
@@ -356,19 +359,32 @@ public class MainServer extends Thread implements ActionListener
 		}
 		try
 		{
+			//prep for query and to send results
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 			display.println("Querying database for \"" + loc[0] + ", " + loc[1] + "\"");
-			Integer code = Weather.db.query(loc[0], loc[1]);
-			if(code != null)
+			try
 			{
-				display.println("Query success! Setting location ID = " + code + "\nSending empty info packet...");
-				locationID = code;
-				multiChannel.sendInfo("");
+				//query database
+				Integer code = Weather.db.query(loc[0], loc[1]);
+				if(code != null)
+				{
+					//valid code obtained, query has hit
+					display.println("Query success! Setting location ID = " + code + "\nSending empty info packet...");
+					locationID = code;
+					multiChannel.sendInfo("");
+				}
+				else
+				{
+					//no code obtained, query has missed
+					display.println("Query failure!\nSending error packet...");
+					multiChannel.sendErr("Location: \"" + loc[0] + ", " + loc[1] + "\" not in database");
+				}
 			}
-			else
+			catch(FileNotFoundException e)
 			{
-				display.println("Query failure!\nSending error packet...");
-				multiChannel.sendErr("Location: \"" + loc[0] + ", " + loc[1] + "\" not in database");
+				//database file cannot be located
+				display.println("Query failure!\nDatabase file cannot be found!\n" + e.getMessage() + "\nSending eror packet...");
+				multiChannel.sendErr("Database file: \"" + CrudeDatabase.DB_LOC.toString() + "\" cannot be found");
 			}
 		}
 		catch (NetworkException e) {e.printStackTrace();}
