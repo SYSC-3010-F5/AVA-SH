@@ -2,13 +2,16 @@
 *Class:             DayAndTimeDialog.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    19/02/2017                                              
-*Version:           1.0.2                                         
+*Date of Update:    23/03/2017                                              
+*Version:           1.0.4                                         
 *                                                                                   
 *Purpose:           Allow to user to select a time and dates for an alarm.
 *					
 * 
-*Update Log			v1.0.3
+*Update Log			v1.0.4
+*						- tabbing between fields patched
+*						- alarm setting altered to suit Alarm v2.0.0
+*					v1.0.3
 *						- hotkeys added to the dialog (alt+1 for mon, alt+2 for tues, etc)
 *					v1.0.2
 *						- bug where user could select no days for valid alarm patched
@@ -43,6 +46,7 @@ import javax.swing.SwingConstants;
 
 //import packages
 import server.datatypes.Alarm;
+import server.datatypes.TimeAndDate;
 
 
 
@@ -216,10 +220,7 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 				JOptionPane.showMessageDialog(this, "You must selected at least one day to set the alarm", windowName, JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			alarm.setDays(daysArr);
-			alarm.setName(txtName.getText());
-			alarm.setHour((int)spHour.getValue());
-			alarm.setMinute((int)spMin.getValue());
+			alarm = new Alarm(txtName.getText(), new TimeAndDate((int)spHour.getValue(), (int)spMin.getValue(), daysArr));
 			
 			//set exit mode
 			closeMode = this.OK_OPTION;

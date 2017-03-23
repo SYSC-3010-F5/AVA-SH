@@ -149,6 +149,7 @@ public class MainServer extends Thread implements ActionListener
 	public void scheduleEvent(String eventJson) throws JsonException
 	{
 		//get event
+		display.println("Assembling event...");
 		ServerEvent event = new ServerEvent();
 		event.fromJSON(eventJson);
 		
@@ -429,17 +430,6 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//make a new alarm
-	private void newAlarm(String alarmJSON) throws JsonException
-	{
-		display.println("Creating new alarm...");
-		Alarm alarm = new Alarm();
-		alarm.fromJSON(alarmJSON);
-		display.println("Alarm created!");
-		//TODO add alarm as a ServerEvent
-	}
-	
-	
 	//send the server time
 	private void sendTime(InetSocketAddress dest)
 	{
@@ -618,18 +608,6 @@ public class MainServer extends Thread implements ActionListener
 								}
 								break;
 								
-							//new alarm added
-							case("new alarm"):
-								try
-								{
-									newAlarm(packet.extraInfo());
-								}
-								catch (JsonException e)
-								{
-									display.println("ERROR >> " + e.getMessage());
-								}
-								break;
-								
 							//the server time is requested
 							case("req time"):
 								sendTime(packet.source());
@@ -641,7 +619,7 @@ public class MainServer extends Thread implements ActionListener
 								break;
 								
 							//new event being scheduled
-							case("sch event"):
+							case("sch p-event"):
 								try
 								{
 									scheduleEvent(packet.extraInfo());

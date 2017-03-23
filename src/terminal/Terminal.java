@@ -12,6 +12,7 @@
 * 
 *Update Log			v0.5.3
 *						- added prefix i\
+*						- alarm setting patched
 *					v0.5.2
 *						- terminal disconnect error bug patched (issue #15)
 *						- switching location for weather added
@@ -88,6 +89,7 @@ import network.NetworkException;
 import network.PacketWrapper;
 import server.MainServer;
 import server.datatypes.Alarm;
+import server.datatypes.TimeAndDate;
 import terminal.dialogs.TimeDialog;
 import server.datatypes.WeatherData;
 
@@ -604,7 +606,7 @@ public class Terminal extends JFrame implements ActionListener
 						//send alarm
 						try 
 						{
-							dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+							dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
 						} 
 						catch (NetworkException e) 
 						{
@@ -615,9 +617,12 @@ public class Terminal extends JFrame implements ActionListener
 				//cmd alarm, generic name
 				else if(input.length == 3 || input.length == 4)
 				{
-					Alarm alarm = new Alarm();
-					//parse day into
+					//method variables
+					int hour, min;
 					boolean[] daysArr = new boolean[7];
+					String name = "Generic Alarm";
+					
+					//parse day into
 					String[] daysInput = input[1].split(",");
 					for(String day : daysInput)
 					{
@@ -649,38 +654,31 @@ public class Terminal extends JFrame implements ActionListener
 								return;
 						}
 					}
-					alarm.setDays(daysArr);
 					//parse time info
 					String[] hourMin = input[2].split(":");
 					try
 					{
-						int hour =  Integer.parseInt(hourMin[0]);
-						int min = Integer.parseInt(hourMin[1]);
-						alarm.setHour(hour);
-						alarm.setMinute(min);
+						hour =  Integer.parseInt(hourMin[0]);
+						min = Integer.parseInt(hourMin[1]);
 					}
 					catch (NumberFormatException e)
 					{
 						ui.printError("Hour/Minute must be a valid integer");
 						return;
 					}
-					catch (DateTimeException e)
-					{
-						ui.printError(e.getMessage());
-						return;
-					}
 					//parse name info
 					if(input.length == 4)
 					{
-						alarm.setName(input[3]);
+						name = (input[3]);
 					}
 					
 					//send alarm
 					try 
 					{
-						dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+						Alarm alarm = new Alarm(name, new TimeAndDate(hour, min, daysArr));
+						dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
 					} 
-					catch (NetworkException e) 
+					catch (NetworkException|DateTimeException e) 
 					{
 						ui.printError(e.getMessage());
 					}
