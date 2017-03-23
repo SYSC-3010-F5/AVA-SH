@@ -2,8 +2,8 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    28/02/2017                                              
-*Version:           1.1.0                                         
+*Date of Update:    15/03/2017                                              
+*Version:           1.2.0                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
@@ -16,7 +16,10 @@
 *						- gross packet delays
 *					
 * 
-*Update Log			v1.1.0
+*Update Log			v1.2.0
+*						- code for packing refactored into unneeded methods which can return a packet
+*						  (this is purely for formal test cases for packing algorithm)
+*					v1.1.0
 *						- uses revision 2.1.1 of coms protocol
 *						- disconnect functionality added
 *						- disconnect packet packing/unpacking added
@@ -84,7 +87,7 @@ public class DataChannel implements ComsProtocol
 	protected static final int TIMEOUT_MS = 4000;
 	protected static final byte[] HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.".getBytes();
 	
-	//declaring local instance variables
+	//declaring local instance	 variables
 	protected boolean connected;
 	protected DatagramSocket gpSocket;
 	protected InetAddress pairedAddress;
@@ -390,31 +393,10 @@ public class DataChannel implements ComsProtocol
 	@Override
 	public void connect(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException, IOException
 	{
-		int i=1;
-		//assemble empty byte array
-		byte[] nameBytes = deviceName.getBytes();
-		byte[] toSend = new byte[HANDSHAKE.length + nameBytes.length + 2];
+		//create packet data
+		byte[] toSend = packHandshake(HANDSHAKE, deviceName.getBytes());
 		
-		//add opcode
-		toSend[0] = TYPE_HANDSHAKE;
-		for(byte b : HANDSHAKE)
-		{
-			toSend[i] = b;
-			i++;
-		}
-		
-		//add terminating 0
-		toSend[i] = (byte)0x00;
-		i++;
-		
-		//add device name
-		for(byte b : nameBytes)
-		{
-			toSend[i] = b;
-			i++;
-		}
-		
-		//create & send packet
+		//send packet
 		DatagramPacket packet = new DatagramPacket(toSend, toSend.length, toPair, listeningPort);
 		try 
 		{
@@ -477,17 +459,10 @@ public class DataChannel implements ComsProtocol
 	@Override
 	public void disconnect(String reason) throws NetworkException
 	{
-		//create packet contents
-		byte[] stringBytes = reason.getBytes();
-		byte[] rawData = new byte[1+stringBytes.length];
-		rawData[0] = TYPE_DISCONNECT;
-		for(int i=0; i<stringBytes.length; i++)
-		{
-			rawData[i+1] = stringBytes[i];
-		}
+		//build & send packet
+		sendPacket(packDisconnect(reason.getBytes()));
 		
-		//send packet and set fields
-		sendPacket(rawData);
+		//set fields
 		pairedPort = -1;
 		pairedAddress = null;
 		connected = false;
@@ -502,7 +477,7 @@ public class DataChannel implements ComsProtocol
 		pairedAddress = toPair;
 		pairedPort = listeningPort;
 		
-		//send packet
+		//send packet (this is easier and more efficient than calling the whole method!)
 		byte[] data = new byte[2];
 		data[0] = TYPE_HANDSHAKE;
 		data[1] = 0x00;
@@ -534,6 +509,52 @@ public class DataChannel implements ComsProtocol
 	@Override
 	public void sendCmd(byte[] cmdKey, byte[] extraInfo) throws NetworkException 
 	{
+		//build and send packet
+		this.sendPacket(packCmd(cmdKey, extraInfo));
+	}
+
+
+	@Override
+	public void sendInfo(JsonFile info) throws NetworkException 
+	{
+		sendInfo(info.toByteArray());
+	}
+
+
+	@Override
+	public void sendInfo(String info) throws NetworkException 
+	{
+		sendInfo(info.getBytes());
+	}
+
+
+	@Override
+	public void sendInfo(byte[] info) throws NetworkException
+	{
+		//build and send
+		this.sendPacket(packInfo(info));
+	}
+
+
+	@Override
+	public void sendErr(String errMsg) throws NetworkException
+	{
+		sendErr(errMsg.getBytes());
+	}
+
+
+	@Override
+	public void sendErr(byte[] errMsg) throws NetworkException 
+	{
+		//send
+		this.sendPacket(packError(errMsg));
+	}
+	
+	
+	//pack a command packet
+	//(never actually used, 100% unneeded as a separate method. Good for testing)
+	public byte[] packCmd(byte[] cmdKey, byte[] extraInfo)
+	{
 		//create empty byte array
 		byte[] toSend = new byte[cmdKey.length + 3 + extraInfo.length];
 		
@@ -561,28 +582,13 @@ public class DataChannel implements ComsProtocol
 		
 		//add final termination 0
 		toSend[i] = (byte)0x00;
-		
-		//send packet
-		this.sendPacket(toSend);
+		return toSend;
 	}
-
-
-	@Override
-	public void sendInfo(JsonFile info) throws NetworkException 
-	{
-		sendInfo(info.toByteArray());
-	}
-
-
-	@Override
-	public void sendInfo(String info) throws NetworkException 
-	{
-		sendInfo(info.getBytes());
-	}
-
-
-	@Override
-	public void sendInfo(byte[] info) throws NetworkException
+	
+	
+	//pack an info packet
+	//(never actually used, 100% unneeded as a separate method. Good for testing)
+	public byte[] packInfo(byte[] info)
 	{
 		//create an empty byte array
 		byte[] toSend = new byte[info.length + 1];
@@ -595,21 +601,13 @@ public class DataChannel implements ComsProtocol
 		{
 			toSend[i+1] = info[i];
 		}
-		
-		//send
-		this.sendPacket(toSend);
+		return toSend;
 	}
-
-
-	@Override
-	public void sendErr(String errMsg) throws NetworkException
-	{
-		sendErr(errMsg.getBytes());
-	}
-
-
-	@Override
-	public void sendErr(byte[] errMsg) throws NetworkException 
+	
+	
+	//pack an error packet 
+	//(never actually used, 100% unneeded as a separate method. Good for testing)
+	public byte[] packError(byte[] errMsg)
 	{
 		//create an empty byte array
 		byte[] toSend = new byte[errMsg.length + 1];
@@ -622,9 +620,54 @@ public class DataChannel implements ComsProtocol
 		{
 			toSend[i+1] = errMsg[i];
 		}
+		return toSend;	
+	}
+	
+	
+	//pack a handshake packet
+	// (never actually used, 100% unneeded as a separate method. Good for testing)
+	public byte[] packHandshake(byte[] key, byte[] nameBytes)
+	{
+		int i=1;
+		//assemble empty byte array
+		byte[] toSend = new byte[key.length + nameBytes.length + 2];
 		
-		//send
-		this.sendPacket(toSend);
+		//add opcode
+		toSend[0] = TYPE_HANDSHAKE;
+		for(byte b : key)
+		{
+			toSend[i] = b;
+			i++;
+		}
+		
+		//add terminating 0
+		toSend[i] = (byte)0x00;
+		i++;
+		
+		//add device name
+		for(byte b : nameBytes)
+		{
+			toSend[i] = b;
+			i++;
+		}
+		
+		return toSend;
+		
+	}
+	
+	
+	//pack a disconnect packet
+	//(never actually used, 100% unneeded as a separate method. Good for testing)
+	public byte[] packDisconnect(byte[] reason)
+	{
+		//create packet contents
+		byte[] rawData = new byte[1+reason.length];
+		rawData[0] = TYPE_DISCONNECT;
+		for(int i=0; i<reason.length; i++)
+		{
+			rawData[i+1] = reason[i];
+		}
+		return rawData;
 	}
 }
 

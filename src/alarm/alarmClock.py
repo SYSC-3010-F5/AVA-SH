@@ -22,12 +22,17 @@ def checkButton():
         
 #bright/dimming for LED
 def ledDim(pwm):
+         print('starting pwm')
+         pwm=int(pwm)
          while(True):
-                for i in range(100):
+                for i in range(pwm*2):
                         pfio.digital_write(2,1)
-                        time.sleep(i/100)
+                        time.sleep(i/pwm)
                         pfio.digital_write(2,0)
-                        time.sleep(i/100)
+                        time.sleep(0.01)
+                break
+         pfio.digital_write(2,1)
+         return
 
 def ledOn():
         pfio.digital_write(2,1)
@@ -57,16 +62,28 @@ for i in range(0,7,-1):
         pfio.digital_write(i,0)
 
 myChannel=dataChannel.DataChannel()
+name='Alarm Controller'
+trys=0
+ledOff()
+while(True):
+        connected = myChannel.connect("134.117.58.116", 3010, (name))
 
-connected = myChannel.connect  ("192.168.3.2", 3010, "AlarmClock")
+        while(connected==True):
+                data, addr = myChannel.rcvPacket(None)
+                opcode, info, extra = myChannel.Unpack(data)
 
-while(connected==False):
-        
-        
-        data, addr = myChannel.rcvPacket(10)
-        opcode, info, extra = myChannel.Unpack(data)
+                sortPack(info,extra)
 
-        sortPack(info,extra)
+                #ledDim(10)
+                #connected=True
         
+        trys=trys+1
+        if(trys==100):
+                print ('10 attemps, changing name')
+                name=name+'1'
+                print (name)
+                trys=0
+
+                
 
 

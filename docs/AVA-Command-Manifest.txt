@@ -119,6 +119,18 @@ COMMAND MANIFEST
 	PURPOSE:		Request the current weather from server
 	RESPONSE:		info-type packet JSON formated current weather
 	
+	----------------------------
+	
+	COMMAND_KEY	:	"set location"
+	EXTRA_INFO:		true
+					The city and (optional) country code, encoded as UTF-8 characters Strings. Separated by comma. If there is no country code, the default is set to CN (Canada). Examples such that:
+					Ottawa,CN
+					OR
+					Ottawa
+	PURPOSE:		Change the geographical location that server gets the weather for based on city location.
+	RESPONSE:		empty info-type packet if location set/query is valid
+					error-type packet otherwise
+	
 	
 	----------------------------
 	COMMAND_KEY:	"req time"
@@ -162,5 +174,55 @@ COMMAND MANIFEST
 	PURPOSE:		Delete a non-periodic event from the server (like removing a timer)
 	RESPONSE:		blank info-type packet as acknowledgment of successful removal
 					error-type packet if the event cannot be found
+	
+	----------------------------
+	
+	COMMAND_KEY:	"led on"
+	EXTRA_INFO:		false
+	PURPOSE:		remote turn on of LED to full.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"led off"
+	EXTRA_INFO:		false
+	PURPOSE:		remote turn off led.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"led pwm"
+	EXTRA_INFO:		true
+					Time in seconds from led off to on. Encoded as a UTF-8 character string.
+					An example of having a period of 1234 seconds would be the UTF-8 characters:
+					1234
+	PURPOSE:		led slowly brightening
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	"alarm on"
+	EXTRA_INFO:		false
+	PURPOSE:		sound alarm.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"coffee on"
+	EXTRA_INFO:		false
+	PURPOSE:		turn ON coffee maker.
+	RESPONSE:		false
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"coffee off"
+	EXTRA_INFO:		false
+	PURPOSE:		turn OFF coffee maker.
+	RESPONSE:		false
+	
+	
+	----------------------------
 
 					

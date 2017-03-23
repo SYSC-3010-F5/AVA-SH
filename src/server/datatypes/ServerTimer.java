@@ -10,7 +10,9 @@
 *
 *
 * 
-*Update Log			v1.0.0
+*Update Log			v1.1.0
+*						- actually triggers an alarm now
+*					v1.0.0
 *						- null
 */
 package server.datatypes;
@@ -28,9 +30,6 @@ import server.Scheduler;
 
 public class ServerTimer extends ServerEvent 
 {
-	//declaring static class constants
-	private static final PacketWrapper[] CMDS = new PacketWrapper[0];//TODO actually make it use alarm
-	
 	//declaring instance variable
 	private final long timeOfCreation;
 	private int secondsUntilTrigger;
@@ -40,7 +39,11 @@ public class ServerTimer extends ServerEvent
 	//generic constructor
 	public ServerTimer(String eventName, int triggerDelaySec, Scheduler scheduler)
 	{
-		super(eventName, CMDS, new TimeAndDate());
+		super(eventName, null, new TimeAndDate());		//because java has a fit if I call super() on not the first line
+		PacketWrapper[] CMDS = new PacketWrapper[]{
+				new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null),
+				new PacketWrapper(PacketWrapper.TYPE_INFO, "Timer \"" + eventName + "\" Triggered!","", null)};
+		this.commands = CMDS;
 		secondsUntilTrigger = triggerDelaySec;
 		timeOfCreation = Calendar.getInstance().getTimeInMillis();
 		this.scheduler = scheduler;

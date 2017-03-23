@@ -4,23 +4,24 @@ import sys
 class DataChannel():
 	TYPE_HANDSHAKE = 0
 	TYPE_CMD = 1
-	TYPE_INFO = 2
+	TYPE_INFO = 2  
 	TYPE_ERR = 3
 	TYPE_DISCONNECT = 4
 	MAX_PACKET_SIZE = 1024
 	TIMEOUT_S = 4
 	HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm."
-	PORT = 3010
+	PORT = 3011
 	connected = False
-	pairedAddress = -1
-	pairedPort = -1
+	pairedAddress ='134.117.58.116'
+	pairedPort = 3010
 	registeredName = ""
 	gpSocket = 0
 	
-	def __init__(self):
+	def __init__(self, deviceName):
 		self.gpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.gpSocket.bind(("", self.PORT))
-		
+		self.gpSocket.setblocking(1)
+		self.registeredName = deviceName
 	
 	#generic accessors
 	def getPairedAddress(self):
@@ -46,7 +47,7 @@ class DataChannel():
 	#returns the data as well as source IP+port
 	def rcvPacket(self, timeout):
 		self.gpSocket.settimeout(timeout)
-		data, addr = self.gpSocket.recvfrom(self.PORT)
+		data, addr = self.gpSocket.recvfrom(self.MAX_PACKET_SIZE)
 		return [data, addr]
 	
 	#send data to IP
@@ -104,7 +105,7 @@ class DataChannel():
 			#decode the bytes			
 			info = extraInfo.decode("utf-8")
 			
-			return [self.TYPE_CMD, cmdKey, deviceName]
+			return [self.TYPE_CMD, cmdKey, info]
 		
 		if(rawPacket[0] == self.TYPE_INFO):
 			infoBytes = bytearray()
@@ -167,21 +168,21 @@ class DataChannel():
 		except socket.timeout:
 			return False
 		
-		if(data[0] == self.TYPE_HANDSHAKE & data[1] == 0x00):
-			self.pairedPort = addr[1]
-			print(addr[1])
-			self.pairedAddress = addr[0]
-			print(addr[0])
-			self.connected = True
-			self.registeredName = deviceName
-			return True
-		elif(data[0] == self.TYPE_ERR):
-			print(self.Unpack(data)[1])
-			return False
-		else:
-			print("Invalid response to handshake\n")
-			print(data)
-			return False
+		#if((data[0] == self.TYPE_HANDSHAKE) and (data[1] == 0x00)):
+		self.pairedPort = addr[1]
+		print(addr[1])
+		self.pairedAddress = addr[0]
+		print(addr[0])
+		self.connected = True
+		self.registeredName = deviceName
+		return True
+		#elif(data[0] == self.TYPE_ERR):
+		#	print(self.Unpack(data)[1])
+		#	return False
+		#else:
+		#	print("Invalid response to handshake\n")
+		#	print(data)
+		#	return False
 	
 	def disconnect(self, reason):
 		#create the disconnect packet
@@ -205,7 +206,7 @@ class DataChannel():
 	#	#create the handshake response
 	#	data = bytearray()
 	#	data.append(self.TYPE_HANDSHAKE)
-	#	data.append(0x00)
+	#	data.append(0x00) 
 	#	self.sendPacketByteArr(data)
 		
 	#send the command and extra info (should be formatted as string)
@@ -237,17 +238,21 @@ class DataChannel():
 		
 		
 #MAIN
-myChannel = DataChannel()
-boolean = myChannel.connect("134.117.58.118", 3010, "BLYAT")
-print(boolean)
-boolean = myChannel.connect("134.117.58.118", 3010, "BLYAT")
-print(boolean)
-myChannel.sendInfo("THE ONLY THING YOU HAVE TO LOSE IS YOUR CHAINS")
-myChannel.sendCmd("req time", "")
-data, addr = myChannel.rcvPacket(10)
-print(data)
-opcode, info, extra = myChannel.Unpack(data)
-print(info)
-myChannel.sendCmd("RISE UP", "")
-myChannel.sendErr("STALIN DED")
-myChannel.disconnect("COMMUNISM DED")
+#myChannel = DataChannel()
+
+#connect(self, sendAddress, sendPort, deviceName)
+#boolean = myChannel.connect  ("192.168.3.2", 3010, "AlarmClock")
+#print(boolean)
+
+#boolean = myChannel.connect("134.117.58.118", 3010, "AlarmClock")
+#print(boolean)
+
+#myChannel.sendInfo("THE ONLY THING YOU HAVE TO LOSE IS YOUR CHAINS")
+#myChannel.sendCmd("req time", "")
+#data, addr = myChannel.rcvPacket(10)
+#print(data)
+#opcode, info, extra = myChannel.Unpack(data)
+#print(info)
+#myChannel.sendCmd("RISE UP", "")
+#myChannel.sendErr("STALIN DED")
+#myChannel.disconnect("COMMUNISM DED")

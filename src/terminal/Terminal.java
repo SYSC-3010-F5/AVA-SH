@@ -2,16 +2,21 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    13/03/2017                                              
-*Version:           0.5.1                                         
+*Date of Update:    15/03/2017                                              
+*Version:           0.5.2                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.2
-*						- terminal disconnect error bug patched (issue #15 on github)
+*Update Log			v0.5.3
+*						- added prefix i\
+*					v0.5.2
+*						- terminal disconnect error bug patched (issue #15)
+*						- switching location for weather added
+*						- help menu updated
+*						- weather location printing bug patched (issue #18)
 *					v0.5.1
 *						- terminal can set up timers (cmd or dialog)
 *						- terminal can remove timers
@@ -81,6 +86,7 @@ import javax.swing.JFrame;
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.MainServer;
 import server.datatypes.Alarm;
 import terminal.dialogs.TimeDialog;
 import server.datatypes.WeatherData;
@@ -92,8 +98,9 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_RESET = 0;
 	public static final int CLOSE_OPTION_ERROR = 1;
 	public static final int CLOSE_OPTION_USER = 2;
+	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.5.0";
+	private static final String VERSION = "v0.5.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	
@@ -209,12 +216,15 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("close", "Exit the local terminal");
 		
 		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
-					+ "\tparam1= n/a             || Attempt to establish server connection at default server address\n"
-					+ "\tparam1= default ::      || Attempt to establish server connection at default server address\n"
-					+ "\tparam1= local ::        || Attempt to establish server conncetion at the local IPv4 address\n"
-					+ "\tparam1= xxx.xxx.xxx.xxx || Attempt to establish server connection to this IPv4 address\n"
-					+ "\tparam2= n/a ::          || Attempt to establish server connect to the default port\n"
-					+ "\tparam2= <INT> ::        || Attempt to establish server connection to port <INT>");
+					+ "\tparam1= n/a             || Connect to server using default IPv4 address\n"
+					+ "\tparam1= default         || Connect to server using default IPv4 address\n"
+					+ "\tparam1= local           || Connect to server using the local IPv4 address\n"
+					+ "\tparam1= xxx.xxx.xxx.xxx || Connect to server using this IPv4 address\n"
+					+ "\tparam2= n/a             || Use default port\n"
+					+ "\tparam2= default         || Use default port\n"
+					+ "\tparam2= <INT>           || Use port <INT>"
+					+ "\tparam3= n/a             || Connect under name \""+defaultDeviceName+"\""
+					+ "\tparam3= <STR>           || Connect under name <STR>");
 		
 		cmdMap.put("disconnect", "Disconnect from main server");
 		
@@ -237,7 +247,7 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= na     || Show the current state of voice echo\n"
 					+ "\tparam1= true   || Set the terminal to synthesize all text as voice\n"
 					+ "\tparam1= false  || Set the terminal to stop synthesis of all text as voice\n"
-					+ "\tparam1 = <STR> || Synthesize the entered String to voice");
+					+ "\tparam1 = <STR> || Synthesize the entered String <STR> to voice");
 		
 		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															
 					+ "\tparam1: n/a      || Launch dialog to schedual alarm\n"
@@ -283,7 +293,22 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("timer-get", "Request list of all timers currently scheduled");
 		
-		cmdMap.put("weather", "Request the current weather of Ottawa, Ontario");
+		cmdMap.put("weather", "Request the current weather");
+		
+		cmdMap.put("location", "Set the current location to a particular city\n"
+				+ "\tparam1: <STR> || The city you want to set location to\n"
+				+ "\tparam2: n/a   || Use default 2 character country code (Canada)\n"
+				+ "\tparam2: <STR> || The country-code you want to set locaiton to (2 character)\n"
+				+ "\t                 CA=Canada, USA=US, Australia=AU, Britain=GB, New Zealand=NZ, etc.");
+		
+		cmdMap.put("lights", "Set the lights ON, OFF, or to gradually increase luminance\n"
+				+ "\tparam1: on    || Turn the lights fully on\n"
+				+ "\tparam1: off   || Turn the lights fully off\n"
+				+ "\tparam1: <INT> || Linearly increase the lights luminance over a period of <INT> second");
+		
+		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"
+				+ "\tparam1: on  || Turn the alarm on\n"
+				+ "\tparam1: off || Turn the alarm off");
 		
 		return cmdMap;
 	}
@@ -302,7 +327,7 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println("Establishing connection...");
 					try 
 					{
-						dataChannel.connect(address, port, name);
+						dataChannel.connect(address, port, PREFIX+name);
 					} 
 					catch (IOException e1) 
 					{
@@ -984,7 +1009,7 @@ public class Terminal extends JFrame implements ActionListener
 						WeatherData weather = new WeatherData(wrapper.info());
 						
 						String[] weatherData = weather.getWeatherData();
-						ui.println("Weather data for Ottawa, Ontario.");
+						ui.println("Weather data for " + weatherData[WeatherData.CITY] + ", " + weatherData[WeatherData.COUNTRY] + ".");
 						ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
 						ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
 						ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
@@ -1034,21 +1059,140 @@ public class Terminal extends JFrame implements ActionListener
 						ui.printError(e.getMessage());
 					}
 				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 			
 			//get list of active non-periodic events
 			case("timer-get"):
-				try
+				if(input.length == 1)
 				{
-					dataChannel.sendCmd("req np-events");
-					PacketWrapper wrapper = dataChannel.receivePacket();
-					ui.println(wrapper.extraInfo());
+					try
+					{
+						dataChannel.sendCmd("req np-events");
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						ui.println(wrapper.extraInfo());
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
 				}
-				catch (NetworkException e)
+				else
 				{
-					ui.printError(e.getMessage());
+					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+			
+			case("location"):
+				if(input.length == 2 || input.length == 3)
+				{
+					try
+					{
+						//send information and command
+						if(input.length == 2)
+						{
+							dataChannel.sendCmd("set location", input[1]);
+						}
+						else
+						{
+							dataChannel.sendCmd("set location", input[1] + "," + input[2]);
+						}
+						
+						//wait for response
+						PacketWrapper wrapper = dataChannel.receivePacket();
+						if(wrapper.type() != DataChannel.TYPE_INFO)
+						{
+							if(wrapper.type() == DataChannel.TYPE_ERR)
+							{
+								ui.printError(wrapper.errorMessage());
+							}
+							else
+							{
+								ui.printError("Received invalid packet type!");
+							}
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+			
+			//change the light status
+			case("lights"):
+				if(input.length == 2)
+				{
+					try
+					{
+						//turn on light
+						if(input[1].equals("on") || input[1].equals("1"))
+						{
+							dataChannel.sendCmd("led on");
+						}
+						//turn light off
+						else if (input[1].equals("off") || input[1].equals("0"))
+						{
+							dataChannel.sendCmd("led off");
+						}
+						//set PWM
+						else
+						{
+							//check PWM period is valid number
+							Integer.parseInt(input[1]);
+							dataChannel.sendCmd("led pwm", input[1]);
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Number must be valid 32bit integer\n\"" + input[1] + "\" not valid time");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			//turn alarm on or off
+			case("alarm-set"):
+				if(input.length == 2)
+				{
+					try
+					{
+						if(input[1].equals("on") || input[1].equals("1"))
+						{
+							dataChannel.sendCmd("alarm on", "");
+						}
+						else if (input[1].equals("on") || input[1].equals("0"))
+						{
+							dataChannel.sendCmd("alarm off", "");
+						}
+						else
+						{
+							ui.println(CMD_NOT_FOUND);
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				
 			//cmd not found
 			default:

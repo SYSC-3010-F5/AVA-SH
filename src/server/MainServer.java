@@ -2,15 +2,30 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    13/03/2017
-*Version:           0.3.1
+*Date of Update:    21/03/2017
+*Version:           0.6.1
 *
 *Purpose:           The main controller of the AVA system
 *
 * 
-*Update Log			v0.3.1
+*Update Log			v0.6.1
+*						- error for database missing handled
+*						- commenting for get weather method
+*					v0.6.0
+*						- packet forwarding based on prefix
+*						- packet forwarding made generic to allow forwarding to any module
+*						- server now forwards info packets to interfaces (when info packet is what it
+*						  (fetches during fetch-execute loop)
+*						- prefixes added
+*					v0.5.0
+*						- method added for forwarding commands to hardware modules/external controllers
+*						- server can remotely turn light on alarm controller on/off/PWM
+*						- server can remotely turn alarm on alarm controller on/off
+*						- server timers now trigger alarm
+*					v0.4.0
 *						- changed to use new ServerTimer subclass
 *						- added button functionality for updating event info
+*						- changing location for weather added
 *					v0.3.0
 *						- button for clearing all events added
 *						- getting current weather added
@@ -46,6 +61,7 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -53,10 +69,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-
-import javax.swing.JOptionPane;
-
+import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -64,6 +77,7 @@ import org.json.JSONObject;
 import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
+import server.database.CrudeDatabase;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
 import server.datatypes.ServerTimer;
@@ -75,7 +89,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.1.1";
+	public static final String SERVER_NAME = "AVA Server v0.6.0";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -84,7 +98,9 @@ public class MainServer extends Thread implements ActionListener
 	public static final byte TYPE_DISCONNECT = 4;
 	public static final int MAX_PACKET_SIZE = 1024;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
-
+	public static final String PREFIX_ALARM = 			"a";
+	public static final String PREFIX_COFEEE_MAKER = 	"c";
+	public static final String PREFIX_INTERFACE = 		"i";
 	
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
@@ -93,6 +109,7 @@ public class MainServer extends Thread implements ActionListener
 	private boolean pauseFlag;
 	private boolean runFlag;
 	private int closeMode;
+	private int locationID;
 	private ServerDSKY display;
 	
 	
@@ -106,6 +123,7 @@ public class MainServer extends Thread implements ActionListener
 		display = new ServerDSKY(SERVER_NAME, InetAddress.getLocalHost().toString()+":"+PORT, this, isFullScreen);
 		runFlag = true;
 		pauseFlag = false;
+		locationID = Weather.OTTAWA_OPENWEATHER_ID;
 		
 		ServerEvent.hookDSKY(display);
 		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
@@ -270,6 +288,109 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
+	//forward a packet
+	private void forwardPacket(PacketWrapper packet, String targetPrefix)
+	{
+		boolean found = false;
+		
+		//look for alarm controller(s)
+		display.println("Attempting packet forward...\nScanning registry for prefix \"" + targetPrefix + "\\\"...");
+		Set<String> keys = registry.keySet();
+		for(String key : keys)
+		{
+			if(key.contains("\\"))
+			{
+				String prefix = key.split("\\\\")[0];		// WHY ORACLE WHY WOULD YOU DO THIS
+				if(prefix.equals(targetPrefix))
+				{
+					try
+					{
+						InetSocketAddress alarm = registry.get(key);
+						display.println("\"" + key + "\" found @ "  + alarm.toString());
+						multiChannel.hijackChannel(alarm.getAddress(), alarm.getPort());
+						switch(packet.type())
+						{
+							case(DataChannel.TYPE_CMD):
+								multiChannel.sendCmd(packet.commandKey(), packet.extraInfo());
+								break;
+							case(DataChannel.TYPE_ERR):
+								multiChannel.sendErr(packet.errorMessage());
+								break;
+							case(DataChannel.TYPE_INFO):
+								multiChannel.sendInfo(packet.info());
+								break;
+							default:
+								display.printError("Unknown packet type for forwarding: " + packet.type());
+								break;
+						}
+						found = true;
+					}
+					catch (NetworkException e){e.printStackTrace();}
+				}
+			}
+		}
+		
+		if(!found)
+		{
+			display.printError("No device registered with prefix \"" + targetPrefix + "\\\" found!");
+		}
+	}
+	
+	
+	//set the location
+	private void setLocation(String cc, InetSocketAddress dest) throws JsonException
+	{
+		String[] loc = new String[2];	
+		//check if there is comma separator for city,country_code
+		if(cc.contains(","))
+		{
+			loc = cc.split(",");
+			if(loc.length != 2)
+			{
+				//invalid format (ie not of city,country)
+				throw new JsonException("Invalid city,country format", JsonException.ERR_FORMAT);
+			}
+		}
+		//no country code given, use default
+		else
+		{
+			loc[0] = cc;
+			loc[1] = CrudeDatabase.COUNTRY_CODE;
+		}
+		try
+		{
+			//prep for query and to send results
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			display.println("Querying database for \"" + loc[0] + ", " + loc[1] + "\"");
+			try
+			{
+				//query database
+				Integer code = Weather.db.query(loc[0], loc[1]);
+				if(code != null)
+				{
+					//valid code obtained, query has hit
+					display.println("Query success! Setting location ID = " + code + "\nSending empty info packet...");
+					locationID = code;
+					multiChannel.sendInfo("");
+				}
+				else
+				{
+					//no code obtained, query has missed
+					display.println("Query failure!\nSending error packet...");
+					multiChannel.sendErr("Location: \"" + loc[0] + ", " + loc[1] + "\" not in database");
+				}
+			}
+			catch(FileNotFoundException e)
+			{
+				//database file cannot be located
+				display.println("Query failure!\nDatabase file cannot be found!\n" + e.getMessage() + "\nSending eror packet...");
+				multiChannel.sendErr("Database file: \"" + CrudeDatabase.DB_LOC.toString() + "\" cannot be found");
+			}
+		}
+		catch (NetworkException e) {e.printStackTrace();}
+	}
+	
+	
 	//send the current weather data as unformatted JSON
 	private void sendCurrentWeather(InetSocketAddress dest)
 	{
@@ -277,7 +398,7 @@ public class MainServer extends Thread implements ActionListener
 		JSONObject weatherData = null;
 		try
 		{
-			weatherData = weatherRequest.currentWeatherAtCity(Weather.OTTAWA_OPENWEATHER_ID);
+			weatherData = weatherRequest.currentWeatherAtCity(locationID);
 		}
 		catch(IOException e)
 		{
@@ -291,7 +412,15 @@ public class MainServer extends Thread implements ActionListener
 		{
 			display.println("Sending weather data...");
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			multiChannel.sendInfo(weatherData.toString());
+			if(weatherData == null)
+			{
+				display.println("Weather data not found! Sending error packet...");
+				multiChannel.sendErr("Weather data not found");
+			}
+			else
+			{
+				multiChannel.sendInfo(weatherData.toString());
+			}
 		}
 		catch(NetworkException e)
 		{
@@ -475,6 +604,20 @@ public class MainServer extends Thread implements ActionListener
 								sendCurrentWeather(packet.source());
 								break;
 								
+							//change the current server location
+							case("set location"):
+								try
+								{
+									setLocation(packet.extraInfo(), packet.source());
+								}
+								catch (JsonException e)
+								{
+									display.println("ERROR >> " + e.getMessage());
+									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
+									multiChannel.sendErr(e.getMessage());
+								}
+								break;
+								
 							//new alarm added
 							case("new alarm"):
 								try
@@ -535,10 +678,20 @@ public class MainServer extends Thread implements ActionListener
 								{
 									String err = "No event with name \"" + packet.extraInfo() + "\" found";
 									display.println(err + "\nSending error packet...");
-									multiChannel.sendErr("No event with name \"" + packet.extraInfo() + "\" found");
+									multiChannel.sendErr(err);
 								}
 								break;
+							
+							//commands forwarded to alarm
+							case("alarm on"):
+							case("alarm off"):
+							case("led on"):
+							case("led off"):
+							case("led pwm"):
+								forwardPacket(packet, PREFIX_ALARM);
+								break;
 								
+							//commands forwarding
 						}
 						break;
 					
@@ -546,6 +699,7 @@ public class MainServer extends Thread implements ActionListener
 						
 					//some info from an interface
 					case(DataChannel.TYPE_INFO):
+						forwardPacket(packet, PREFIX_INTERFACE);
 						break;
 					
 					
@@ -624,7 +778,7 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//main method
-	public static void main(String[] args) throws SocketException
+	public static void main(String[] arg)
 	{
 		try 
 		{
@@ -632,7 +786,7 @@ public class MainServer extends Thread implements ActionListener
 			server.run();
 		}
 		catch (UnknownHostException e) 
-		{			
+		{	
 			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());
 			e.printStackTrace();
 		}

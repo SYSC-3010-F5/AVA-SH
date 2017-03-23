@@ -2,14 +2,16 @@
 *Class:             PacketWrapper.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    04/03/2017                                              
-*Version:           1.2.0                                         
+*Date of Update:    16/03/2017                                              
+*Version:           1.2.1                                         
 *                                                                                   
 *Purpose:           Generic wrapper class that shows the components of a packet
 *					in an easy, ready-to-use form.
 *					
 * 
-*Update Log			v1.2.0
+*Update Log			v1.2.1
+*						- added constants for packet types 
+*					v1.2.0
 *						- to and from JSON added
 *						- fields made non-final and private for json init
 *						- accessors made for source and type
@@ -33,6 +35,13 @@ import io.json.*;
 
 public class PacketWrapper implements ToJSONFile
 {
+	//declaring global class constants
+	public static final byte TYPE_HANDSHAKE = DataChannel.TYPE_HANDSHAKE;
+	public static final byte TYPE_CMD = DataChannel.TYPE_CMD;
+	public static final byte TYPE_INFO = DataChannel.TYPE_INFO;
+	public static final byte TYPE_ERR = DataChannel.TYPE_ERR;
+	public static final byte TYPE_DISCONNECT = DataChannel.TYPE_DISCONNECT;
+	
 	//declaring local instance variables
 	private byte type;
 	private String sField1;
@@ -117,19 +126,19 @@ public class PacketWrapper implements ToJSONFile
 		String s = "TYPE: " + "0x" + (String.format("%02x", type)).toUpperCase() + ", ";
 		switch(type)
 		{
-			case(DataChannel.TYPE_HANDSHAKE):
+			case(TYPE_HANDSHAKE):
 				s += "HANDSHAKE_KEY: <" + this.handshakeKey() + ">, DEVICE_NAME: <" + this.deviceName() + ">";
 				break;
-			case(DataChannel.TYPE_CMD):
+			case(TYPE_CMD):
 				s += "CMD_KEY: <" + this.commandKey() + "> EXTRA_INFO: <" + this.extraInfo() + ">";
 				break;
-			case(DataChannel.TYPE_INFO):
+			case(TYPE_INFO):
 				s += "INFO: <" + this.info() + ">";
 				break;
-			case(DataChannel.TYPE_ERR):
+			case(TYPE_ERR):
 				s += "ERR_MSG: <" + this.errorMessage() + ">";
 				break;
-			case(DataChannel.TYPE_DISCONNECT):
+			case(TYPE_DISCONNECT):
 				s += "DISCONNECT_MSG: <" + this.disconnectMessage() + ">";
 				break;
 			default:
