@@ -11,10 +11,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+import datatypes.WeatherData;
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 
+import static android.R.attr.data;
 import static android.icu.lang.UCharacter.GraphemeClusterBreak.L;
 
 /**
@@ -131,7 +133,7 @@ public class ConnectionHelper implements Runnable {
     }
 
     public void getWeather(){
-        /*
+
         try
         {
             dataChannel.sendCmd("req current weather" + "\n" );
@@ -146,9 +148,22 @@ public class ConnectionHelper implements Runnable {
         }
         catch (NetworkException e)
         {
-            ui.printError(e.getMessage());
+            et.append(e.getMessage());
+
         }
-        */
+        alertBuilder.showAlert();
+
+    }
+
+    public void sendCmd(String cmd){
+        try{
+            dataChannel.sendCmd(cmd);
+        } catch(NetworkException e){
+            et.append(e.getMessage());
+            alertBuilder.showAlert();
+
+        }
+
     }
 
     public DataChannel getDataChannel(){

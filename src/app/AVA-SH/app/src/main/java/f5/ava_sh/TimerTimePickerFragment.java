@@ -18,6 +18,11 @@ public class TimerTimePickerFragment extends DialogFragment implements TimePicke
     private int defaultHour;
     private int defaultMinute;
 
+    public int hourOfDay;
+    public int minute;
+
+
+
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -34,6 +39,9 @@ public class TimerTimePickerFragment extends DialogFragment implements TimePicke
 
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+        this.hourOfDay = hourOfDay;
+        this.minute = minute;
 
     }
+
 }
