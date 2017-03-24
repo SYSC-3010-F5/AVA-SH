@@ -3,14 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    09/03/2017                                              
-*Version:           1.1.1                                         
+*Version:           1.2.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.1.2
+*Update Log			v1.2.0
 *						- external window listener added for close button
+*						- method added for info pop-ups
+*						- method added for blocking on input for on x seconds
 *					v1.1.1
 *						- optional fullscreen added
 *						- separate command-list window added
@@ -296,7 +298,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				flavor = "fullscreen mode...";
 			}
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.1.2 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
+			this.println("Starting TerminalUI v1.2.0 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -444,6 +446,33 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		//set flag and return
 		inputReady = false;
 		return input;
+	}
+	
+	
+	//return the user input if there is any, only block for ms seconds
+	public synchronized String[] getInput(int timeout)
+	{
+		//wait for input from maximum of timeout ms
+		if (!inputReady)
+		{
+			try
+			{
+				wait(timeout);
+			} 
+			catch (InterruptedException e) {e.printStackTrace();}
+		}
+		
+		
+		if(inputReady)
+		{
+			//set flag and return
+			inputReady = false;
+			return input;
+		}
+		else
+		{
+			return null;
+		}
 	}
 	
 	
@@ -671,6 +700,17 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void close()
 	{
 		this.dispose();
+	}
+	
+	
+	//popup info message
+	public void dialogInfo(String msg)
+	{
+		//print to console
+		println(msg);
+		
+		//open dialog
+		JOptionPane.showMessageDialog(this, msg, TERMINAL_NAME, JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	

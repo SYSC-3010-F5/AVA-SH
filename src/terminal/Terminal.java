@@ -12,6 +12,7 @@
 * 
 *Update Log			v0.6.0
 *						- x button now disconnects
+*						- can now receive unprompted INFO and ERROR packet
 *					v0.5.3
 *						- added prefix i\
 *						- alarm setting patched
@@ -109,6 +110,7 @@ public class Terminal extends JFrame implements ActionListener
 	private static final String VERSION = "v0.5.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
+	private static final int SWITCH_SPEED = 100;
 	
 	//declaring local instance variables
 	private String 		defaultDeviceName;
@@ -181,9 +183,40 @@ public class Terminal extends JFrame implements ActionListener
 		
 		//main input-parse loop
 		ui.println("\n************************* INIT COMPLETE *************************\nWaiting for input...");
+		String[] in;
 		while(runFlag)
 		{
-			String[] in = ui.getInput();
+			//get input and check for data on socket
+			in = null;
+			while(in == null)
+			{
+				//get input
+				in = ui.getInput(SWITCH_SPEED);
+				if(in == null)
+				{
+					try
+					{
+						//get packet
+						PacketWrapper packet = dataChannel.receivePacket(SWITCH_SPEED);
+						
+						switch(packet.type())
+						{
+							//atomic info received
+							case(PacketWrapper.TYPE_INFO):
+								ui.dialogInfo(packet.info());
+								break;
+							
+							//atomic error received
+							case(PacketWrapper.TYPE_ERR):
+								ui.printError(packet.info());
+								break;
+						}
+					}
+					//nothing on socket, repeat
+					catch (SocketException|NetworkException e){}
+				}
+			}
+			
 			handleConsoleInput(in);
 		}
 		
@@ -193,7 +226,7 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//added to keep older code running, default close is via user
-	public void close()
+	public void close() //TODO never actually closes
 	{
 		close(CLOSE_OPTION_USER);
 	}

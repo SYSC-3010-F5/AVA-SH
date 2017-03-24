@@ -55,6 +55,6 @@ public class Alarm extends ServerEvent
 	{
 		return new PacketWrapper[]{
 				new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null),
-				new PacketWrapper(PacketWrapper.TYPE_INFO, "Alarm: \"" + eventName + "\" Triggered!","", null)};
+				new PacketWrapper(PacketWrapper.TYPE_INFO, eventName,"", null)};
 	}
 }

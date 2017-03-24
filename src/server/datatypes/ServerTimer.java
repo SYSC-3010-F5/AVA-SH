@@ -42,7 +42,7 @@ public class ServerTimer extends ServerEvent
 		super(eventName, null, new TimeAndDate());		//because java has a fit if I call super() on not the first line
 		PacketWrapper[] CMDS = new PacketWrapper[]{
 				new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null),
-				new PacketWrapper(PacketWrapper.TYPE_INFO, "Timer \"" + eventName + "\" Triggered!","", null)};
+				new PacketWrapper(PacketWrapper.TYPE_INFO, eventName,"", null)};
 		this.commands = CMDS;
 		secondsUntilTrigger = triggerDelaySec;
 		timeOfCreation = Calendar.getInstance().getTimeInMillis();
