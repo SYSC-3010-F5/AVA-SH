@@ -2,8 +2,8 @@
 *Class:             ServerDSKY.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    13/03/2017                                              
-*Version:           2.2.0                                         
+*Date of Update:    23/03/2017                                              
+*Version:           2.2.1                                         
 *                                                                                   
 *Purpose:           Displays plain text with time stamps (DiSplay).
 *					Displays registry for server.
@@ -15,7 +15,10 @@
 *					Are guaranteed thread safe.
 *					
 * 
-*Update Log			v2.2.0
+*Update Log			v2.2.1
+*						- option to have custom handling of close button added
+*						- constructors tidied
+*					v2.2.0
 *						- east panel registered devices and header split into separate GUI objects
 *						- soft reset replaced with update for events
 *					v2.1.1
@@ -47,6 +50,7 @@ import java.awt.GridLayout;
 import java.awt.Window.Type;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -105,14 +109,24 @@ public class ServerDSKY extends JFrame implements ActionListener
 	}
 	
 	
+	
+	//constructor from v2.0.0
+	public ServerDSKY(String title, String location, ActionListener listener)
+	{
+		this(title, location, listener, false, null);
+	}
+	//constructor from v2.2.0
+	public ServerDSKY(String title, String location, ActionListener listener, boolean isFullScreen)
+	{
+		this(title, location, listener, isFullScreen, null);
+	}
 	//generic constructor
-	public ServerDSKY(String title, String location, ActionListener listener, boolean isFullScreen) 
+	public ServerDSKY(String title, String location, ActionListener listener, boolean isFullScreen, WindowAdapter closeOverride) 
 	{
 		//set up main window frame
 		super(title + "@" + location);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(ServerDSKY.class.getResource("/javax/swing/plaf/metal/icons/ocean/computer.gif")));
 		this.setBounds(100, 0, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
-		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.getContentPane().setBackground(DEFAULT_BACKGROUND_COLOR);
 		this.getContentPane().setLayout(new BorderLayout(0, 0));
 		
@@ -255,7 +269,13 @@ public class ServerDSKY extends JFrame implements ActionListener
 		buttonPanel.add(btnClearDisplay);
 		buttonPanel.add(btnClearEvents);
 		
-
+		//set up close button custom
+		if(closeOverride != null)
+		{
+			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			this.addWindowListener(closeOverride);
+		}
+		
 		//set visible
 		try 
 		{

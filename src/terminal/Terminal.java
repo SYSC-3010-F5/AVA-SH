@@ -2,15 +2,17 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    15/03/2017                                              
-*Version:           0.5.2                                         
+*Date of Update:    23/03/2017                                              
+*Version:           0.6.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.3
+*Update Log			v0.6.0
+*						- x button now disconnects
+*					v0.5.3
 *						- added prefix i\
 *						- alarm setting patched
 *					v0.5.2
@@ -75,6 +77,8 @@ package terminal;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -122,7 +126,19 @@ public class Terminal extends JFrame implements ActionListener
 	public Terminal(boolean isFullScreen)
 	{	
 		//init ui
-		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen);
+		WindowAdapter adapter = new WindowAdapter() 
+		{
+		    @Override
+		    public void windowClosing(WindowEvent windowEvent) 
+		    {
+		    	boolean closed = ui.reqClose();
+				if(closed)
+				{
+					close(CLOSE_OPTION_USER);
+				}
+		    }
+		};
+		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen, adapter);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
 		

@@ -9,7 +9,9 @@
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.1.1
+*Update Log			v1.1.2
+*						- external window listener added for close button
+*					v1.1.1
 *						- optional fullscreen added
 *						- separate command-list window added
 *						- print all command details patched
@@ -70,6 +72,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -141,9 +144,18 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private JTextArea statusOverview;
 	private JTextArea cmdHelp;
 
-	
-	//generic constructor
+	//v1.0.0 constructor
+	public TerminalUI(String title, ActionListener listener, String cmdNotFound)
+	{
+		this(title, listener, cmdNotFound, false, null);
+	}
+	//v1.1.1 constructor
 	public TerminalUI(String title, ActionListener listener, String cmdNotFound, boolean isFullScreen)
+	{
+		this(title, listener, cmdNotFound, isFullScreen, null);
+	}
+	//generic constructor
+	public TerminalUI(String title, ActionListener listener, String cmdNotFound, boolean isFullScreen, WindowAdapter closeOverride)
 	{
 		//set up main window frame
 		super(title);
@@ -264,6 +276,14 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		cmdPane.setViewportView(cmdHelp);
 		
 		
+		//set up close button custom
+		if(closeOverride != null)
+		{
+			this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+			this.addWindowListener(closeOverride);
+		}
+		
+		
 		//set visible and color
 		this.colorScheme(DEFAULT_COLOR_SCHEME);
 		try 
@@ -276,7 +296,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				flavor = "fullscreen mode...";
 			}
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.1.1 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
+			this.println("Starting TerminalUI v1.1.2 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
