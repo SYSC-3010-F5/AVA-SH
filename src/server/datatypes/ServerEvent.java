@@ -61,7 +61,7 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 	
 	//declaring local instance variables
 	protected String eventName;
-	private TimeAndDate trigger;
+	protected TimeAndDate trigger;
 	protected PacketWrapper[] commands;
 	
 

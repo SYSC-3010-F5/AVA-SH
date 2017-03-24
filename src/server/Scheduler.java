@@ -2,13 +2,18 @@
 *Class:             Scheduler.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    12/03/2017                                              
-*Version:           0.1.0                                         
+*Date of Update:    23/03/2017                                              
+*Version:           1.0.1                                         
 *                                                                                   
 *Purpose:           Real time is hard.
 *					
 * 
-*Update Log			v0.2.2
+*Update Log			v1.0.1
+*						- periodic events are now only added once to the list of periodic events
+*						  (fixes bug with printing)
+*					v1.0.0
+*						- Periodic scheduling working
+*					v0.2.2
 *						- timers added using standard schedule method
 *						- timers now use subclass of ServerEvent <|--- ServerTimer
 *						- Scheduler instances now have special Event that runs every 30 seconds to
@@ -240,7 +245,6 @@ public class Scheduler
 				//to reduce the delay to the next trigger time (which could be either today or tomorrow if the time has passed), take the delay modulus the period of 1 day
 				
 				delay = delay % MS_DAY;
-				
 				scheduler.scheduleAtFixedRate(event, delay, MS_DAY);
 				periodicEvents.add(event);
 				return true;
@@ -258,8 +262,8 @@ public class Scheduler
 						TimeAndDate trigger = scheduleEvent.getTrigger();
 						trigger.setDays(triggerDay);
 						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
-						periodicEvents.add(scheduleEvent);
 					}
+					periodicEvents.add(event);
 				}
 				return true;
 			}

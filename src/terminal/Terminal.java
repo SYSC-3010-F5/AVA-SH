@@ -2,16 +2,20 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    15/03/2017                                              
-*Version:           0.5.2                                         
+*Date of Update:    23/03/2017                                              
+*Version:           0.6.0                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.5.3
+*Update Log			v0.6.0
+*						- x button now disconnects
+*						- can now receive unprompted INFO and ERROR packet
+*					v0.5.3
 *						- added prefix i\
+*						- alarm setting patched
 *					v0.5.2
 *						- terminal disconnect error bug patched (issue #15)
 *						- switching location for weather added
@@ -74,6 +78,8 @@ package terminal;
 //external imports
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -88,6 +94,7 @@ import network.NetworkException;
 import network.PacketWrapper;
 import server.MainServer;
 import server.datatypes.Alarm;
+import server.datatypes.TimeAndDate;
 import terminal.dialogs.TimeDialog;
 import server.datatypes.WeatherData;
 
@@ -103,6 +110,7 @@ public class Terminal extends JFrame implements ActionListener
 	private static final String VERSION = "v0.5.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
+	private static final int SWITCH_SPEED = 100;
 	
 	//declaring local instance variables
 	private String 		defaultDeviceName;
@@ -120,7 +128,19 @@ public class Terminal extends JFrame implements ActionListener
 	public Terminal(boolean isFullScreen)
 	{	
 		//init ui
-		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen);
+		WindowAdapter adapter = new WindowAdapter() 
+		{
+		    @Override
+		    public void windowClosing(WindowEvent windowEvent) 
+		    {
+		    	boolean closed = ui.reqClose();
+				if(closed)
+				{
+					close(CLOSE_OPTION_USER);
+				}
+		    }
+		};
+		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen, adapter);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
 		
@@ -163,9 +183,40 @@ public class Terminal extends JFrame implements ActionListener
 		
 		//main input-parse loop
 		ui.println("\n************************* INIT COMPLETE *************************\nWaiting for input...");
+		String[] in;
 		while(runFlag)
 		{
-			String[] in = ui.getInput();
+			//get input and check for data on socket
+			in = null;
+			while(in == null)
+			{
+				//get input
+				in = ui.getInput(SWITCH_SPEED);
+				if(in == null)
+				{
+					try
+					{
+						//get packet
+						PacketWrapper packet = dataChannel.receivePacket(SWITCH_SPEED);
+						
+						switch(packet.type())
+						{
+							//atomic info received
+							case(PacketWrapper.TYPE_INFO):
+								ui.dialogInfo(packet.info());
+								break;
+							
+							//atomic error received
+							case(PacketWrapper.TYPE_ERR):
+								ui.printError(packet.info());
+								break;
+						}
+					}
+					//nothing on socket, repeat
+					catch (SocketException|NetworkException e){}
+				}
+			}
+			
 			handleConsoleInput(in);
 		}
 		
@@ -175,7 +226,7 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//added to keep older code running, default close is via user
-	public void close()
+	public void close() //TODO never actually closes
 	{
 		close(CLOSE_OPTION_USER);
 	}
@@ -604,7 +655,7 @@ public class Terminal extends JFrame implements ActionListener
 						//send alarm
 						try 
 						{
-							dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+							dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
 						} 
 						catch (NetworkException e) 
 						{
@@ -615,9 +666,12 @@ public class Terminal extends JFrame implements ActionListener
 				//cmd alarm, generic name
 				else if(input.length == 3 || input.length == 4)
 				{
-					Alarm alarm = new Alarm();
-					//parse day into
+					//method variables
+					int hour, min;
 					boolean[] daysArr = new boolean[7];
+					String name = "Generic Alarm";
+					
+					//parse day into
 					String[] daysInput = input[1].split(",");
 					for(String day : daysInput)
 					{
@@ -649,38 +703,31 @@ public class Terminal extends JFrame implements ActionListener
 								return;
 						}
 					}
-					alarm.setDays(daysArr);
 					//parse time info
 					String[] hourMin = input[2].split(":");
 					try
 					{
-						int hour =  Integer.parseInt(hourMin[0]);
-						int min = Integer.parseInt(hourMin[1]);
-						alarm.setHour(hour);
-						alarm.setMinute(min);
+						hour =  Integer.parseInt(hourMin[0]);
+						min = Integer.parseInt(hourMin[1]);
 					}
 					catch (NumberFormatException e)
 					{
 						ui.printError("Hour/Minute must be a valid integer");
 						return;
 					}
-					catch (DateTimeException e)
-					{
-						ui.printError(e.getMessage());
-						return;
-					}
 					//parse name info
 					if(input.length == 4)
 					{
-						alarm.setName(input[3]);
+						name = (input[3]);
 					}
 					
 					//send alarm
 					try 
 					{
-						dataChannel.sendCmd("new alarm", alarm.toJSON(""));
+						Alarm alarm = new Alarm(name, new TimeAndDate(hour, min, daysArr));
+						dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
 					} 
-					catch (NetworkException e) 
+					catch (NetworkException|DateTimeException e) 
 					{
 						ui.printError(e.getMessage());
 					}

@@ -48,7 +48,7 @@ COMMAND MANIFEST
 		
 	----------------------------
 	
-	COMMAND_KEY:	"sch event"
+	COMMAND_KEY:	"sch p-event"
 	EXTRA_INFO:		true
 					Formated using JSON using UTF-8 character encoding, includes information denoting the trigger of the event (ie what time of day, and what days per week), and an array of the commands to fire upon event triger. A sample of this looks like:
 					{
@@ -94,21 +94,6 @@ COMMAND MANIFEST
 						"timeUntilTrigger" : 30
 					}
 	PURPOSE:		Set a timer to trigger in a certain amount of minutes
-	RESPONSE		N/A
-	
-	
-	----------------------------
-	
-	COMMAND_KEY:	"new alarm"
-	EXTRA_INFO:		true
-					Formated JSON using UTF-8 encoding, includes information denoting the hour and minute the alarm is to trigger at (24h format), as well as the days of the week the alarm is to trigger on (saved as a 7 long array of boolean values). It also includes the name of the alarm. A sample of the EXTRA_INFO field of an alarm that tiggers on weekdays at 7:20, with a label of "wake up":
-					{
-						"hour" : 7
-						"minute" : 20
-						"days" : [true, true, true, true, true, false, false]
-						"name" : "wake up"
-					}
-	PURPOSE:		Set a new alarm to trigger at a particular time on certain days of the week.
 	RESPONSE		N/A
 	
 	

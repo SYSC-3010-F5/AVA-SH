@@ -11,6 +11,7 @@
 *Update Log			v0.6.1
 *						- error for database missing handled
 *						- commenting for get weather method
+*						- close button adapter added to main frame
 *					v0.6.0
 *						- packet forwarding based on prefix
 *						- packet forwarding made generic to allow forwarding to any module
@@ -61,6 +62,8 @@ package server;
 //import libraries
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -89,7 +92,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.6.0";
+	public static final String SERVER_NAME = "AVA Server v0.6.1";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = 0;
 	public static final byte TYPE_CMD = 1;
@@ -115,15 +118,38 @@ public class MainServer extends Thread implements ActionListener
 	
 	//generic constructor
 	public MainServer(boolean isFullScreen) throws SocketException, UnknownHostException
-	{
+	{	
 		//initialize
 		registry = new HashMap<String,InetSocketAddress>();
 		multiChannel = new DataMultiChannel(PORT);
 		scheduler = new Scheduler("AVA Scheduler");
-		display = new ServerDSKY(SERVER_NAME, InetAddress.getLocalHost().toString()+":"+PORT, this, isFullScreen);
 		runFlag = true;
 		pauseFlag = false;
 		locationID = Weather.OTTAWA_OPENWEATHER_ID;
+		
+		//initialize DSKY
+		WindowAdapter adapter = new WindowAdapter() 
+		{
+		    @Override
+		    public void windowClosing(WindowEvent windowEvent) 
+		    {
+		    	display.println("BUTTON >> WINDOW CLOSE");
+		    	if(display.getBoolean("Are you sure you wish to perform a hard shutdown on the AVA Server?\nThis can lead to unexpected events on modules and lost data"))
+				{
+					System.exit(0);
+				}
+				else
+				{
+					display.println("Shutdown canceled!");
+				}
+		    }
+		};
+		display = new ServerDSKY(SERVER_NAME, 
+				InetAddress.getLocalHost().toString()+":"+PORT, 
+				this, 
+				isFullScreen,
+				adapter
+				);
 		
 		ServerEvent.hookDSKY(display);
 		display.println("Server running @ " + InetAddress.getLocalHost() + ":" + PORT + " !");
@@ -149,6 +175,7 @@ public class MainServer extends Thread implements ActionListener
 	public void scheduleEvent(String eventJson) throws JsonException
 	{
 		//get event
+		display.println("Assembling event...");
 		ServerEvent event = new ServerEvent();
 		event.fromJSON(eventJson);
 		
@@ -429,17 +456,6 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//make a new alarm
-	private void newAlarm(String alarmJSON) throws JsonException
-	{
-		display.println("Creating new alarm...");
-		Alarm alarm = new Alarm();
-		alarm.fromJSON(alarmJSON);
-		display.println("Alarm created!");
-		//TODO add alarm as a ServerEvent
-	}
-	
-	
 	//send the server time
 	private void sendTime(InetSocketAddress dest)
 	{
@@ -618,18 +634,6 @@ public class MainServer extends Thread implements ActionListener
 								}
 								break;
 								
-							//new alarm added
-							case("new alarm"):
-								try
-								{
-									newAlarm(packet.extraInfo());
-								}
-								catch (JsonException e)
-								{
-									display.println("ERROR >> " + e.getMessage());
-								}
-								break;
-								
 							//the server time is requested
 							case("req time"):
 								sendTime(packet.source());
@@ -641,7 +645,7 @@ public class MainServer extends Thread implements ActionListener
 								break;
 								
 							//new event being scheduled
-							case("sch event"):
+							case("sch p-event"):
 								try
 								{
 									scheduleEvent(packet.extraInfo());
