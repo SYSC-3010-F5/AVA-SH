@@ -186,7 +186,9 @@ public class Scheduler
 		//this means that if today is friday, and the trigger date is a sunday, the computed delay will end up being negative
 		//checking if the delay is negative and adding the milliseconds in a week should fix this, which is done lower down
 		
-		//Set the hour and minute of the trigger
+		//Set the hour, minute, second and millisecond of the trigger
+		triggerDate.set(Calendar.MILLISECOND, 0);
+		triggerDate.set(Calendar.SECOND, 0);
 		triggerDate.set(Calendar.MINUTE, trigger.getMinute());
 		triggerDate.set(Calendar.HOUR_OF_DAY, trigger.getHour());
 		
