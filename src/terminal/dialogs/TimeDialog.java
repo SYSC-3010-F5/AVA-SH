@@ -2,13 +2,15 @@
 *Class:             TimeDialog.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    07/03/2017                                              
-*Version:           2.0.0                                         
+*Date of Update:    25/03/2017                                              
+*Version:           2.0.1                                         
 *                                                                                   
 *Purpose:           Allow to user to select a time for a timer
 *					
 * 
-*Update Log			V2.0.0
+*Update Log			v2.0.1
+*						- tab order fixed
+*					v2.0.0
 *						- Entire graphic aspect redone
 *					v1.0.0
 *						- null
@@ -16,7 +18,7 @@
 package terminal.dialogs;
 
 
-//import libraires
+//import libraries
 import java.awt.Font;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
@@ -32,6 +34,8 @@ import javax.swing.SwingConstants;
 
 //import packages
 import server.datatypes.Alarm;
+import terminal.dialogs.traversals.FocusTraversalOnArray;
+import java.awt.Component;
 
 
 
@@ -174,8 +178,15 @@ public class TimeDialog extends JDialog implements ActionListener
 		this.getContentPane().add(btnCancel);
 		
 		
-		//set visible
+		//set visible and tabbing order
 		this.setLocationRelativeTo(callingFrame);
+		setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{
+				txtName, 
+				spHour, 
+				spMin, 
+				spSec, 
+				btnOk, 
+				btnCancel}));
 		this.setVisible(true);
 	}
 	

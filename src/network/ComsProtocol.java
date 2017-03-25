@@ -31,7 +31,7 @@ import io.json.JsonFile;
 public interface ComsProtocol 
 {
 	//receive
-	public PacketWrapper receivePacket() throws NetworkException;
+	public PacketWrapper receivePacket(int timeout) throws NetworkException;
 	
 	//contact paired connection via handshake protocol
 	public void connect(InetAddress toPair, int listeningPort, String deviceName) throws NetworkException, IOException;

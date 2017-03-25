@@ -12,6 +12,7 @@
 *						- error for database missing handled
 *						- commenting for get weather method
 *						- close button adapter added to main frame
+*						- remote shutdown added
 *					v0.6.0
 *						- packet forwarding based on prefix
 *						- packet forwarding made generic to allow forwarding to any module
@@ -136,7 +137,7 @@ public class MainServer extends Thread implements ActionListener
 		    	display.println("BUTTON >> WINDOW CLOSE");
 		    	if(display.getBoolean("Are you sure you wish to perform a hard shutdown on the AVA Server?\nThis can lead to unexpected events on modules and lost data"))
 				{
-					System.exit(0);
+					shutdown();
 				}
 				else
 				{
@@ -166,8 +167,11 @@ public class MainServer extends Thread implements ActionListener
 	//shutdown server
 	public void shutdown()
 	{
+		display.println("Begining AVA Server shutdown...");
 		multiChannel.close();
 		display.close();
+		display.println("Shutdown complete!");
+		System.exit(0);
 	}
 	
 	
@@ -685,6 +689,11 @@ public class MainServer extends Thread implements ActionListener
 									multiChannel.sendErr(err);
 								}
 								break;
+								
+							//remote shutdown
+							case("shutdown"):
+								this.shutdown();
+								break;
 							
 							//commands forwarded to alarm
 							case("alarm on"):
@@ -694,14 +703,12 @@ public class MainServer extends Thread implements ActionListener
 							case("led pwm"):
 								forwardPacket(packet, PREFIX_ALARM);
 								break;
-								
-							//commands forwarding
 						}
 						break;
 					
 						
 						
-					//some info from an interface
+					//some info to fwd to interfaces
 					case(DataChannel.TYPE_INFO):
 						forwardPacket(packet, PREFIX_INTERFACE);
 						break;
@@ -751,7 +758,7 @@ public class MainServer extends Thread implements ActionListener
 				display.println("BUTTON >> HARD SHUTDOWN");
 				if(display.getBoolean("Are you sure you wish to perform a hard shutdown on the AVA Server?\nThis can lead to unexpected events on modules and lost data"))
 				{
-					System.exit(0);
+					this.shutdown();
 				}
 				else
 				{

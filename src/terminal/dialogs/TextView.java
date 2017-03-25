@@ -30,7 +30,7 @@ import javax.swing.JTextArea;
 public class TextView extends JFrame 
 {
 	//declaring static class constants
-	private static final int DEFAULT_WINDOW_X = 825;
+	private static final int DEFAULT_WINDOW_X = 900;
 	private static final int DEFAULT_WINDOW_Y = 600;
 	private static final Font DEFAULT_FONT = new Font("Monospaced", Font.PLAIN, 13);
 	

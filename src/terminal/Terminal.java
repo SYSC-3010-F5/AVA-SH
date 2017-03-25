@@ -13,6 +13,8 @@
 *Update Log			v0.6.0
 *						- x button now disconnects
 *						- can now receive unprompted INFO and ERROR packet
+*						- all dialogs tab order added
+*						- can now shutdown server
 *					v0.5.3
 *						- added prefix i\
 *						- alarm setting patched
@@ -213,7 +215,7 @@ public class Terminal extends JFrame implements ActionListener
 						}
 					}
 					//nothing on socket, repeat
-					catch (SocketException|NetworkException e){}
+					catch (NetworkException e){}
 				}
 			}
 			
@@ -360,6 +362,8 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"
 				+ "\tparam1: on  || Turn the alarm on\n"
 				+ "\tparam1: off || Turn the alarm off");
+		
+		cmdMap.put("shutdown", "Shutdown the main AVA Server\n");
 		
 		return cmdMap;
 	}
@@ -644,7 +648,7 @@ public class Terminal extends JFrame implements ActionListener
 			
 				
 			//Schedule an alarm
-			case("alarm"):
+			case("alarm-new"):
 				//no params, launch dialog
 				if(input.length == 1)
 				{
@@ -874,10 +878,6 @@ public class Terminal extends JFrame implements ActionListener
 					ui.println(wrapper.info());
 				} 
 				catch (NetworkException e) 
-				{
-					ui.printError(e.getMessage());
-				}
-				catch (SocketException e)
 				{
 					ui.printError(e.getMessage());
 				}
@@ -1240,6 +1240,46 @@ public class Terminal extends JFrame implements ActionListener
 				{
 					ui.println(CMD_NOT_FOUND);
 				}
+				break;
+				
+			case("shutdown"):
+				if (length == 1)
+				{
+					//confirm exit
+					ui.println("Are you sure you wish to shutdown the main AVA Server?\nYou will not be able to remotely start the main AVA Server afterwards (y/n)");
+					String[] in = ui.getInput();
+					if(in.length == 1)
+					{
+						if(in[0].equals("y"))
+						{
+							try 
+							{
+								//shutdown server and disconnect
+								dataChannel.sendCmd("shutdown");
+								ui.println("Server shutdown complete!");
+								this.disconnect("user");
+							} 
+							catch (NetworkException e) 
+							{
+								ui.printError(e.getMessage());
+							}
+						}
+						else
+						{
+							ui.println("Canceling shutdown...");
+						}
+					}
+					
+					else
+					{
+						ui.println("Canceling shutdown...");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
 				
 			//cmd not found
 			default:
@@ -1284,10 +1324,6 @@ public class Terminal extends JFrame implements ActionListener
 			catch (NetworkException e)
 			{
 				ui.println(e.getMessage());
-			}
-			catch (SocketException e)
-			{
-				ui.println("No response");
 			}
 		}
 	}
@@ -1359,6 +1395,7 @@ public class Terminal extends JFrame implements ActionListener
 			switch(close)
 			{
 				//closed from error
+			
 				case(Terminal.CLOSE_OPTION_ERROR):
 					System.out.println("An error has occured");
 					relaunch = false;

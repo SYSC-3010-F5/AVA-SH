@@ -36,7 +36,7 @@ public class CrudeDatabase
 {
 	//declaring local class constants
 	public static final Path DB_LOC = Paths.get("").toAbsolutePath().resolve("resources/citylist.json.butletspretenditsapdf.pdf");
-	public static final String COUNTRY_CODE = "CA";
+	public static final String COUNTRY_CODE = "ca";
 
 	
 	//generic constructor
@@ -47,7 +47,7 @@ public class CrudeDatabase
 	private String formatQ(String city, String country)
 	{
 		//format:	"name":"Etten-Leur","country":"NL"
-		return ("\"name\":\"" + city + "\",\"country\":\"" + country.toUpperCase() + "\"");
+		return ("\"name\":\"" + city.toLowerCase() + "\",\"country\":\"" + country.toLowerCase() + "\"");
 	}
 	
 	

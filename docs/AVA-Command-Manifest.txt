@@ -40,6 +40,14 @@ ILLEGAL CHARACTERS
 COMMAND MANIFEST
 ===============================
 
+	COMMAND_KEY:	"shutdown"
+	EXTRA_INFO:		false
+	PURPOSE:		Remotely shutdown the main AVA Server
+	RESPONSE:		N/A
+	
+		
+	----------------------------
+	
 	COMMAND_KEY:	"ping"
 	EXTRA_INFO: 	false
 	PURPOSE:		Request an empty info-type packet from the server to act as a ping.

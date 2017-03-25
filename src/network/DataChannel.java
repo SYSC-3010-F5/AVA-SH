@@ -2,8 +2,8 @@
 *Class:             DataChannel.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    15/03/2017                                              
-*Version:           1.2.0                                         
+*Date of Update:    25/03/2017                                              
+*Version:           1.2.1                                         
 *                                                                                   
 *Purpose:           Single channel, only designed for coms between ONE server, ONE client.
 *					Will reject all packets from non-paired port/IP.
@@ -16,7 +16,9 @@
 *						- gross packet delays
 *					
 * 
-*Update Log			v1.2.0
+*Update Log			v1.2.1
+*						- socket timeout bug (issue #35) patched
+*					v1.2.0
 *						- code for packing refactored into unneeded methods which can return a packet
 *						  (this is purely for formal test cases for packing algorithm)
 *					v1.1.0
@@ -209,8 +211,14 @@ public class DataChannel implements ComsProtocol
 	}
 
 
-	@Override
+	//receive a packet, no timeout
 	public PacketWrapper receivePacket() throws NetworkException 
+	{
+		return receivePacket(0);
+	}
+	//receive a packet
+	@Override
+	public PacketWrapper receivePacket(int timeout) throws NetworkException
 	{
 		if(connected)
 		{	
@@ -222,11 +230,12 @@ public class DataChannel implements ComsProtocol
 			//block indefinitely waiting on packet
 			try 
 			{
+				gpSocket.setSoTimeout(timeout);
 				gpSocket.receive(packet);
 			} 
 			catch (IOException e) 
 			{
-				throw new NetworkException("Socket timeout");
+				throw new NetworkException(e.getMessage());
 			}
 			
 			//unpack it and return
@@ -237,19 +246,7 @@ public class DataChannel implements ComsProtocol
 			throw new NetworkException("Cannot receive packet -- DataChannel not paired");
 		}
 	}
-	
-	
-	//receive for only set time
-	public PacketWrapper receivePacket(int timeout) throws NetworkException, SocketException
-	{
-		//set timeout
-		gpSocket.setSoTimeout(timeout);
-		PacketWrapper wrapper = this.receivePacket();
-		//reset timeout
-		gpSocket.setSoTimeout(0);
-		return wrapper;
-	}
-	
+
 	
 	//process packet (added as separate method for debugging & testing)
 	public PacketWrapper unpack(DatagramPacket packet) throws NetworkException

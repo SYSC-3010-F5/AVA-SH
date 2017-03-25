@@ -43,10 +43,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;
+import java.awt.Component;
 
 //import packages
 import server.datatypes.Alarm;
 import server.datatypes.TimeAndDate;
+import terminal.dialogs.traversals.FocusTraversalOnArray;
+
 
 
 
@@ -171,8 +174,21 @@ public class DayAndTimeDialog extends JDialog implements ActionListener
 		btnCancel.addActionListener(this);
 		this.getContentPane().add(btnCancel);
 		
-		//set visible
+		//set visible and tab order
 		this.setLocationRelativeTo(callingFrame);
+		setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{
+				days[0], 
+				days[1],
+				days[2],
+				days[3],
+				days[4],
+				days[5],
+				days[6],
+				txtName, 
+				spHour, 
+				spMin, 
+				btnOk, 
+				btnCancel}));
 		this.setVisible(true);
 	}
 	
