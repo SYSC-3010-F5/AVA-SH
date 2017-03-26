@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Debug;
 import android.text.Editable;
+import android.util.Log;
 import android.view.View;
 
 import datatypes.Alarm;
@@ -30,7 +32,7 @@ public class CommandHelper {
             "sch event",
             "set timer",
             "new alarm",
-            "req current Weather",
+            "req current weather",
             "req time",
             "req ip",
             "req np-events",
@@ -40,7 +42,8 @@ public class CommandHelper {
             "led off",
             "led pwm",
             "alarm on",
-            "alarm off"
+            "alarm off",
+            "get time"
 
     };
 
@@ -91,7 +94,7 @@ public class CommandHelper {
                 AlertDialog.Builder alert = new AlertDialog.Builder(c);
 
                 timerText = new EditText(c);
-                timerText.setEnabled(false);
+                timerText.setEnabled(true);
                 timerText.setTextColor(Color.parseColor("#000000"));
 
                 // set prompts.xml to alertdialog builder
@@ -132,12 +135,15 @@ public class CommandHelper {
                 break;
 
             case "req time":
+                connectionHelper.getTime();
                 break;
 
             case "req ip":
+                connectionHelper.getTime();
                 break;
 
             case "req np-events":
+                connectionHelper.getNpEvents();
                 break;
 
             case "req p-events":
@@ -165,6 +171,7 @@ public class CommandHelper {
             case "alarm off":
                 connectionHelper.sendCmd("alarm off");
                 break;
+
 
         }
 
