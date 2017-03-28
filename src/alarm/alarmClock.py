@@ -20,19 +20,29 @@ def checkButton():
         else:
                 return False
         
+    
 #bright/dimming for LED
-def ledDim(pwm):
-         print('starting pwm')
-         pwm=int(pwm)
-         while(True):
-                for i in range(pwm*2):
-                        pfio.digital_write(2,1)
-                        time.sleep(i/pwm)
-                        pfio.digital_write(2,0)
-                        time.sleep(0.01)
-                break
+#totalTime should be passed in seconds, as the sleep method takes in an int as seconds to sleep
+def ledDim(totalTime):
+         #using pins 0-3 for now, could be changed
+	
+         timeBetweenBrightnessLevels = totalTime/16
+         
+	 #starting from 1 as the initial brightness should be 1, not 0
+	 for i in range(1,16):
+        	pfio.digital_write(0, i&1) #check if first bit is high
+         	pfio.digital_write(1, i&2) #check if second bit is high
+         	pfio.digital_write(2, i&4) #check if third bit is high
+         	pfio.digital_write(3, i&8) #check if fourth bit is high
+		#wait until it's time to go up one brightness level
+		time.sleep(timeBetweenBrightnessLevels)
+		
+	 
+	 #max brightness, send maximum current to the LED
+         pfio.digital_write(0,1)
+         pfio.digital_write(1,1)
          pfio.digital_write(2,1)
-         return
+         pfio.digital_write(3,1)
 
 def ledOn():
         pfio.digital_write(2,1)
