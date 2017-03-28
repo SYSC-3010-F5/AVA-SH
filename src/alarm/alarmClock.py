@@ -29,7 +29,9 @@ def ledDim(totalTime):
          timeBetweenBrightnessLevels = totalTime/16
          
 	 #starting from 1 as the initial brightness should be 1, not 0
-	 for i in range(1,16):
+	 #this code is for N-type MOSTFETs
+	 #if P-types are used, use bitwise inverters (~) to set pins low rather than high
+	 for i in range(1,15):
         	pfio.digital_write(0, i&1) #check if first bit is high
          	pfio.digital_write(1, i&2) #check if second bit is high
          	pfio.digital_write(2, i&4) #check if third bit is high
@@ -38,17 +40,25 @@ def ledDim(totalTime):
 		time.sleep(timeBetweenBrightnessLevels)
 		
 	 
-	 #max brightness, send maximum current to the LED
-         pfio.digital_write(0,1)
-         pfio.digital_write(1,1)
-         pfio.digital_write(2,1)
-         pfio.digital_write(3,1)
+	 ledOn()
 
 def ledOn():
+        #max brightness, send maximum current to the LED
+	#this code is for N-type MOSFETs
+	#if P-types are used, write 0 to the pins rather than 1
+        pfio.digital_write(0,1)
+        pfio.digital_write(1,1)
         pfio.digital_write(2,1)
+        pfio.digital_write(3,1)
 
 def ledOff():
+        #turn off all transistors to turn off the LED
+	#this code is for N-type MOSFETs
+	#if P-types are used, write 1 to the pins rather than 0
+        pfio.digital_write(0,0)
+        pfio.digital_write(1,0)
         pfio.digital_write(2,0)
+        pfio.digital_write(3,0)
 
 #alarm turn on, off by button push
 def alarmOn():
