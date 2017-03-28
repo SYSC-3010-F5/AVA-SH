@@ -227,7 +227,7 @@ public class DataChannel implements ComsProtocol
 			//create empty packet
 			packet = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
 			
-			//block indefinitely waiting on packet
+			//block waiting on packet
 			try 
 			{
 				gpSocket.setSoTimeout(timeout);

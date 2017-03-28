@@ -39,8 +39,6 @@ public abstract class BasicIO
 			//launch dialog to select file
 			JFileChooser fileChooser = new JFileChooser();
 			fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-			FileNameExtensionFilter filter = new FileNameExtensionFilter("*");
-			fileChooser.setFileFilter(filter);
 			fileChooser.setDialogTitle(msg);
 			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			

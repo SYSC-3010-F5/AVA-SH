@@ -2,13 +2,18 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    21/03/2017
-*Version:           0.6.1
+*Date of Update:    27/03/2017
+*Version:           0.7.0
 *
 *Purpose:           The main controller of the AVA system
 *
-* 
-*Update Log			v0.6.1
+*Update Log			v0.7.0
+*						- Packet rejection added (see below)
+*						- MainServer will now ignore all packets from unregistered devices (unless type handshake).
+*						  Packets from local address are ALWAYS allowed 
+*						- unneeded constants removed and instance variables removed
+*						- DSKY printout can be manually logged
+*					v0.6.1
 *						- error for database missing handled
 *						- commenting for get weather method
 *						- close button adapter added to main frame
@@ -82,9 +87,9 @@ import network.DataMultiChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.database.CrudeDatabase;
-import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
 import server.datatypes.ServerTimer;
+import io.Writer;
 import io.json.JsonException;
 import network.DataChannel;
 
@@ -93,14 +98,13 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.6.1";
+	public static final String SERVER_NAME = "AVA Server v0.7.0";
 	public static final int PORT = 3010;
-	public static final byte TYPE_HANDSHAKE = 0;
-	public static final byte TYPE_CMD = 1;
-	public static final byte TYPE_INFO = 2;
-	public static final byte TYPE_ERR = 3;
-	public static final byte TYPE_DISCONNECT = 4;
-	public static final int MAX_PACKET_SIZE = 1024;
+	public static final byte TYPE_HANDSHAKE = DataChannel.TYPE_HANDSHAKE;
+	public static final byte TYPE_CMD = DataChannel.TYPE_CMD;
+	public static final byte TYPE_INFO = DataChannel.TYPE_INFO;
+	public static final byte TYPE_ERR = DataChannel.TYPE_ERR;
+	public static final byte TYPE_DISCONNECT = DataChannel.TYPE_DISCONNECT;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
 	public static final String PREFIX_ALARM = 			"a";
 	public static final String PREFIX_COFEEE_MAKER = 	"c";
@@ -191,13 +195,9 @@ public class MainServer extends Thread implements ActionListener
 	//receive packet
 	private PacketWrapper receivePacket() throws NetworkException
 	{
-		display.println();
-		display.println("Waiting for packet...");
-		PacketWrapper wrapper = multiChannel.receivePacket();
-		display.println("Packet received!\nContents: {" + wrapper.toString() + "}");
-		return wrapper;
+		return receivePacket(0);
 	}
-	private PacketWrapper receivePacket(int timeout) throws NetworkException, SocketException
+	private PacketWrapper receivePacket(int timeout) throws NetworkException
 	{
 		display.println();
 		display.println("Waiting for packet...");
@@ -505,13 +505,54 @@ public class MainServer extends Thread implements ActionListener
 	//main server input-control-wait loop
 	public void run()
 	{
-		while(runFlag)
+		PacketWrapper packet = null;
+		try
 		{
-			try
+			while(runFlag)
 			{
-				//receive
-				PacketWrapper packet = null;
-				packet = this.receivePacket();
+				/*receive a packet and confirm it is from registered device (or handshake)
+				 *
+				 * scan registry for matching IP if not handshake (we always want to respond to handshakes)
+				 * we always want to respond to handshakes, as a device trying to connect is likely not in registry
+				 * all other packet types should come from registered devices
+				 * so ignore all packets coming from unknown IPs if they're not of type handshake
+				 * 
+				 * EXCEPTION: allow packet through if it comes from local address
+				 * 
+				 * 									packet.type == handshake
+				 * 
+				 * 									+------+---+
+				 *									|   | 0 | 1 |
+				 *		packet.source == knownIP/	+---+---+---+
+				 *		packet.source == local		| 0 | 1 | 0 |
+				 *									| 1 | 0 | 0 |
+				 *									+---+---+---+
+				 * 											showing condition on do{...}while();
+				 */
+				while(true)
+				{
+					//get packet
+					packet = this.receivePacket();
+					
+					//check if packet should be processed
+					//(done outside of a do{}while() statement so we can print the message
+					try
+					{
+						if (packet.source().getAddress().equals(InetAddress.getLocalHost()))
+						{
+							break;
+						}
+						else if (!registry.containsValue(packet.source()) && !(packet.type() == PacketWrapper.TYPE_HANDSHAKE))
+						{
+							display.println("Packet source from non-registered address/not handshake packet\nPacket ignored!");
+						}
+						else
+						{
+							break;
+						}
+					}
+					catch(UnknownHostException e){e.printStackTrace();} //if this helps you there is nothing i can do to save this -- game over
+				}
 				
 				//decide what to do with the packet
 				switch(packet.type())
@@ -720,8 +761,8 @@ public class MainServer extends Thread implements ActionListener
 						break;
 				}
 			}
-			catch (NetworkException e){}
 		}
+		catch (NetworkException e) {} //should never occur due to flag override in multichannel
 	}
 	
 	
@@ -747,10 +788,17 @@ public class MainServer extends Thread implements ActionListener
 				display.updateRegistry(registry);
 				break;
 			
-			//soft shutdown of system
-			case(ServerDSKY.BTN_SOFT_SHUTDOWN):
-				display.println("BUTTON >> SOFT SHUTDOWN");
-				//TODO
+			//log current DKSY printout
+			case(ServerDSKY.BTN_SAVE_LOG):
+				display.println("BUTTON >> SAVE LOG");
+				try 
+				{
+					Writer.write(display.getPrintout());
+				} 
+				catch (IOException e) 
+				{
+					display.printError("DSKY printout cannot be logged!");
+				}
 				break;
 			
 			//hard shutdown of system
@@ -774,6 +822,7 @@ public class MainServer extends Thread implements ActionListener
 			
 			//hard reset of system
 			case(ServerDSKY.BTN_HARD_RESET):
+				display.println("BUTTON >> HARD RESET");
 				//TODO
 				break;
 			

@@ -18,6 +18,8 @@
 *Update Log			v2.2.1
 *						- option to have custom handling of close button added
 *						- constructors tidied
+*						- button labels changed
+*						- method to return DSKY printout
 *					v2.2.0
 *						- east panel registered devices and header split into separate GUI objects
 *						- soft reset replaced with update for events
@@ -80,7 +82,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 			"\t/_/  |_|___/_/  |_|\n\n" ;
 	
 	//declaring static class constants
-	public static final String BTN_SOFT_SHUTDOWN = "btn/softshutdown";
+	public static final String BTN_SAVE_LOG = "btn/savelog";
 	public static final String BTN_HARD_SHUTDOWN = "btn/hardshutdown";
 	public static final String BTN_UPDATE_EVENTS = "btn/updateevents";
 	public static final String BTN_HARD_RESET = "btn/hardreset";
@@ -99,7 +101,6 @@ public class ServerDSKY extends JFrame implements ActionListener
 	//declaring local instance variables
 	private JTextArea display;
 	private JTextArea registryText, eventText;
-	private JButton btnClearEvents;
 	
 	
 	//return current time
@@ -111,6 +112,9 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 	
 	//constructor from v2.0.0
+	/**
+	 * @wbp.parser.constructor
+	 */
 	public ServerDSKY(String title, String location, ActionListener listener)
 	{
 		this(title, location, listener, false, null);
@@ -245,29 +249,29 @@ public class ServerDSKY extends JFrame implements ActionListener
 		btnHardShutdown.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnHardShutdown.setForeground(DEFAULT_TEXT_COLOR);
 		
-		JButton btnSoftShutdown = new JButton("<html>Soft<br />Shutdown</html>");
-		btnSoftShutdown.setActionCommand(BTN_SOFT_SHUTDOWN);
-		btnSoftShutdown.addActionListener(listener);
-		btnSoftShutdown.setFont(BUTTON_FONT);
-		btnSoftShutdown.setBackground(DEFAULT_BACKGROUND_COLOR);
-		btnSoftShutdown.setForeground(DEFAULT_TEXT_COLOR);
+		JButton btnLog = new JButton("<html>Save<br />Log</html>");
+		btnLog.setActionCommand(BTN_SAVE_LOG);
+		btnLog.addActionListener(listener);
+		btnLog.setFont(BUTTON_FONT);
+		btnLog.setBackground(DEFAULT_BACKGROUND_COLOR);
+		btnLog.setForeground(DEFAULT_TEXT_COLOR);
 		
-		
-		btnClearEvents = new JButton("<html>Clear<br />Events</html>");
+		JButton btnClearEvents = new JButton("<html>Clear<br />Events</html>");
 		btnClearEvents.setActionCommand(BTN_CLEAR_EVENTS);
 		btnClearEvents.addActionListener(listener);
 		btnClearEvents.setFont(BUTTON_FONT);
 		btnClearEvents.setBackground(DEFAULT_BACKGROUND_COLOR);
 		btnClearEvents.setForeground(DEFAULT_TEXT_COLOR);
 		
+		buttonPanel.add(btnClearDisplay);
 		buttonPanel.add(btnHardReset);
-		buttonPanel.add(btnUpdateEvents);
-		buttonPanel.add(btnSoftShutdown);
 		buttonPanel.add(btnHardShutdown);
+		buttonPanel.add(btnLog);
+		
+		buttonPanel.add(btnClearEvents);
+		buttonPanel.add(btnUpdateEvents);
 		buttonPanel.add(btnEraseRegistry);
 		buttonPanel.add(btnUpdateRegistry);
-		buttonPanel.add(btnClearDisplay);
-		buttonPanel.add(btnClearEvents);
 		
 		//set up close button custom
 		if(closeOverride != null)
@@ -315,6 +319,13 @@ public class ServerDSKY extends JFrame implements ActionListener
 			return true;
 		}
 		return false;
+	}
+	
+	
+	//get the current DSKY printout
+	public String getPrintout()
+	{
+		return display.getText();
 	}
 	
 	

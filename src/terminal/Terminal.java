@@ -1252,6 +1252,7 @@ public class Terminal extends JFrame implements ActionListener
 					{
 						if(in[0].equals("y"))
 						{
+							
 							try 
 							{
 								//shutdown server and disconnect
