@@ -3,14 +3,18 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    23/03/2017                                              
-*Version:           0.6.0                                         
+*Version:           0.6.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.6.0
+*Update Log			v0.6.1
+*						- help menu format fixed
+*						- commands added for removing non-period event
+*						- prototypes added for npe and pe interaction
+*					v0.6.0
 *						- x button now disconnects
 *						- can now receive unprompted INFO and ERROR packet
 *						- all dialogs tab order added
@@ -109,7 +113,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.5.2";
+	private static final String VERSION = "v0.6.1";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
@@ -275,8 +279,8 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= xxx.xxx.xxx.xxx || Connect to server using this IPv4 address\n"
 					+ "\tparam2= n/a             || Use default port\n"
 					+ "\tparam2= default         || Use default port\n"
-					+ "\tparam2= <INT>           || Use port <INT>"
-					+ "\tparam3= n/a             || Connect under name \""+defaultDeviceName+"\""
+					+ "\tparam2= <INT>           || Use port <INT>\n"
+					+ "\tparam3= n/a             || Connect under name \""+defaultDeviceName+"\"\n"
 					+ "\tparam3= <STR>           || Connect under name <STR>");
 		
 		cmdMap.put("disconnect", "Disconnect from main server");
@@ -302,7 +306,7 @@ public class Terminal extends JFrame implements ActionListener
 					+ "\tparam1= false  || Set the terminal to stop synthesis of all text as voice\n"
 					+ "\tparam1 = <STR> || Synthesize the entered String <STR> to voice");
 		
-		cmdMap.put("alarm", "Schedual an alarm at a certain time\n"															
+		cmdMap.put("alarm-new", "Schedual an alarm at a certain time\n"															
 					+ "\tparam1: n/a      || Launch dialog to schedual alarm\n"
 					+ "\tparam1: ddd      || Set the alarm to go off on day ddd\n"
 					+ "\t                    multiple days should be seperated by a comma such that ddd,ddd\n"
@@ -340,7 +344,7 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
 		
-		cmdMap.put("timer-remove", "Remove a timer currently scheduled"
+		cmdMap.put("timer-remove", "Remove a timer currently scheduled\n"
 				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
 				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
 		
@@ -364,6 +368,20 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: off || Turn the alarm off");
 		
 		cmdMap.put("shutdown", "Shutdown the main AVA Server\n");
+		
+		cmdMap.put("npe-get", "Request a list of all non-periodic events currently scheduled\n");	//TODO
+		
+		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
+		
+		cmdMap.put("npe-remove", "Remove a currently scheduled non-periodic event\n"
+				+ "\tparam1: <STR> || Remove np-event with name <STR> from scheduler");				//TODO
+		
+		cmdMap.put("pe-get", "Request a list of all non-periodic events currently scheduled\n");	//TODO
+		
+		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
+		
+		cmdMap.put("pe-remove", "Remove a currently scheduled non-periodic event\n"
+				+ "\tparam1: <STR> || Remove p-event with name <STR> from scheduler");				//TODO
 		
 		return cmdMap;
 	}
@@ -1274,6 +1292,45 @@ public class Terminal extends JFrame implements ActionListener
 					else
 					{
 						ui.println("Canceling shutdown...");
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			//remove a periodic event
+			case("pe-remove"):
+				if(input.length == 1)
+				{
+					//TODO Dialog
+				}
+				else if (input.length == 2)
+				{
+					try
+					{
+						//send and wait for response
+						dataChannel.sendCmd("del p-event", input[1]);
+						PacketWrapper response = dataChannel.receivePacket();
+						
+						//parse response
+						if(response.type() == DataChannel.TYPE_INFO)
+						{
+							ui.println("\"" + input[1] + "\" removed!");
+						}
+						else if (response.type() == DataChannel.TYPE_ERR)
+						{
+							ui.printError(response.errorMessage());
+						}
+						else
+						{
+							ui.printError("Unknown response from server!\n"+response.toString());
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
 					}
 				}
 				else

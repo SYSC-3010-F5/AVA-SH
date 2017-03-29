@@ -2,12 +2,15 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    27/03/2017
-*Version:           0.7.0
+*Date of Update:    29/03/2017
+*Version:           0.7.1
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log			v0.7.0
+*Update Log			v0.7.1
+*						- removing periodic events added
+*						- removing periodic and non-period events method combined and refactored
+*					v0.7.0
 *						- Packet rejection added (see below)
 *						- MainServer will now ignore all packets from unregistered devices (unless type handshake).
 *						  Packets from local address are ALWAYS allowed 
@@ -366,6 +369,43 @@ public class MainServer extends Thread implements ActionListener
 			display.printError("No device registered with prefix \"" + targetPrefix + "\\\" found!");
 		}
 	}
+
+	
+	//remove an event from scheduler
+	private void removeEvent(String toRemove, boolean periodic,InetSocketAddress dest)
+	{
+		//remove the event based on if it is periodic/non-periodic
+		boolean removed;
+		if(periodic)
+		{
+			display.println("Attemping to remove PERIODIC event \"" + toRemove + "\"");
+			removed = scheduler.removePeriodic(toRemove);
+		}
+		else
+		{
+			display.println("Attemping to remove NON-PERIODIC event \"" + toRemove + "\"");
+			removed = scheduler.removeNonPeriodic(toRemove);
+		}
+		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
+		
+		//send response
+		try
+		{
+			if(removed)
+			{
+				display.println("Sending empty info packet...");
+				multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+				multiChannel.sendInfo("");
+			}
+			else
+			{
+				String err = "No event with name \"" + toRemove + "\" found";
+				display.println(err + "\nSending error packet...");
+				multiChannel.sendErr(err);
+			}
+		}
+		catch (NetworkException e){} //should never occur due to flag override in multichannel
+	}
 	
 	
 	//set the location
@@ -703,32 +743,22 @@ public class MainServer extends Thread implements ActionListener
 							
 							//return information on all scheduled single-triggered events
 							case("req np-events"):
-								sendEvents(true, packet.source());
+								sendEvents(false, packet.source());
 								break;
 							
 							//return information on all scheduled periodic events
 							case("req p-events"):
-								sendEvents(false, packet.source());
+								sendEvents(true, packet.source());
 								break;
 							
 							//remove a non-periodic event
 							case("del np-event"):
-								String toRemove = packet.extraInfo();
-								display.println("Attemping to remove non-periodic event \"" + toRemove + "\"");
-								boolean removed = scheduler.removeNonPeriodic(toRemove);
-								display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
-								if(removed)
-								{
-									display.println("Sending empty info packet...");
-									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
-									multiChannel.sendInfo("");
-								}
-								else
-								{
-									String err = "No event with name \"" + packet.extraInfo() + "\" found";
-									display.println(err + "\nSending error packet...");
-									multiChannel.sendErr(err);
-								}
+								removeEvent(packet.extraInfo(), false, packet.source());
+								break;
+								
+							//remove a non-periodic event
+							case("del p-event"):
+								removeEvent(packet.extraInfo(), true, packet.source());
 								break;
 								
 							//remote shutdown
