@@ -2,18 +2,20 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/03/2017                                              
-*Version:           0.6.1                                         
+*Date of Update:    29/03/2017                                              
+*Version:           0.7.0
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.6.1
-*						- help menu format fixed
-*						- commands added for removing non-period event
+*Update Log			v0.7.0
 *						- prototypes added for npe and pe interaction
+*						- old commands removed (timer-get and timer-remove)
+*						- command npe-remove implemented
+*						- command npe-get implemented
+*						- help menu format fixed
 *					v0.6.0
 *						- x button now disconnects
 *						- can now receive unprompted INFO and ERROR packet
@@ -113,7 +115,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.6.1";
+	private static final String VERSION = "v0.7.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
@@ -343,13 +345,7 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: n/a   || Launch system dialog to set a new timer\n"
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
-		
-		cmdMap.put("timer-remove", "Remove a timer currently scheduled\n"
-				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
-				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
-		
-		cmdMap.put("timer-get", "Request list of all timers currently scheduled");
-		
+
 		cmdMap.put("weather", "Request the current weather");
 		
 		cmdMap.put("location", "Set the current location to a particular city\n"
@@ -373,8 +369,9 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
-		cmdMap.put("npe-remove", "Remove a currently scheduled non-periodic event\n"
-				+ "\tparam1: <STR> || Remove np-event with name <STR> from scheduler");				//TODO
+		cmdMap.put("npe-remove", "Remove a timer currently scheduled\n"								//TODO
+				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
+				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
 		
 		cmdMap.put("pe-get", "Request a list of all non-periodic events currently scheduled\n");	//TODO
 		
@@ -1092,10 +1089,10 @@ public class Terminal extends JFrame implements ActionListener
 			
 			
 			//remove a non-periodic event (timer or reminder)
-			case("timer-remove"):
+			case("npe-remove"):
 				if(input.length == 1)
 				{
-					
+					ui.println("TODO");				//TODO
 				}
 				else if (input.length == 2)
 				{
@@ -1131,14 +1128,41 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 			
 			//get list of active non-periodic events
-			case("timer-get"):
+			case("npe-get"):
 				if(input.length == 1)
 				{
 					try
 					{
+						//get event JSON
 						dataChannel.sendCmd("req np-events");
-						PacketWrapper wrapper = dataChannel.receivePacket();
-						ui.println(wrapper.extraInfo());
+						String npe = dataChannel.receivePacket().info();
+						System.out.println(npe);
+						
+						//check format of data returned
+						int l = npe.length();
+						if(npe.charAt(0) == '{' && npe.charAt(1) == '\n' && npe.charAt(l-2) == '\n' && npe.charAt(l-1) == '}')
+						{
+							//check if any events
+							if(l > 4)
+							{
+								//print all events with a numerical label
+								String[] events = npe.substring(2, l-2).split("\n");
+								for(int i=0; i<events.length; i++)
+								{
+									System.out.println("terminal >> " + events[i]);
+									ui.println((i+1) + ".\t" + events[i]);
+								}
+							}
+							else
+							{
+								ui.println("No scheduled mono-triggered events");
+							}
+						}
+						//bad format
+						else
+						{
+							ui.printError("Server responce format unknown!");
+						}
 					}
 					catch (NetworkException e)
 					{

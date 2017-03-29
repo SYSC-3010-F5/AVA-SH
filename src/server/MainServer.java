@@ -10,6 +10,7 @@
 *Update Log			v0.7.1
 *						- removing periodic events added
 *						- removing periodic and non-period events method combined and refactored
+*						- returning list of all non-periodic events fixed (issue #14)
 *					v0.7.0
 *						- Packet rejection added (see below)
 *						- MainServer will now ignore all packets from unregistered devices (unless type handshake).
@@ -101,7 +102,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.7.0";
+	public static final String SERVER_NAME = "AVA Server v0.7.1";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = DataChannel.TYPE_HANDSHAKE;
 	public static final byte TYPE_CMD = DataChannel.TYPE_CMD;
@@ -189,7 +190,7 @@ public class MainServer extends Thread implements ActionListener
 		display.println("Assembling event...");
 		ServerEvent event = new ServerEvent();
 		event.fromJSON(eventJson);
-		
+
 		//schedule
 		display.println("Scheduling event: " + event.toString());
 		scheduler.schedule(event);
@@ -531,10 +532,10 @@ public class MainServer extends Thread implements ActionListener
 		String json = "{\n";
 		for(ServerEvent event : events)
 		{
-			json += event.toJSON("\t").toString();
+			json += event.toString() + "\n";
 		}
-		json += "}\n";
-		System.out.println(json);
+		json += "}";
+		
 		//send
 		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 		multiChannel.sendInfo(json);

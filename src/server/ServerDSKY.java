@@ -90,6 +90,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	public static final String BTN_UPDATE_REGISTRY = "btn/updateregistry";
 	public static final String BTN_ERASE_REGISTRY = "btn/eraseregistry";
 	public static final String BTN_CLEAR_EVENTS = "btn/clearevents";
+	private static final String VERSION = "v2.2.1";
 	private static final String WINDOW_TITLE = MainServer.SERVER_NAME;
 	private static final int DEFAULT_WINDOW_X = 1000;
 	private static final int DEFAULT_WINDOW_Y = 725;
@@ -264,9 +265,9 @@ public class ServerDSKY extends JFrame implements ActionListener
 		btnClearEvents.setForeground(DEFAULT_TEXT_COLOR);
 		
 		buttonPanel.add(btnClearDisplay);
+		buttonPanel.add(btnLog);
 		buttonPanel.add(btnHardReset);
 		buttonPanel.add(btnHardShutdown);
-		buttonPanel.add(btnLog);
 		
 		buttonPanel.add(btnClearEvents);
 		buttonPanel.add(btnUpdateEvents);
@@ -293,7 +294,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 			this.setVisible(true);
 			this.updateRegistry(null);
 			this.updateEvent(null, null);
-			this.println("DSKY running " + flavor);
+			this.println("DSKY " + VERSION + " running " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -406,7 +407,7 @@ public class ServerDSKY extends JFrame implements ActionListener
 	
 
 	@Override
-	//handl button presses
+	//handle button presses
 	public void actionPerformed(ActionEvent arg0) 
 	{
 		this.clear();
