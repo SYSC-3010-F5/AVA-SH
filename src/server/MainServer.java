@@ -2,12 +2,17 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    29/03/2017
-*Version:           0.7.1
+*Date of Update:    30/03/2017
+*Version:           0.7.2
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log			v0.7.1
+*Update Log			v0.7.2
+*						- getting details on periodic/non-periodic events added
+*						- getting list of all periodic events added
+*						- getting list of non-periodic events refactored into common method
+*						- socket exception has fancy handler
+*					v0.7.1
 *						- removing periodic events added
 *						- removing periodic and non-period events method combined and refactored
 *						- returning list of all non-periodic events fixed (issue #14)
@@ -53,7 +58,7 @@
 *						- disconnect now supported
 *						- address lookup now supported
 *						- server can be run on thread outside of calling thread
-*						- shutdown added
+*						- close added
 *					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent
@@ -83,6 +88,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -514,8 +521,8 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//send the JSON representation of non periodic events
-	private void sendEvents(boolean periodic, InetSocketAddress dest) throws NetworkException				//TODO this is janked up
+	//send the JSON representation of events
+	private void sendEvents(boolean periodic, InetSocketAddress dest) throws NetworkException
 	{
 		//get event list
 		ArrayList<ServerEvent> events;
@@ -539,6 +546,37 @@ public class MainServer extends Thread implements ActionListener
 		//send
 		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 		multiChannel.sendInfo(json);
+	}
+	
+	
+	//send details on a single event
+	private void sendEventDetails(boolean periodic, String eventName, InetSocketAddress dest) throws NetworkException
+	{
+		//get event list
+		ArrayList<ServerEvent> events;
+		if(periodic)
+		{
+			events = scheduler.getPeriodicEvents();
+		}
+		else
+		{
+			events = scheduler.getNonPeriodicEvents();
+		}
+		
+		//search for event (overriding equals is for chumps)
+		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+		for(ServerEvent event: events)
+		{
+			if(event.getEventName().equals(eventName))
+			{
+				//send event details
+				multiChannel.sendInfo(event.toDetailedString());
+				return;
+			}
+		}
+		
+		//no event found, send error
+		multiChannel.sendErr("Event with name \"" + eventName + " \" not found");
 	}
 	
 	
@@ -742,12 +780,12 @@ public class MainServer extends Thread implements ActionListener
 								}
 								break;
 							
-							//return information on all scheduled single-triggered events
+							//return basic information on all scheduled single-triggered events
 							case("req np-events"):
 								sendEvents(false, packet.source());
 								break;
 							
-							//return information on all scheduled periodic events
+							//return basic information on all scheduled periodic events
 							case("req p-events"):
 								sendEvents(true, packet.source());
 								break;
@@ -760,6 +798,16 @@ public class MainServer extends Thread implements ActionListener
 							//remove a non-periodic event
 							case("del p-event"):
 								removeEvent(packet.extraInfo(), true, packet.source());
+								break;
+								
+							//get details on a non-periodic event
+							case("details np-event"):
+								sendEventDetails(false, packet.extraInfo(), packet.source());
+								break;
+							
+							//get details on a periodic event
+							case("details p-event"):
+								sendEventDetails(true, packet.extraInfo(), packet.source());
 								break;
 								
 							//remote shutdown
@@ -878,13 +926,14 @@ public class MainServer extends Thread implements ActionListener
 		}
 		catch (UnknownHostException e) 
 		{	
-			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());
+			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());		//if this happens just burn the entire git
 			e.printStackTrace();
+			System.exit(0);
 		}
 		catch (SocketException e)
 		{
-			System.out.println("EXCEPTION >> SocketException\n" + e.getMessage());
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(new JFrame(), e.getMessage(), "Socket Exception Error", JOptionPane.ERROR_MESSAGE);
+			System.exit(0);
 		}
 	}
 }

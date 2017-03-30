@@ -168,8 +168,41 @@ COMMAND MANIFEST
 	RESPONSE:		blank info-type packet as acknowledgment of successful removal
 					error-type packet if the event cannot be found
 	
+	
 	----------------------------
 	
+	COMMAND_KEY:	"del p-event"
+	EXTRA_INFO:		true
+					UTF-8 character string representing the event name of the event to remove.
+					EXTRA_INFO field for removing a periodic event with the name "Alarm 1" would be (excluding quotes): "Alarm 1"
+	PURPOSE:		Delete a non-periodic event from the server (like removing an alarm)
+	RESPONSE:		blank info-type packet as acknowledgment of successful removal
+					error-type packet if the event cannot be found
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"details np-event"
+	EXTRA_INFO:		true
+					UTF-8 character string representing the event name of the event to examine.
+					EXTRA_INFO field for examining a mono-triggered event with the name "Timer_1" would be (excluding quotes): "Timer_1"
+	PURPOSE:		Fetch details on non-periodic event
+	RESPONSE:		info packet with JSON representation of event
+					error-type packet if the event cannot be found
+	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"details p-event"
+	EXTRA_INFO:		true
+					UTF-8 character string representing the event name of the event to examine.
+					EXTRA_INFO field for examining a periodic event with the name "Alarm 1" would be (excluding quotes): "Alarm 1"
+	PURPOSE:		Fetch details on periodic event
+	RESPONSE:		info packet with JSON representation of event
+					error-type packet if the event cannot be found
+	
+	
+	----------------------------
 	COMMAND_KEY:	"led on"
 	EXTRA_INFO:		false
 	PURPOSE:		remote turn on of LED to full.

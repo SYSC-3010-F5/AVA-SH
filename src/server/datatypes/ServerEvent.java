@@ -2,17 +2,16 @@
 *Class:             ServerEvent.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    02/03/2017
-*Version:           1.2.2
+*Date of Update:    30/03/2017
+*Version:           1.3.0
 *
 *Purpose:           "Sends" packets to server at certain time over a certain period
 *					Can be used to schedule commands, info, or errors.
 *
-*					Should only be used for commands
-*
-*
 * 
-*Update Log			v1.2.2
+*Update Log			v1.3.0
+*						- added method to return detailed string representing event
+*					v1.2.2
 *						- printing to DSKY fixed (typo)
 *					v1.2.1
 *						- override clear method
@@ -197,6 +196,19 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 			s += "<no trigger information>";
 		}
 		return s;
+	}
+	
+	
+	//show as a detailed string
+	public String toDetailedString()
+	{
+		String s = "-----------\n" + this.toString() + " triggers:\n";
+		for(PacketWrapper cmd : commands)
+		{
+			s += cmd.toString() + "\n";
+		}
+		return (s + "-----------");
+		
 	}
 
 	
