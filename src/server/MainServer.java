@@ -514,8 +514,8 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//send the JSON representation of non periodic events
-	private void sendEvents(boolean periodic, InetSocketAddress dest) throws NetworkException				//TODO this is janked up
+	//send the JSON representation of events
+	private void sendEvents(boolean periodic, InetSocketAddress dest) throws NetworkException
 	{
 		//get event list
 		ArrayList<ServerEvent> events;
@@ -539,6 +539,37 @@ public class MainServer extends Thread implements ActionListener
 		//send
 		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
 		multiChannel.sendInfo(json);
+	}
+	
+	
+	//send details on a single event
+	private void sendEventDetails(boolean periodic, String eventName, InetSocketAddress dest) throws NetworkException
+	{
+		//get event list
+		ArrayList<ServerEvent> events;
+		if(periodic)
+		{
+			events = scheduler.getPeriodicEvents();
+		}
+		else
+		{
+			events = scheduler.getNonPeriodicEvents();
+		}
+		
+		//search for event (overriding equals is for chumps)
+		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+		for(ServerEvent event: events)
+		{
+			if(event.getEventName().equals(eventName))
+			{
+				//send event details
+				multiChannel.sendInfo(event.toDetailedString());
+				return;
+			}
+		}
+		
+		//no event found, send error
+		multiChannel.sendErr("Event with name \"" + eventName + " \" not found");
 	}
 	
 	
@@ -742,12 +773,12 @@ public class MainServer extends Thread implements ActionListener
 								}
 								break;
 							
-							//return information on all scheduled single-triggered events
+							//return basic information on all scheduled single-triggered events
 							case("req np-events"):
 								sendEvents(false, packet.source());
 								break;
 							
-							//return information on all scheduled periodic events
+							//return basic information on all scheduled periodic events
 							case("req p-events"):
 								sendEvents(true, packet.source());
 								break;
@@ -760,6 +791,16 @@ public class MainServer extends Thread implements ActionListener
 							//remove a non-periodic event
 							case("del p-event"):
 								removeEvent(packet.extraInfo(), true, packet.source());
+								break;
+								
+							//get details on a non-periodic event
+							case("details np-event"):
+								sendEventDetails(false, packet.extraInfo(), packet.source());
+								break;
+							
+							//get details on a periodic event
+							case("details p-event"):
+								sendEventDetails(true, packet.extraInfo(), packet.source());
 								break;
 								
 							//remote shutdown
