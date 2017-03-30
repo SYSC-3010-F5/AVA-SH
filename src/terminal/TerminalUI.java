@@ -3,13 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    09/03/2017                                              
-*Version:           1.2.0                                         
+*Version:           1.2.1                                         
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.2.0
+*Update Log			v1.2.1
+*						- dialog-related methods renamed for clairity
+*						- dialog for selecting 1 of n options added
+*					v1.2.0
 *						- external window listener added for close button
 *						- method added for info pop-ups
 *						- method added for blocking on input for on x seconds
@@ -298,7 +301,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				flavor = "fullscreen mode...";
 			}
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.2.0 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
+			this.println("Starting TerminalUI v1.2.1 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -715,7 +718,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	
 	
 	//get an alarm for the user via dialog
-	public Alarm getAlarm()
+	public Alarm dialogGetAlarm()
 	{
 		//get info from dialog
 		DayAndTimeDialog dialog = new DayAndTimeDialog(this, this.TERMINAL_NAME);
@@ -730,8 +733,15 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
+	//get one option out of an array of options
+	public Object dialogGetOptions(String msg, Object[] options)
+	{
+		return JOptionPane.showInputDialog(this, msg, TERMINAL_NAME, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+	}
+	
+	
 	//get a color via dialog
-	public void colorDialog()
+	public void dialogSetColor()
 	{
 		//get a valid color scheme using system dialog
 		String[] keys = colorMap.keySet().toArray(new String[0]);
@@ -841,7 +851,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		{
 			//color scheme menu item pressed
 			case(MENU_COLOR_SCHEME):
-				colorDialog();
+				dialogSetColor();
 				break;
 			
 				

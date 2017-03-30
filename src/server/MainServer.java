@@ -53,7 +53,7 @@
 *						- disconnect now supported
 *						- address lookup now supported
 *						- server can be run on thread outside of calling thread
-*						- shutdown added
+*						- close added
 *					v0.1.1
 *						- if device name already exists in registry, error packet is sent
 *						- if handshake is bad, error packet sent

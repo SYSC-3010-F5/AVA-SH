@@ -369,9 +369,9 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
-		cmdMap.put("npe-remove", "Remove a timer currently scheduled\n"								//TODO
-				+ "\tparam1: n/a   || Launch system dialog to select a timer to remove\n"
-				+ "\tparam1: <STR> || Remove timer with name <STR> from scheduling");
+		cmdMap.put("npe-remove", "Remove a non-periodic event currently scheduled\n"
+				+ "\tparam1: n/a   || Launch system dialog to select a non-periodic event to remove\n"
+				+ "\tparam1: <STR> || Remove np-event with name <STR> from scheduling");
 		
 		cmdMap.put("pe-get", "Request a list of all non-periodic events currently scheduled\n");	//TODO
 		
@@ -517,7 +517,7 @@ public class Terminal extends JFrame implements ActionListener
 			case("color"):
 				if (length == 1)
 				{
-					ui.colorDialog();
+					ui.dialogSetColor();
 				}
 				else if (length == 2)
 				{
@@ -668,7 +668,7 @@ public class Terminal extends JFrame implements ActionListener
 				if(input.length == 1)
 				{
 					//get info from dialog
-					Alarm alarm = ui.getAlarm();
+					Alarm alarm = ui.dialogGetAlarm();
 					if(alarm != null)
 					{
 						//send alarm
@@ -1092,7 +1092,62 @@ public class Terminal extends JFrame implements ActionListener
 			case("npe-remove"):
 				if(input.length == 1)
 				{
-					ui.println("TODO");				//TODO
+					try
+					{
+						//get event JSON
+						dataChannel.sendCmd("req np-events");
+						String npe = dataChannel.receivePacket().info();
+						System.out.println(npe);
+						
+						//check format of data returned
+						int l = npe.length();
+						if(npe.charAt(0) == '{' && npe.charAt(1) == '\n' && npe.charAt(l-2) == '\n' && npe.charAt(l-1) == '}')
+						{
+							if (l > 4)
+							{
+								//split into array
+								String[] events = npe.substring(2, l-2).split("\n");
+								
+								//get user to select one via dialog
+								String selection = (String)ui.dialogGetOptions("Select an event to remove", events);
+								if(selection != null)
+								{
+									//parse name
+									String toRemove = selection.substring(1, selection.indexOf('"', 1));
+									
+									//send and wait for response
+									dataChannel.sendCmd("del np-event", toRemove);
+									PacketWrapper response = dataChannel.receivePacket();
+									
+									//parse response
+									if(response.type() == DataChannel.TYPE_INFO)
+									{
+										ui.println("\"" + toRemove + "\" removed!");
+									}
+									else if (response.type() == DataChannel.TYPE_ERR)
+									{
+										ui.printError(response.errorMessage());
+									}
+									else
+									{
+										ui.printError("Unknown response from server!\n"+response.toString());
+									}
+								}
+							}
+							else
+							{
+								ui.dialogInfo("No scheduled non-periodic events");
+							}
+						}
+						else
+						{
+							ui.printError("Unknown response from Server");
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
 				}
 				else if (input.length == 2)
 				{
