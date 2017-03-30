@@ -232,8 +232,8 @@ public class MainServer extends Thread implements ActionListener
 	}
 	
 	
-	//schedual a new timer
-	public boolean setTimer(String json) throws JsonException
+	//scheduale a new timer
+	public boolean scheduleTimer(String json) throws JsonException
 	{
 		String timerName;
 		int triggerTime;
@@ -717,7 +717,7 @@ public class MainServer extends Thread implements ActionListener
 							case("set timer"):
 								try
 								{
-									boolean s = setTimer(packet.extraInfo());
+									boolean s = scheduleTimer(packet.extraInfo());
 									multiChannel.hijackChannel(packet.source().getAddress(), packet.source().getPort());
 									if(s)
 									{

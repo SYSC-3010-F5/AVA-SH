@@ -604,7 +604,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private String getAllCommandsAndDetails()
 	{
 		String s = "";
-		s += "--------------- COMMAND LIST ---------------";
+		s += "--------------- COMMAND LIST ---------------\n";
 		Set<String> keys = cmdMap.keySet();
 		
 		//list all available commands

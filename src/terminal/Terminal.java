@@ -144,11 +144,14 @@ public class Terminal extends JFrame implements ActionListener
 		    @Override
 		    public void windowClosing(WindowEvent windowEvent) 
 		    {
-		    	boolean closed = ui.reqClose();
-				if(closed)
-				{
-					close(CLOSE_OPTION_USER);
-				}
+		    	if(!connecting)							//workaround to fix issue #15
+		    	{
+			    	boolean closed = ui.reqClose();
+					if(closed)
+					{
+						close(CLOSE_OPTION_USER);
+					}
+		    	}
 		    }
 		};
 		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen, adapter);
@@ -1529,7 +1532,7 @@ public class Terminal extends JFrame implements ActionListener
 		//determine source via cmd parse
 		String src = e.getActionCommand();
 		
-		/* only respond to action events if not attempting to connect (leads to unknown and bad states
+		/* only respond to action events if not attempting to connect (leads to unknown and bad states)
 		 * due to the fact that action events basically act like interrupts
 		 * (bug patch for git issue #15)
 		 */
