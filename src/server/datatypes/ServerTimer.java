@@ -2,16 +2,17 @@
 *Class:             ServerTimer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    12/03/2017
-*Version:           1.1.1
+*Date of Update:    30/03/2017
+*Version:           1.2.0
 *
 *Purpose:           Specialized case of ServerEvent.
 *					Triggered once to alarm user of something
 *
 *
 * 
-*Update Log			v1.1.1
+*Update Log			v1.2.
 *						- zero padding added to toString
+*						- constructor added for custom trigger action
 *					v1.1.0
 *						- actually triggers an alarm now
 *					v1.0.0
@@ -38,7 +39,19 @@ public class ServerTimer extends ServerEvent
 	private Scheduler scheduler;
 	boolean executed;
 	
-	//generic constructor
+	
+	//specialized constructor for generic non-periodic event with custom trigger action
+	public ServerTimer(String eventName, int triggerDelaySec, Scheduler scheduler, PacketWrapper[] atTrigger)
+	{
+		super(eventName, atTrigger, new TimeAndDate());
+		secondsUntilTrigger = triggerDelaySec;
+		timeOfCreation = Calendar.getInstance().getTimeInMillis();
+		this.scheduler = scheduler;
+		executed = false;
+	}
+	
+	
+	//generic constructor for default timer action (print to interface and sound alarm) (v1.1.0 and earlier)
 	public ServerTimer(String eventName, int triggerDelaySec, Scheduler scheduler)
 	{
 		super(eventName, null, new TimeAndDate());		//because java has a fit if I call super() on not the first line
