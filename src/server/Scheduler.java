@@ -228,6 +228,15 @@ public class Scheduler
 		}
 		else
 		{
+			//check if the an event with the same name already exists
+			String eventName = event.getEventName();
+			for(ServerEvent liveEvent : periodicEvents)
+			{
+				if(liveEvent.getEventName().equals(eventName))
+					return false;
+			}
+			
+			
 			//determine if the event will occur daily
 			boolean[] days = event.getTrigger().getDays();
 			boolean dailyEvent = true;
@@ -264,8 +273,8 @@ public class Scheduler
 						TimeAndDate trigger = scheduleEvent.getTrigger();
 						trigger.setDays(triggerDay);
 						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
+						periodicEvents.add(event);
 					}
-					periodicEvents.add(event);
 				}
 				return true;
 			}
@@ -276,6 +285,7 @@ public class Scheduler
 	//remove from a list of ServerEvents based on ServerEvent.name
 	private boolean remove(ArrayList<ServerEvent> events, String toRemove)
 	{
+		boolean removed = false;
 		for(ServerEvent event : events)
 		{
 			if(event.getEventName().equals(toRemove))
@@ -284,10 +294,10 @@ public class Scheduler
 				events.remove(event);
 				event.cancel();
 				scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
-				return true;
+				removed = true;
 			}
 		}
-		return false;
+		return removed;
 	}
 	
 	
