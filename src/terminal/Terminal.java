@@ -11,12 +11,12 @@
 *					
 * 
 *Update Log			v0.7.0
-*						- prototypes added for npe and pe interaction
+*						- refactoring on older event-related code
+*						- prototypes added for npe and pe interaction (redesigned so common code can be reused)
 *						- old commands removed (timer-get and timer-remove)
 *						- command npe-remove implemented
 *						- command npe-get implemented
-*						- command npe-details implemented
-*						- command pe-details implemented
+*						- command pe-get implemented
 *						- help menu format fixed
 *					v0.6.0
 *						- x button now disconnects
@@ -368,7 +368,9 @@ public class Terminal extends JFrame implements ActionListener
 		
 		cmdMap.put("shutdown", "Shutdown the main AVA Server\n");
 		
-		cmdMap.put("npe-get", "Request a list of all non-periodic events currently scheduled\n");
+		cmdMap.put("npe-get", "Request information on scheduled non-peiodic event(s)\n"
+				+ "\tparam1: n/a   || Request a list of all non-periodic events currently scheduled\n"
+				+ "\tparam1: <STR> || Request detailed information on non-periodic event <STR>");
 		
 		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
@@ -376,20 +378,14 @@ public class Terminal extends JFrame implements ActionListener
 				+ "\tparam1: n/a   || Launch system dialog to select a non-periodic event to remove\n"
 				+ "\tparam1: <STR> || Remove np-event with name <STR> from scheduling");
 		
-		cmdMap.put("npe-details", "Return detailed information on a non-periodic event scheduled\n"
-				+ "\tparam1: n/a   || Launch system dialog to select a non-periodic event to examine\n"
-				+ "\tparam1: <STR> || Get details for np-event with name <STR>");
-		
-		cmdMap.put("pe-get", "Request a list of all non-periodic events currently scheduled\n");	//TODO
+		cmdMap.put("pe-get", "Request information on scheduled peiodic event(s)\n"
+				+ "\tparam1: n/a   || Request a list of all periodic events currently scheduled\n"
+				+ "\tparam1: <STR> || Request detailed information on periodic event <STR>");
 		
 		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
 		cmdMap.put("pe-remove", "Remove a currently scheduled non-periodic event\n"
-				+ "\tparam1: <STR> || Remove p-event with name <STR> from scheduler");				//TODO
-		
-		cmdMap.put("pe-details", "Return detailed information on a periodic event scheduled\n"
-				+ "\tparam1: n/a   || Launch system dialog to select a periodic event to examine\n"
-				+ "\tparam1: <STR> || Get details for p-event with name <STR>");
+				+ "\tparam1: <STR> || Remove p-event with name <STR> from scheduler");
 		
 		return cmdMap;
 	}
@@ -459,6 +455,8 @@ public class Terminal extends JFrame implements ActionListener
 	private void handleConsoleInput(String[] input)
 	{
 		int length = input.length;
+		boolean pFlag;
+		
 		//handle based on prime noun
 		switch(input[0])
 		{
@@ -1099,147 +1097,6 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 			
 			
-			//remove a non-periodic event (timer or reminder)
-			case("npe-remove"):
-				if(input.length == 1)
-				{
-					try
-					{
-						//get event JSON
-						dataChannel.sendCmd("req np-events");
-						String npe = dataChannel.receivePacket().info();
-						
-						//check format of data returned
-						int l = npe.length();
-						if(npe.charAt(0) == '{' && npe.charAt(1) == '\n' && npe.charAt(l-2) == '\n' && npe.charAt(l-1) == '}')
-						{
-							if (l > 4)
-							{
-								//split into array
-								String[] events = npe.substring(2, l-2).split("\n");
-								
-								//get user to select one via dialog
-								String selection = (String)ui.dialogGetOptions("Select an event to remove", events);
-								if(selection != null)
-								{
-									//parse name
-									String toRemove = selection.substring(1, selection.indexOf('"', 1));
-									
-									//send and wait for response
-									dataChannel.sendCmd("del np-event", toRemove);
-									PacketWrapper response = dataChannel.receivePacket();
-									
-									//parse response
-									if(response.type() == DataChannel.TYPE_INFO)
-									{
-										ui.println("\"" + toRemove + "\" removed!");
-									}
-									else if (response.type() == DataChannel.TYPE_ERR)
-									{
-										ui.printError(response.errorMessage());
-									}
-									else
-									{
-										ui.printError("Unknown response from server!\n"+response.toString());
-									}
-								}
-							}
-							else
-							{
-								ui.dialogInfo("No scheduled non-periodic events");
-							}
-						}
-						else
-						{
-							ui.printError("Unknown response from Server");
-						}
-					}
-					catch (NetworkException e)
-					{
-						ui.printError(e.getMessage());
-					}
-				}
-				else if (input.length == 2)
-				{
-					try
-					{
-						//send and wait for response
-						dataChannel.sendCmd("del np-event", input[1]);
-						PacketWrapper response = dataChannel.receivePacket();
-						
-						//parse response
-						if(response.type() == DataChannel.TYPE_INFO)
-						{
-							ui.println("\"" + input[1] + "\" removed!");
-						}
-						else if (response.type() == DataChannel.TYPE_ERR)
-						{
-							ui.printError(response.errorMessage());
-						}
-						else
-						{
-							ui.printError("Unknown response from server!\n"+response.toString());
-						}
-					}
-					catch (NetworkException e)
-					{
-						ui.printError(e.getMessage());
-					}
-				}
-				else
-				{
-					ui.println(CMD_NOT_FOUND);
-				}
-				break;
-			
-			//get list of active non-periodic events
-			case("npe-get"):
-				if(input.length == 1)
-				{
-					try
-					{
-						//get event JSON
-						dataChannel.sendCmd("req np-events");
-						String npe = dataChannel.receivePacket().info();
-						System.out.println(npe);
-						
-						//check format of data returned
-						int l = npe.length();
-						if(npe.charAt(0) == '{' && npe.charAt(1) == '\n' && npe.charAt(l-2) == '\n' && npe.charAt(l-1) == '}')
-						{
-							//check if any events
-							if(l > 4)
-							{
-								//print all events with a numerical label
-								String[] events = npe.substring(2, l-2).split("\n");
-								for(int i=0; i<events.length; i++)
-								{
-									System.out.println("terminal >> " + events[i]);
-									ui.println((i+1) + ".\t" + events[i]);
-								}
-							}
-							else
-							{
-								ui.println("No scheduled mono-triggered events");
-							}
-						}
-						//bad format
-						else
-						{
-							ui.printError("Server responce format unknown!");
-						}
-					}
-					catch (NetworkException e)
-					{
-						ui.printError(e.getMessage());
-					}
-				}
-				else
-				{
-					ui.println(CMD_NOT_FOUND);
-				}
-				break;
-			
 			case("location"):
 				if(input.length == 2 || input.length == 3)
 				{
@@ -1390,54 +1247,76 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 				
 				
+			//get list of active periodic/non-periodic events
+			case("npe-get"):
+			case("pe-get"):
+				
+				//set periodic flag
+				if(input[0].equals("npe-get"))	pFlag = false;
+				else							pFlag = true;
+				
+				//get generic list of events
+				try
+				{
+					if(length == 1)
+					{	
+						//get and print all events
+						String[] events = reqAllEvents(pFlag);
+						if(events != null)
+						{
+							if(events.length <= 0)
+							{
+								ui.println("No scheduled events");
+							}
+							for(int i=0; i<events.length; i++)
+							{
+								ui.println((i+1) + ".\t" + events[i]);
+							}
+						}
+					}
+					//get details on specific event
+					else if (length == 2)
+					{
+						String event = reqEventDetails(pFlag, input[1]);
+						if(event != null)
+						{
+							ui.println(event);
+						}
+					}
+					else
+					{
+						ui.println(CMD_NOT_FOUND);
+					}
+				}
+				catch (NetworkException e)
+				{
+					ui.printError(e.getMessage());
+				}
+				break;
+				
+				
 			//remove a periodic event
 			case("pe-remove"):
-				if(input.length == 1)
-				{
-					//TODO Dialog
-				}
-				else if (input.length == 2)
-				{
-					try
-					{
-						//send and wait for response
-						dataChannel.sendCmd("del p-event", input[1]);
-						PacketWrapper response = dataChannel.receivePacket();
-						
-						//parse response
-						if(response.type() == DataChannel.TYPE_INFO)
-						{
-							ui.println("\"" + input[1] + "\" removed!");
-						}
-						else if (response.type() == DataChannel.TYPE_ERR)
-						{
-							ui.printError(response.errorMessage());
-						}
-						else
-						{
-							ui.printError("Unknown response from server!\n"+response.toString());
-						}
-					}
-					catch (NetworkException e)
-					{
-						ui.printError(e.getMessage());
-					}
-				}
-				else
-				{
-					ui.println(CMD_NOT_FOUND);
-				}
-				break;
+			case("npe-remove"):
+				//set periodic flat
+				if(input[0].equals("pe-remove"))	pFlag = true;
+				else								pFlag = false;
 				
-				
-			//get details on a periodic event
-			case("pe-details"):
 				try
 				{
-					String event = reqEventDetails(true, input[1]);
-					if(event != null)
+					//remove event with dialog prompt
+					if(length == 1)
 					{
-						ui.println(event);
+						reqEventDelete(pFlag, null);
+					}
+					//remove event with terminal input
+					else if (length == 2)
+					{
+						reqEventDelete(pFlag, input[1]);
+					}
+					else
+					{
+						ui.println(CMD_NOT_FOUND);
 					}
 				}
 				catch (NetworkException e)
@@ -1445,24 +1324,7 @@ public class Terminal extends JFrame implements ActionListener
 					ui.printError(e.getMessage());
 				}
 				break;
-			
-			
-			//get details on a non-periodic event
-			case("npe-details"):
-				try
-				{
-					String event = reqEventDetails(false, input[1]);
-					if(event != null)
-					{
-						ui.println(event);
-					}
-				}
-				catch (NetworkException e)
-				{
-					ui.printError(e.getMessage());
-				}
-				break;
-				
+
 				
 			//cmd not found
 			default:
@@ -1470,6 +1332,60 @@ public class Terminal extends JFrame implements ActionListener
 				break;
 		}
 		
+	}
+	
+	
+	//delete an event
+	private void reqEventDelete(boolean periodic, String eventName) throws NetworkException
+	{
+		//set cmd
+		String cmd;
+		if(periodic)	cmd = "del p-event";
+		else			cmd = "del np-event";
+		
+		//use dialog to get event name
+		if(eventName == null)
+		{
+			//get events
+			String[] events = reqAllEvents(periodic);
+			if(events.length > 0)
+			{
+				//get user to select one via dialog
+				String selection = (String)ui.dialogGetOptions("Select an event to remove", events);
+				if(selection != null)
+				{
+					//parse name
+					eventName = selection.substring(1, selection.indexOf('"', 1));
+				}
+				else
+				{
+					return;
+				}
+			}
+			else
+			{
+				ui.dialogInfo("No scheduled events");
+				return;
+			}
+		}
+		
+		//send command packet and wait on response
+		dataChannel.sendCmd(cmd, eventName);
+		PacketWrapper response = dataChannel.receivePacket();
+		
+		//parse response
+		if(response.type() == DataChannel.TYPE_INFO)
+		{
+			ui.println("\"" + eventName + "\" removed!");
+		}
+		else if (response.type() == DataChannel.TYPE_ERR)
+		{
+			ui.printError(response.errorMessage());
+		}
+		else
+		{
+			ui.printError("Unknown response from server!\n"+response.toString());
+		}
 	}
 	
 	
@@ -1506,9 +1422,40 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//
-	private void reqRemoveEvent(boolean periodic, String eventName) throws NetworkException
+	private String[] reqAllEvents(boolean periodic) throws NetworkException
 	{
-		//TODO refactor
+		//set cmdKey
+		String cmdKey;
+		if(periodic)
+			cmdKey = "req p-events";
+		else
+			cmdKey = "req np-events";
+		
+		//get event JSON
+		dataChannel.sendCmd(cmdKey);
+		String eventsJson = dataChannel.receivePacket().info();
+		
+		//check format of data returned
+		int l = eventsJson.length();
+		if(eventsJson.charAt(0) == '{' && eventsJson.charAt(1) == '\n' && eventsJson.charAt(l-2) == '\n' && eventsJson.charAt(l-1) == '}')
+		{
+			//check if any events
+			if(l > 4)
+			{
+				//return events in array format
+				return eventsJson.substring(2, l-2).split("\n");
+			}
+			else
+			{
+				return new String[0];
+			}
+		}
+		//bad format
+		else
+		{
+			ui.printError("Server responce format unknown!");
+			return null;
+		}
 	}
 	
 	

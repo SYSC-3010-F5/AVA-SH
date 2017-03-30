@@ -2,12 +2,17 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    29/03/2017
-*Version:           0.7.1
+*Date of Update:    30/03/2017
+*Version:           0.7.2
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log			v0.7.1
+*Update Log			v0.7.2
+*						- getting details on periodic/non-periodic events added
+*						- getting list of all periodic events added
+*						- getting list of non-periodic events refactored into common method
+*						- socket exception has fancy handler
+*					v0.7.1
 *						- removing periodic events added
 *						- removing periodic and non-period events method combined and refactored
 *						- returning list of all non-periodic events fixed (issue #14)
@@ -83,6 +88,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -919,13 +926,14 @@ public class MainServer extends Thread implements ActionListener
 		}
 		catch (UnknownHostException e) 
 		{	
-			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());
+			System.out.println("EXCEPTION >> UnknownHostException\n" + e.getMessage());		//if this happens just burn the entire git
 			e.printStackTrace();
+			System.exit(0);
 		}
 		catch (SocketException e)
 		{
-			System.out.println("EXCEPTION >> SocketException\n" + e.getMessage());
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(new JFrame(), e.getMessage(), "Socket Exception Error", JOptionPane.ERROR_MESSAGE);
+			System.exit(0);
 		}
 	}
 }
