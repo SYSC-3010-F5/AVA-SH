@@ -286,17 +286,21 @@ public class Scheduler
 	private boolean remove(ArrayList<ServerEvent> events, String toRemove)
 	{
 		boolean removed = false;
-		for(ServerEvent event : events)
+		for(int i = 0; i < events.size(); i++)
 		{
-			if(event.getEventName().equals(toRemove))
+			if(events.get(i).getEventName().equals(toRemove))
 			{
 				//remove event from list, mark event to not run, purge from scheduler
-				events.remove(event);
-				event.cancel();
-				scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
+				events.get(i).cancel();
+				events.remove(i);
 				removed = true;
+				
+				//removing the event shrinks the list by one, shifting all events ahead of it in the list back one index
+				//decrement the index to avoid skipping entries
+				i--;
 			}
 		}
+		scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
 		return removed;
 	}
 	

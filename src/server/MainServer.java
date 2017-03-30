@@ -191,7 +191,7 @@ public class MainServer extends Thread implements ActionListener
 	
 	
 	//schedule a new event
-	public void scheduleEvent(String eventJson) throws JsonException
+	public void scheduleEvent(String eventJson, InetSocketAddress dest) throws JsonException
 	{
 		//get event
 		display.println("Assembling event...");
@@ -200,7 +200,22 @@ public class MainServer extends Thread implements ActionListener
 
 		//schedule
 		display.println("Scheduling event: " + event.toString());
-		scheduler.schedule(event);
+		//returns false if the event name already exists
+		if(!scheduler.schedule(event))
+		{
+			//send an error message that the event was not scheduled
+			String err = "Error: event with the name " + event.getEventName() + " exists.";
+			display.println(err);
+			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+			try 
+			{
+				multiChannel.sendErr(err);
+			}
+			catch (NetworkException e)
+			{
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	//receive packet
@@ -772,7 +787,7 @@ public class MainServer extends Thread implements ActionListener
 							case("sch p-event"):
 								try
 								{
-									scheduleEvent(packet.extraInfo());
+									scheduleEvent(packet.extraInfo(), packet.source());
 								}
 								catch (JsonException e)
 								{
