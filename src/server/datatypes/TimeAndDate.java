@@ -2,8 +2,8 @@
 *Class:             TimeAndDate.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    02/04/2017
-*Version:           1.0.1
+*Date of Update:    30/03/2017
+*Version:           1.1.1
 *
 *Purpose:           Holds information regarding a single time (hh:mm) for a ServerEvent to trigger at.
 *					Also includes a list of days to trigger to event on.
@@ -12,7 +12,9 @@
 *
 *
 * 
-*Update Log			v1.1.0
+*Update Log			v1.1.1
+*						- zero padding added to toString
+*					v1.1.0
 *						- restructured from Alarm.java into TimeAndDate.java
 *						- name field removed -- to/from JSON rewritten accordingly
 *					v1.0.1
@@ -35,13 +37,6 @@ import io.json.ToJSONFile;
 public class TimeAndDate implements ToJSONFile
 {
 	//declaring static class constants
-	public static final String[] DAY_NAMES_FULL = { "Sunday",
-													"Monday",
-													"Tuesday",
-													"Wednesday",
-													"Thursday",
-													"Friday",
-													"Saturday"};
 	public static final String[] DAY_NAMES_SHORT = {"sun",
 													"mon",
 													"tue",
@@ -288,7 +283,12 @@ public class TimeAndDate implements ToJSONFile
 	//show as a string
 	public String toString()
 	{
-		String string = hour + ":" + minute + " on [";
+		//set zero padding
+		String[] zp = {"",""};
+		if(hour < 10)		zp[0]="0";
+		if(minute <10)		zp[1]="0";
+		
+		String string = zp[0]+hour + ":" + zp[1]+minute + " on [";
 		boolean first = true;
 		for(int i=0; i<days.length; i++)
 		{

@@ -3,13 +3,15 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *Date of Update:    30/03/2017
-*Version:           1.3.0
+*Version:           1.3.1
 *
 *Purpose:           "Sends" packets to server at certain time over a certain period
 *					Can be used to schedule commands, info, or errors.
 *
 * 
-*Update Log			v1.3.0
+*Update Log			v1.3.1
+*						- zero padding added
+*					v1.3.0
 *						- added method to return detailed string representing event
 *					v1.2.2
 *						- printing to DSKY fixed (typo)

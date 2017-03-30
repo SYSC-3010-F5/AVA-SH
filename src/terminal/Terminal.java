@@ -130,6 +130,7 @@ public class Terminal extends JFrame implements ActionListener
 	
 	private boolean runFlag;
 	private boolean connecting;
+	private boolean normalMode;
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
@@ -168,6 +169,7 @@ public class Terminal extends JFrame implements ActionListener
 			defaultDeviceName = "terminal";
 			defaultServerPort = 3010;
 			connecting = false;
+			normalMode = true;
 		} 
 		catch (SocketException e) 
 		{
@@ -240,7 +242,7 @@ public class Terminal extends JFrame implements ActionListener
 	
 	
 	//added to keep older code running, default close is via user
-	public void close() //TODO never actually closes
+	public void close()
 	{
 		close(CLOSE_OPTION_USER);
 	}
@@ -1511,11 +1513,20 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			status += "Server: CONNECTED\n"
 					+ "        @" + dataChannel.getPairedAddress().toString() + ":" + dataChannel.getPairedPort() + "\n"
-					+ "        under \"" + dataChannel.getRegisteredName() + "\"\n";
+					+ "        under \"" + dataChannel.getRegisteredName() + "\"\n\n";
 		}
 		else
 		{
-			status += "Server: DISCONNECTED\n\n";
+			status += "Server: DISCONNECTED\n\n\n\n";
+		}
+		
+		if(normalMode)
+		{
+			status += "Operating Mode: " + "NORMAL";
+		}
+		else
+		{
+			status += "Operating Mode: " + "SCHEDULING";
 		}
 		
 		return status;

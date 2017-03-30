@@ -3,14 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *Date of Update:    12/03/2017
-*Version:           1.0.0
+*Version:           1.1.1
 *
 *Purpose:           Specialized case of ServerEvent.
 *					Triggered once to alarm user of something
 *
 *
 * 
-*Update Log			v1.1.0
+*Update Log			v1.1.1
+*						- zero padding added to toString
+*					v1.1.0
 *						- actually triggers an alarm now
 *					v1.0.0
 *						- null
@@ -99,11 +101,17 @@ public class ServerTimer extends ServerEvent
 			time[0] = triggerTime/(60*60);
 			time[1] = (triggerTime%(60*60))/60;
 			time[2] = (triggerTime%(60*60))%60;
-			printTime = time[0]+":"+time[1]+":"+time[2];
+			
+			String[] zeroPad = {"","",""};
+			if(time[0] < 10)	zeroPad[0]="0";
+			if(time[1] < 10)	zeroPad[1]="0";
+			if(time[2] < 10)	zeroPad[2]="0";
+			System.out.println(zeroPad[0] + ", " + zeroPad[1] + ", " + zeroPad[2]);
+			printTime = zeroPad[0]+time[0] + ":" + zeroPad[1]+time[1]+ ":" +zeroPad[2]+time[2];
 		}
 		else
 		{
-			printTime = "0:0:0";
+			printTime = "00:00:00";
 		}
 		String s = "\"" + eventName + "\" in " + printTime;
 		return s;
