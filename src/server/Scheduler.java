@@ -266,6 +266,8 @@ public class Scheduler
 			//event occurs on less than 7 days a week
 			else
 			{
+				for(ServerEvent e : periodicEvents)
+					System.out.println(e.toString());
 				for(int i = 0; i < 7; i++)
 				{
 					if(days[i])
@@ -273,12 +275,15 @@ public class Scheduler
 						ServerEvent scheduleEvent = new ServerEvent(event.getEventName(), event.getCommands(), event.getTrigger());
 						boolean[] triggerDay = new boolean[]{false,false,false,false,false,false,false};
 						triggerDay[i] = true;
-						TimeAndDate trigger = scheduleEvent.getTrigger();
-						trigger.setDays(triggerDay);
+						
+						//create a duplicate TimeAndDate object with the single day trigger
+						TimeAndDate trigger = new TimeAndDate(event.getTrigger().getHour(), event.getTrigger().getMinute(), triggerDay);
 						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
 						nonDailyPeriodicEvents.add(scheduleEvent);
 					}
 				}
+				for(ServerEvent e : periodicEvents)
+					System.out.println(e.toString());
 				return true;
 			}
 		}

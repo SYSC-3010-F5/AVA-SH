@@ -217,11 +217,6 @@ public class MainServer extends Thread implements ActionListener
 				e.printStackTrace();
 			}
 		}
-		for(ServerEvent e : scheduler.getPeriodicEvents())
-		{
-			System.out.println(e.toString());
-			System.out.println(Arrays.toString(e.getTrigger().getDays()));
-		}
 		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 	}
 	
