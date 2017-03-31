@@ -86,6 +86,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import javax.swing.JFrame;
@@ -216,6 +217,7 @@ public class MainServer extends Thread implements ActionListener
 				e.printStackTrace();
 			}
 		}
+		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 	}
 	
 	//receive packet
