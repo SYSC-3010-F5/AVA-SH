@@ -28,15 +28,16 @@
 */
 package magicmirror;
 
-import java.io.IOException;
+
 //import external libraries
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-
+import java.io.IOException;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
+//import packages
 import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
@@ -116,23 +117,32 @@ public class MirrorController implements Runnable
 			}
 
 			//get weather data every 15 minutes
+			PacketWrapper wrapper;
 			while(timeout < RETRY_QUANTUM)
 			{
 				try 
 				{
 					//get weather (block for max 5s)
 					dataChannel.sendCmd("req current weather");
-					PacketWrapper wrapper = dataChannel.receivePacket(BLOCK_TIME_MS);
+					wrapper = dataChannel.receivePacket(BLOCK_TIME_MS);
 					WeatherData weather = new WeatherData(wrapper.info());
 					
 					//update mirror and sleep
-					mirror.update(weather);
+					boolean dayFlag = true;
+					try
+					{
+						dataChannel.sendCmd("req time");
+						wrapper = dataChannel.receivePacket(BLOCK_TIME_MS);
+						int hour = Integer.parseInt(wrapper.info().split(":")[0]);
+						dayFlag = (hour < 17 && hour > 6);
+					}
+					catch (Exception e) {}				//squash exception, and assume day if bad packet
+					mirror.update(weather, dayFlag);
 					Thread.sleep(UPDATE_PERIOD);
 				}
 				catch (NetworkException e) 
 				{
 					//inc timeout count
-					System.out.println("timeout >> " + timeout);
 					timeout++;
 				} 
 				catch (InterruptedException e) 
