@@ -390,7 +390,12 @@ public class Terminal extends JFrame implements ActionListener
 		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
 		cmdMap.put("pe-remove", "Remove a currently scheduled non-periodic event\n"
+				+ "\tparam1: n/a   || Launch system dialog to select a periodic event to remove\n"
 				+ "\tparam1: <STR> || Remove p-event with name <STR> from scheduler");
+		
+		cmdMap.put("coffee", "Turn the coffee maker on or off\n"
+				+ "\tparam1: on  || Turn the coffee maker on\n"
+				+ "\tparam1: off || Turn the coffee maker off");
 		
 		return cmdMap;
 	}
@@ -1327,6 +1332,33 @@ public class Terminal extends JFrame implements ActionListener
 				catch (NetworkException e)
 				{
 					ui.printError(e.getMessage());
+				}
+				break;
+				
+				
+			//interact with coffee maker
+			case("coffee"):
+				if(length == 2)
+				{
+					try
+					{
+						if (input[1].equals("on") || input[1].equals("1"))
+						{
+							dataChannel.sendCmd("coffee on");
+						}
+						else if (input[1].equals("off") || input[1].equals("0"))
+						{
+							dataChannel.sendCmd("coffee off");
+						}
+						else
+						{
+							ui.println(CMD_NOT_FOUND);
+						}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
 				}
 				break;
 

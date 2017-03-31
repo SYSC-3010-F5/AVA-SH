@@ -159,6 +159,7 @@ TYPE-DEPENANT FORMATS
 				|  i\      |  any interface such as an app or terminal  |
 				|  c\      |  a coffee maker                            |
 				|  a\      |  an alarm controller                       |
+				|  g\      |  a generic module                          |
 				|----------|--------------------------------------------|
 		
 		The ..\ prefix for DEVICE_NAME is not strictly enforced, and can be neglected by modules. However, by doing this, there is no way of forwarding packets from server to a module (as forwarding requires a ..\ prefix on DEVICE_NAME).

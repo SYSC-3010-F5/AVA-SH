@@ -395,14 +395,7 @@ public class DataChannel implements ComsProtocol
 		
 		//send packet
 		DatagramPacket packet = new DatagramPacket(toSend, toSend.length, toPair, listeningPort);
-		try 
-		{
-			gpSocket.send(packet);
-		}
-		catch (IOException e) 
-		{
-			throw new NetworkException("Error sending inital handshake packet");
-		}
+		gpSocket.send(packet);
 		
 		//wait for response for 10 seconds
 		DatagramPacket response = new DatagramPacket(new byte[MAX_PACKET_SIZE], MAX_PACKET_SIZE);
