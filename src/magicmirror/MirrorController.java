@@ -12,7 +12,14 @@
 *					Attempts connection to server (varies name if already taken).
 *					Periodically checks the weather.
 *
-*					Coded in <4 hours to mess with Dave.
+*					Build in <4 hours to mess with the F1 group.
+*
+*					Will try to connect to server indefinitely, if it cannot due to another device
+*					being registered under its name, it will try again with a new name. Wash rinse
+*					and repeat until you connect.
+*					Updates weather every 15min.
+*					If Server disconnects during runtime, it will enter disconnected state within
+*					5 timeout cycles (25 seconds). It will then try to reconnect indefinitely.
 *					
 * 
 *Update Log			v1.0.0
@@ -125,6 +132,7 @@ public class MirrorController implements Runnable
 				catch (NetworkException e) 
 				{
 					//inc timeout count
+					System.out.println("timeout >> " + timeout);
 					timeout++;
 				} 
 				catch (InterruptedException e) 
@@ -132,13 +140,17 @@ public class MirrorController implements Runnable
 					e.printStackTrace();
 				}
 			}
+			
+			//disconnect and try to reconnect
+			try 
+			{
+				dataChannel.disconnect("loss of connection");
+			} 
+			catch (NetworkException e) 						//if this happens not good
+			{
+				e.printStackTrace();
+			}
 		}
-	}
-	
-	
-	private void getWeatherLoop()
-	{
-		
 	}
 	
 	
@@ -147,7 +159,8 @@ public class MirrorController implements Runnable
 	{
 		try 
 		{
-			new MirrorController(false).run();
+			new MirrorController(true).run();			//true for fullscreen (used for an acutal mirror application)
+														//non-fullscreen better for testing, though
 		} 
 		catch (SocketException | UnknownHostException e) 
 		{

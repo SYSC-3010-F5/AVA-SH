@@ -36,7 +36,7 @@ public class MirrorDisplay extends JFrame
 	private static final int DEFAULT_WINDOW_Y = 725;
 	private static final Font DEFAULT_FONT = new Font("Monospaced", Font.PLAIN, 13);
 	private static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
-	private static final Color DEFAULT_TEXT_COLOR = Color.ORANGE;
+	private static final Color DEFAULT_TEXT_COLOR = Color.ORANGE;		// <-- this would probably need to be white for real applications
 
 	//declaring local instance variables
 	private JTextArea output;
@@ -95,5 +95,4 @@ public class MirrorDisplay extends JFrame
 		System.out.println("DISCONNECTED");
 		output.setText("  DISCONNECTED!");
 	}
-
 }
