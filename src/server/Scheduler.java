@@ -1,16 +1,19 @@
 /**
 *Class:             Scheduler.java
 *Project:          	AVA Smart Home
-*Author:            Jason Van Kerkhoven                                             
-*Date of Update:    23/03/2017                                              
-*Version:           1.0.1                                         
+*Authors:           Jason Van Kerkhoven, Henri Cheung
+*Date of Update:    30/03/2017                                              
+*Version:           1.1.0                                         
 *                                                                                   
-*Purpose:           Real time is hard.
+*Purpose:           Schedule events to occur on periodic or non-periodic basis.
+*					Control removal/addition of those events.
+*					Modification of currently scheduled events is not supported.
 *					
 * 
-*Update Log			v1.0.1
+*Update Log			v1.1.0
 *						- periodic events are now only added once to the list of periodic events
 *						  (fixes bug with printing)
+*						- issues #36 and #38 patched
 *					v1.0.0
 *						- Periodic scheduling working
 *					v0.2.2
@@ -104,6 +107,7 @@ public class Scheduler
 		scheduler = new Timer(name, true);
 		periodicEvents.clear();
 		nonPeriodicEvents.clear();
+		nonDailyPeriodicEvents.clear();
 	}
 	
 	//get current day of the week

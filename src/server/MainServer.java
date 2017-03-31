@@ -2,12 +2,14 @@
 *Class:             MainServer.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    30/03/2017
+*Date of Update:    31/03/2017
 *Version:           0.7.2
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log			v0.7.2
+*Update Log			v0.7.3
+*						- patch for server crash due to garbage
+*					v0.7.2
 *						- getting details on periodic/non-periodic events added
 *						- getting list of all periodic events added
 *						- getting list of non-periodic events refactored into common method
@@ -119,7 +121,7 @@ public class MainServer extends Thread implements ActionListener
 	public static final byte TYPE_DISCONNECT = DataChannel.TYPE_DISCONNECT;
 	private static final String HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm.";
 	public static final String PREFIX_ALARM = 			"a";
-	public static final String PREFIX_COFEEE_MAKER = 	"c";
+	public static final String PREFIX_COFFEE_MAKER = 	"c";
 	public static final String PREFIX_INTERFACE = 		"i";
 	
 	//declaring local instance variables
@@ -628,12 +630,11 @@ public class MainServer extends Thread implements ActionListener
 				while(true)
 				{
 					//get packet
-					packet = this.receivePacket();
-					
-					//check if packet should be processed
-					//(done outside of a do{}while() statement so we can print the message
 					try
 					{
+						packet = this.receivePacket();
+						//check if packet should be processed
+						//(done outside of a do{}while() statement so we can print the message
 						if (packet.source().getAddress().equals(InetAddress.getLocalHost()))
 						{
 							break;
@@ -646,6 +647,10 @@ public class MainServer extends Thread implements ActionListener
 						{
 							break;
 						}
+					}
+					catch (NetworkException e)
+					{
+						display.println(e.getMessage());
 					}
 					catch(UnknownHostException e){e.printStackTrace();} //if this helps you there is nothing i can do to save this -- game over
 				}
@@ -839,6 +844,12 @@ public class MainServer extends Thread implements ActionListener
 							case("led off"):
 							case("led pwm"):
 								forwardPacket(packet, PREFIX_ALARM);
+								break;
+								
+							//commands forwarded to coffee maker
+							case("coffee on"):
+							case("coffee off"):
+								forwardPacket(packet, PREFIX_COFFEE_MAKER);
 								break;
 						}
 						break;
