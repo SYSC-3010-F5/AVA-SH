@@ -288,35 +288,50 @@ public class Scheduler
 	private boolean remove(ArrayList<ServerEvent> events, String toRemove)
 	{
 		boolean removed = false;
-		
+		//keep a list of all events to be removed
+		//removing elements of an ArrayList while iterating through the ArrayList can raise concurrency exceptions
+		ArrayList<ServerEvent> remove = new ArrayList<ServerEvent>();
 		//check the special non daily periodic events list only if the user was trying to remove a periodic event
 		if(events.equals(periodicEvents))
 		{
-			for(int i = 0; i < nonDailyPeriodicEvents.size(); i++)
+			for(ServerEvent event : nonDailyPeriodicEvents)
 			{
-				if(nonDailyPeriodicEvents.get(i).getEventName().equals(toRemove))
+				if(event.getEventName().equals(toRemove))
 				{
-					//remove event from list, mark event to not run
-					nonDailyPeriodicEvents.get(i).cancel();
-					nonDailyPeriodicEvents.remove(i);
+					//cancel event and mark it for removal
+					event.cancel();
+					remove.add(event);
 					removed = true;
-					
-					//removing the event shrinks the list by one, shifting all events ahead of it in the list back one index
-					//decrement the index to avoid skipping entries
-					i--;
+				}
+			}
+			//remove the marked events after iterating through the ArrayList
+			nonDailyPeriodicEvents.removeAll(remove);
+			//now remove the un-scheduled event from the periodicEvents list
+			for(ServerEvent event : events)
+			{
+				if(event.getEventName().equals(toRemove))
+				{
+					//mark event for removal
+					remove.add(event);
+					removed = true;
 				}
 			}
 		}
-		for(ServerEvent event : events)
+		else
 		{
-			if(event.getEventName().equals(toRemove))
+			for(ServerEvent event : events)
 			{
-				//remove event from list, mark event to not run
-				event.cancel();
-				events.remove(event);
-				removed = true;
+				if(event.getEventName().equals(toRemove))
+				{
+					//cancel event and mark it for removal
+					event.cancel();
+					remove.add(event);
+					removed = true;
+				}
 			}
 		}
+		//remove the marked events after iterating through the ArrayList
+		events.removeAll(remove);
 		scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
 		return removed;
 	}
