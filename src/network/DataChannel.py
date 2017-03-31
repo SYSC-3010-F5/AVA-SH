@@ -1,12 +1,13 @@
+
 import socket
 import sys
 
 class DataChannel():
-	TYPE_HANDSHAKE = 0
-	TYPE_CMD = 1
-	TYPE_INFO = 2  
-	TYPE_ERR = 3
-	TYPE_DISCONNECT = 4
+	TYPE_HANDSHAKE = 0x00
+	TYPE_CMD = 0x01
+	TYPE_INFO = 0x02  
+	TYPE_ERR = 0x03
+	TYPE_DISCONNECT = 0x04
 	MAX_PACKET_SIZE = 1024
 	TIMEOUT_S = 4
 	HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm."
@@ -167,22 +168,25 @@ class DataChannel():
 			data, addr = self.rcvPacket(10)
 		except socket.timeout:
 			return False
+                rawData = bytearray(data)
 		
-		#if((data[0] == self.TYPE_HANDSHAKE) and (data[1] == 0x00)):
-		self.pairedPort = addr[1]
-		print(addr[1])
-		self.pairedAddress = addr[0]
-		print(addr[0])
-		self.connected = True
-		self.registeredName = deviceName
-		return True
-		#elif(data[0] == self.TYPE_ERR):
-		#	print(self.Unpack(data)[1])
-		#	return False
-		#else:
-		#	print("Invalid response to handshake\n")
-		#	print(data)
-		#	return False
+		if(rawData[0] == 0x00):
+                        print("Handshake detected")
+                        if(rawData[1] == 0x00):
+                                self.pairedPort = addr[1]
+                                print(addr[1])
+                                self.pairedAddress = addr[0]
+                                print(addr[0])
+                                self.connected = True
+                                self.registeredName = deviceName
+                                return True
+		elif(rawData[0] == self.TYPE_ERR):
+                        print(self.Unpack(data)[1])
+			return False
+		else:
+			print("Invalid response to handshake\n")
+			print(rawData)
+			return False
 	
 	def disconnect(self, reason):
 		#create the disconnect packet
@@ -256,3 +260,4 @@ class DataChannel():
 #myChannel.sendCmd("RISE UP", "")
 #myChannel.sendErr("STALIN DED")
 #myChannel.disconnect("COMMUNISM DED")
+
