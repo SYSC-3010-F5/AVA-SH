@@ -239,8 +239,6 @@ public class Scheduler
 			}
 			
 			periodicEvents.add(event);
-			for(ServerEvent e : periodicEvents)
-				System.out.println(e.toString());
 			//determine if the event will occur daily
 			boolean[] days = event.getTrigger().getDays();
 			boolean dailyEvent = true;
@@ -266,8 +264,6 @@ public class Scheduler
 			//event occurs on less than 7 days a week
 			else
 			{
-				for(ServerEvent e : periodicEvents)
-					System.out.println(e.toString());
 				for(int i = 0; i < 7; i++)
 				{
 					if(days[i])
@@ -282,8 +278,6 @@ public class Scheduler
 						nonDailyPeriodicEvents.add(scheduleEvent);
 					}
 				}
-				for(ServerEvent e : periodicEvents)
-					System.out.println(e.toString());
 				return true;
 			}
 		}
