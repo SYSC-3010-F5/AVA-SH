@@ -69,6 +69,7 @@ public class Scheduler
 	private Timer scheduler;
 	private ArrayList<ServerEvent> periodicEvents;
 	private ArrayList<ServerEvent> nonPeriodicEvents;
+	private ArrayList<ServerEvent> nonDailyPeriodicEvents;
 	
 	
 	//generic constructor
@@ -81,6 +82,7 @@ public class Scheduler
 		//init
 		periodicEvents = new ArrayList<ServerEvent>();
 		nonPeriodicEvents = new ArrayList<ServerEvent>();
+		nonDailyPeriodicEvents = new ArrayList<ServerEvent>();
 	}
 	
 	
@@ -236,7 +238,9 @@ public class Scheduler
 					return false;
 			}
 			
-			
+			periodicEvents.add(event);
+			for(ServerEvent e : periodicEvents)
+				System.out.println(e.toString());
 			//determine if the event will occur daily
 			boolean[] days = event.getTrigger().getDays();
 			boolean dailyEvent = true;
@@ -244,7 +248,7 @@ public class Scheduler
 			{
 				dailyEvent = dailyEvent && day;
 			}
-			
+
 			//special case, daily event
 			if(dailyEvent)
 			{
@@ -257,7 +261,6 @@ public class Scheduler
 				
 				delay = delay % MS_DAY;
 				scheduler.scheduleAtFixedRate(event, delay, MS_DAY);
-				periodicEvents.add(event);
 				return true;
 			}
 			//event occurs on less than 7 days a week
@@ -273,7 +276,7 @@ public class Scheduler
 						TimeAndDate trigger = scheduleEvent.getTrigger();
 						trigger.setDays(triggerDay);
 						scheduler.scheduleAtFixedRate(scheduleEvent, computeDelay(trigger), MS_WEEK);
-						periodicEvents.add(event);
+						nonDailyPeriodicEvents.add(scheduleEvent);
 					}
 				}
 				return true;
@@ -286,18 +289,33 @@ public class Scheduler
 	private boolean remove(ArrayList<ServerEvent> events, String toRemove)
 	{
 		boolean removed = false;
-		for(int i = 0; i < events.size(); i++)
+		
+		//check the special non daily periodic events list only if the user was trying to remove a periodic event
+		if(events.equals(periodicEvents))
 		{
-			if(events.get(i).getEventName().equals(toRemove))
+			for(int i = 0; i < nonDailyPeriodicEvents.size(); i++)
 			{
-				//remove event from list, mark event to not run, purge from scheduler
-				events.get(i).cancel();
-				events.remove(i);
+				if(nonDailyPeriodicEvents.get(i).getEventName().equals(toRemove))
+				{
+					//remove event from list, mark event to not run
+					nonDailyPeriodicEvents.get(i).cancel();
+					nonDailyPeriodicEvents.remove(i);
+					removed = true;
+					
+					//removing the event shrinks the list by one, shifting all events ahead of it in the list back one index
+					//decrement the index to avoid skipping entries
+					i--;
+				}
+			}
+		}
+		for(ServerEvent event : events)
+		{
+			if(event.getEventName().equals(toRemove))
+			{
+				//remove event from list, mark event to not run
+				event.cancel();
+				events.remove(event);
 				removed = true;
-				
-				//removing the event shrinks the list by one, shifting all events ahead of it in the list back one index
-				//decrement the index to avoid skipping entries
-				i--;
 			}
 		}
 		scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
