@@ -174,7 +174,7 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 		return cancel(true);
 	}
 	//marks the ServerEvent to not trigger without print
-	protected boolean cancel(boolean print)
+	public boolean cancel(boolean print)
 	{
 		if(print)
 		{

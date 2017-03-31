@@ -299,37 +299,26 @@ public class Scheduler
 				if(event.getEventName().equals(toRemove))
 				{
 					//cancel event and mark it for removal
-					event.cancel();
+					//do not print that the event is being cancelled
+					event.cancel(false);
 					remove.add(event);
 					removed = true;
 				}
 			}
 			//remove the marked events after iterating through the ArrayList
 			nonDailyPeriodicEvents.removeAll(remove);
-			//now remove the un-scheduled event from the periodicEvents list
-			for(ServerEvent event : events)
-			{
-				if(event.getEventName().equals(toRemove))
-				{
-					//mark event for removal
-					remove.add(event);
-					removed = true;
-				}
-			}
 		}
-		else
+		for(ServerEvent event : events)
 		{
-			for(ServerEvent event : events)
+			if(event.getEventName().equals(toRemove))
 			{
-				if(event.getEventName().equals(toRemove))
-				{
-					//cancel event and mark it for removal
-					event.cancel();
-					remove.add(event);
-					removed = true;
-				}
+				//cancel event and mark it for removal
+				event.cancel();
+				remove.add(event);
+				removed = true;
 			}
 		}
+		
 		//remove the marked events after iterating through the ArrayList
 		events.removeAll(remove);
 		scheduler.purge();				//allows garbage collection to remove event, time of n+log(n)
