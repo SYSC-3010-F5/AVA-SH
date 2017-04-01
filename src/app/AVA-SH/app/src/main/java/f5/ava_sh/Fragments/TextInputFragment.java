@@ -1,18 +1,15 @@
-package f5.ava_sh;
+package f5.ava_sh.Fragments;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.widget.EditText;
-import android.widget.TextView;
 
-import static android.R.attr.value;
+import f5.ava_sh.Listeners.OnTextSetListener;
 
 /**
  * Created by Slate on 2017-03-26.

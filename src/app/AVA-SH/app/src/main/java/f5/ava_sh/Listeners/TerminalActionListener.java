@@ -1,4 +1,4 @@
-package f5.ava_sh;
+package f5.ava_sh.Listeners;
 
 import android.util.Log;
 import android.view.KeyEvent;
@@ -9,6 +9,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+
+import f5.ava_sh.TerminalActivity;
 
 /**
  *Class:                TerminalActionListener.java

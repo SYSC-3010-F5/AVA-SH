@@ -1,22 +1,13 @@
-package f5.ava_sh;
+package f5.ava_sh.Fragments;
 
-import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.TimePickerDialog;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.format.DateFormat;
-import android.util.Log;
-import android.widget.EditText;
 import android.widget.TimePicker;
-import android.widget.Toast;
 
-import java.sql.Time;
-import java.util.Calendar;
-
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
+import f5.ava_sh.Listeners.OnTimeSetListener;
 
 /**
  * Created by Slate on 2017-03-19.

@@ -1,6 +1,7 @@
 package f5.ava_sh;
 
 import android.content.Context;
+import android.net.Network;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -247,19 +248,36 @@ public class ConnectionHelper implements Runnable {
     }
 
     public void sendTimer(int hour, int minute, String name){
+        alertBuilder.clear();
         //ToDo: remove
         Log.d("We've reached","sendTimer");
 
         String jsonBuild = buildTimerJson(hour,minute,name);
 
-    
+        try{
+            dataChannel.sendCmd("set timer",jsonBuild);
+            PacketWrapper response = dataChannel.receivePacket();
 
+            if(response.type == DataChannel.TYPE_INFO){
+                et.append(name + " added!");
+            }
+            else if(response.type == DataChannel.TYPE_ERR){
+                et.append(response.errorMessage());
+            }
+            else{
+                et.append("Unknown response from server! \n" + response.toString() + "\n");
+            }
+
+        }catch(NetworkException e){
+            et.append(e.getMessage());
+        }
+        alertBuilder.showAlert();
     }
 
 
     //ToDo: build the Json time format
     private String buildTimerJson(int hour, int minute,String name){
-        return "{\n\t\"name\" : \"" + name + "\"\n\t\"timeUntilTrigger\" : " + getTimeInSeconds(hour,minute) + "\n}";;
+        return "{\n\t\"name\" : \"" + name + "\"\n\t\"timeUntilTrigger\" : " + getTimeInSeconds(hour,minute) + "\n}";
     }
 
     private int getTimeInSeconds(int hour, int minute){

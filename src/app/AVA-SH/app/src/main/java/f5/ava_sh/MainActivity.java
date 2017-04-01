@@ -1,27 +1,18 @@
 package f5.ava_sh;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.TextView;
 
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.sql.Connection;
-
-import network.DataChannel;
-
-import static android.R.attr.src;
+import f5.ava_sh.Listeners.ButtonAdapter;
+import f5.ava_sh.Listeners.OnTextSetListener;
+import f5.ava_sh.Listeners.OnTimeSetListener;
 
 /**
  *Class:                MainActivity.java
@@ -40,7 +31,7 @@ import static android.R.attr.src;
  *
  */
 
-public class MainActivity extends AppCompatActivity implements OnTimeSetListener, OnTextSetListener{
+public class MainActivity extends AppCompatActivity implements OnTimeSetListener, OnTextSetListener {
 
 
 
@@ -80,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
-        timeWrapper = new int[2];
+        timeWrapper = null;
 
 
         this.setTitle("AVA-SH");
@@ -93,11 +84,6 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     }
 
 
-
-    public void setTime(int[] time){
-        timeWrapper= time;
-    }
-
     @Override
     public void onTimeSet(int[] time) {
         timeWrapper = time;
@@ -107,12 +93,19 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     @Override
     public void onTextSet(int type, String name){
         Log.d("Type/Name",type+"/"+name);
-        switch(type){
-            case 0:
-                connectionHelper.sendTimer(timeWrapper[0],timeWrapper[1],name);
-                break;
-            case 1:
-                break;
+
+        if(timeWrapper != null) {
+            switch (type) {
+                case 0:
+                    connectionHelper.sendTimer(timeWrapper[0], timeWrapper[1], name);
+                    timeWrapper = null;
+                    break;
+                case 1:
+                    break;
+            }
+        } else {
+            //ToDo: Handle improper user input
+            Log.d("TIMER ERROR","Timer not set");
         }
 
     }

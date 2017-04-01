@@ -1,8 +1,11 @@
-package f5.ava_sh;
+package f5.ava_sh.Listeners;
+
 import android.content.Context;
-import android.content.Intent;
 import android.view.View.OnClickListener;
 import android.view.View;
+
+import f5.ava_sh.CommandHelper;
+import f5.ava_sh.MainActivity;
 
 /**
  * Created by Slate on 2017-02-24.

@@ -1,4 +1,4 @@
-package f5.ava_sh;
+package f5.ava_sh.Fragments;
 
 import android.app.Dialog;
 import android.app.DialogFragment;

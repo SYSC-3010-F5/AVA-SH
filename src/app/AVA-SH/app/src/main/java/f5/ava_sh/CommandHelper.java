@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.view.View;
 
 import datatypes.Alarm;
+import f5.ava_sh.Fragments.TextInputFragment;
+import f5.ava_sh.Fragments.TimePickerFragment;
 import network.DataChannel;
 
 import android.app.AlertDialog;
@@ -23,8 +25,8 @@ public class CommandHelper {
             "terminal",
             "ping",
             "sch event",
-            "set timer",
-            "new alarm",
+            "new timer",
+            "new event",
             "req current weather",
             "req time",
             "req ip",
@@ -86,7 +88,7 @@ public class CommandHelper {
 
                 break;
 
-            case "set timer":
+            case "new timer":
                 DialogFragment timerTextInput = new TextInputFragment();
                 timerTextInput.show(main.getFragmentManager(),"timerTextInput");
                 DialogFragment timerPicker = new TimePickerFragment();
@@ -95,13 +97,8 @@ public class CommandHelper {
 
                 break;
 
-            case "new alarm":
+            case "new event":
 
-                //Need to pull master and get alarm type
-                DialogFragment datePicker = new DatePickerFragment();
-                datePicker.show(main.getFragmentManager(), "datePicker");
-                DialogFragment timePicker = new AlarmTimePickerFragment();
-                timePicker.show(main.getFragmentManager(), "alarmTimePicker");
 
 
                 break;
@@ -115,7 +112,7 @@ public class CommandHelper {
                 break;
 
             case "req ip":
-                connectionHelper.getTime();
+
                 break;
 
             case "req np-events":
