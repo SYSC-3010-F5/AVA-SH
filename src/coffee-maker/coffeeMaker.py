@@ -1,6 +1,10 @@
 import time
 import pifacedigitalio as pfio
-import dataChannel
+import DataChannel
+
+#Declaring constants
+serverIP = "192.168.2.76"
+
 
 #Initalizations
 connected=False
@@ -35,25 +39,26 @@ def sortPack(info, extra):
 for i in range(0,7,-1):
         pfio.digital_write(i,0)
 
-myChannel=dataChannel.DataChannel()
-name='Coffee Maker'
+name='c\Coffee Maker'
+myChannel = DataChannel.DataChannel(name)
 trys=0
 while(True):
-        connected = myChannel.connect("134.117.58.116", 3010, (name))
-
+        connected = myChannel.connect(serverIP, 3010, name)
+        time.sleep(1)
         while(connected==True):
                 data, addr = myChannel.rcvPacket(None)
                 opcode, info, extra = myChannel.Unpack(data)
 
                 sortPack(info,extra)
-
+                
         
         trys=trys+1
-        if(trys==100):
-                print ('10 attemps, changing name')
+        if(trys==5):
+                print ('5 attemps, changing name')
                 name=name+'1'
                 print (name)
                 trys=0
+                time.sleep(0.5)
 
                 
 
