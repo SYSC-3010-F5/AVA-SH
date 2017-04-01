@@ -32,10 +32,18 @@ import java.awt.Toolkit;
 
 public class MirrorDisplay extends JFrame 
 {
+	//ASCII Art
+	private static final String ASCII_AVA_LOGO = 
+			"    ___ _    _____   \n" +
+			"   /   | |  / /   |  \n" +
+			"  / /| | | / / /| |  \n" +
+			" / ___ | |/ / ___ |  \n" +
+			"/_/  |_|___/_/  |_|  " ;
+	
 	//declaring static class constants
 	private static final int DEFAULT_WINDOW_X = 1000;
 	private static final int DEFAULT_WINDOW_Y = 725;
-	private static final Font DEFAULT_FONT = new Font("Monospaced", Font.PLAIN, 13);
+	private static final Font DEFAULT_FONT = new Font("Monospaced", Font.PLAIN, 13);		// <-- maybe make font larger
 	private static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
 	private static final Color DEFAULT_TEXT_COLOR = Color.ORANGE;		// <-- this would probably need to be white for real applications
 
@@ -65,6 +73,17 @@ public class MirrorDisplay extends JFrame
 		output.setLineWrap(true);
 		output.setWrapStyleWord(true);
 		this.getContentPane().add(output, BorderLayout.CENTER);
+		
+		
+		//set up vanity logo at east
+		JTextArea logo = new JTextArea();
+		logo.setEditable(false);
+		logo.setFont(DEFAULT_FONT);
+		logo.setBackground(DEFAULT_BACKGROUND_COLOR);
+		logo.setForeground(DEFAULT_TEXT_COLOR);
+		logo.setCaretColor(DEFAULT_TEXT_COLOR);
+		logo.setText(ASCII_AVA_LOGO);
+		this.getContentPane().add(logo, BorderLayout.EAST);
 		
 		
 		//set visible
@@ -132,6 +151,6 @@ public class MirrorDisplay extends JFrame
 	//show disconnect
 	public void update()
 	{
-		output.setText(WeatherIcons.DISCONNECTED);
+		output.setText("\n\n    Disconnected!\n    Main AVA Server unavalible");
 	}
 }
