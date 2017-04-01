@@ -143,7 +143,6 @@ public class MirrorDisplay extends JFrame
 		s += ("  Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius\n");
 		s += ("  Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%\n");
 		s += ("  Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION] + "\n");
-		System.out.println(s);
 		output.setText(s);
 	}
 	
