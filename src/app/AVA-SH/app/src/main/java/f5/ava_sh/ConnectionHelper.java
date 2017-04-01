@@ -1,6 +1,7 @@
 package f5.ava_sh;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.TextView;
 
 
@@ -14,8 +15,26 @@ import network.NetworkException;
 import network.PacketWrapper;
 
 
+
 /**
- * Created by Slate on 2017-03-19.
+ *Class:             ConnectionHelper.java
+ *Project:           AVA Smart Home
+ *Author:            Nathaniel Charlebois
+ *Date of Update:    23/02/2017
+ *Version:           1.0.1
+ *Git:               https://github.com/SYSC-3010-F5/AVA-SH
+ *
+ *Purpose:           A thread that handles connection details and displays results in a custom
+ *                      alertDialog. An instance of `ConnectionHelper` his held by `CommandHelper`
+ *                      which delegates tasks based on the command provided.
+ *
+ *
+ *
+ *Update Log		v1.0.1
+ *						- Adding parsed method functions
+ *					v1.0.0
+ *				        -Default template created
+ *
  */
 
 public class ConnectionHelper implements Runnable {
@@ -28,6 +47,7 @@ public class ConnectionHelper implements Runnable {
     private String 		defaultDeviceName;
     private InetAddress defaultServerAddress;
     private int 		defaultServerPort;
+    private String serverIP;
     private TextView et;
 
     public ConnectionHelper(Context c){
@@ -36,9 +56,10 @@ public class ConnectionHelper implements Runnable {
 
         defaultDeviceName = "i\\app";
         defaultServerPort = 3010;
+        serverIP = "192.168.0.101";
 
         try {
-            defaultServerAddress = InetAddress.getByName("192.168.0.106");
+            defaultServerAddress = InetAddress.getByName(serverIP);
             dataChannel = new DataChannel();
         } catch(Exception e){
 
@@ -74,11 +95,11 @@ public class ConnectionHelper implements Runnable {
 
                 if(dataChannel.getConnected())
                 {
-                    et.append("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
+                    et.append("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\""+ "\n");
                 }
                 else
                 {
-                    et.append("Connection could not be established!" + "\n" + "Please restart the app!");
+                    et.append("Connection could not be established!" + "\n" + "Please restart the app!" + "\n");
                 }
             }
             catch (NetworkException e)
@@ -88,7 +109,7 @@ public class ConnectionHelper implements Runnable {
         }
         else
         {
-            et.append("Already connected!\nPlease disconnect first");
+            et.append("Already connected!\nPlease disconnect first" + "\n");
         }
         alertBuilder.showAlert();
     }
@@ -112,7 +133,7 @@ public class ConnectionHelper implements Runnable {
             }
             else
             {
-                et.append("Unexpected packet recieved!" + "\n");
+                et.append("Unexpected packet received!" + "\n");
             }
         }
         catch (NetworkException e)
@@ -194,6 +215,55 @@ public class ConnectionHelper implements Runnable {
             et.append(e.getMessage());
         }
         alertBuilder.showAlert();
+    }
+
+    public void delNPEvent(String name){
+        alertBuilder.clear();
+        try
+        {
+            //send and wait for response
+            dataChannel.sendCmd("del np-event", name);
+            PacketWrapper response = dataChannel.receivePacket();
+
+            //parse response
+            if(response.type == DataChannel.TYPE_INFO)
+            {
+                et.append("\"" + name + "\" removed!" + "\n");
+            }
+            else if (response.type == DataChannel.TYPE_ERR)
+            {
+                et.append(response.errorMessage() + "\n");
+            }
+            else
+            {
+                et.append("Unknown response from server!\n"+response.toString() + "\n");
+            }
+        }
+        catch (NetworkException e)
+        {
+            et.append(e.getMessage() + "\n");
+        }
+        alertBuilder.showAlert();
+    }
+
+    public void sendTimer(int hour, int minute, String name){
+        //ToDo: remove
+        Log.d("We've reached","sendTimer");
+
+        String jsonBuild = buildTimerJson(hour,minute,name);
+
+    
+
+    }
+
+
+    //ToDo: build the Json time format
+    private String buildTimerJson(int hour, int minute,String name){
+        return "{\n\t\"name\" : \"" + name + "\"\n\t\"timeUntilTrigger\" : " + getTimeInSeconds(hour,minute) + "\n}";;
+    }
+
+    private int getTimeInSeconds(int hour, int minute){
+        return ((hour*60*60) + (minute*60));
     }
 
     public DataChannel getDataChannel(){

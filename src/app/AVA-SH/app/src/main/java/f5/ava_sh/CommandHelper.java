@@ -2,12 +2,7 @@ package f5.ava_sh;
 
 import android.app.DialogFragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
-import android.os.Debug;
-import android.text.Editable;
-import android.util.Log;
 import android.view.View;
 
 import datatypes.Alarm;
@@ -16,8 +11,6 @@ import network.DataChannel;
 import android.app.AlertDialog;
 import android.widget.EditText;
 import android.widget.TextView;
-
-import static android.R.id.input;
 
 
 /**
@@ -56,20 +49,26 @@ public class CommandHelper {
     private DataChannel dataChannel;
     private Alarm alarm;
     private MainActivity main;
-
     private Context c;
     private ConnectionHelper connectionHelper;
+
+
 
 
     public CommandHelper(Context c, MainActivity main){
         this.main = main;
         this.c = c;
         connectionHelper = main.getConnectionHelper();
+
     }
+
+
 
     public String[] getCommands(){
         return buttonNames;
     }
+
+
 
     public void interpret(View view, String id){
 
@@ -88,33 +87,10 @@ public class CommandHelper {
                 break;
 
             case "set timer":
-                DialogFragment timerPicker = new TimerTimePickerFragment();
+                DialogFragment timerTextInput = new TextInputFragment();
+                timerTextInput.show(main.getFragmentManager(),"timerTextInput");
+                DialogFragment timerPicker = new TimePickerFragment();
                 timerPicker.show(main.getFragmentManager(), "timerTimePicker");
-
-                AlertDialog.Builder alert = new AlertDialog.Builder(c);
-
-                timerText = new EditText(c);
-                timerText.setEnabled(true);
-                timerText.setTextColor(Color.parseColor("#000000"));
-
-                // set prompts.xml to alertdialog builder
-                alertDialogBuilder.setView(timerText);
-
-
-                alert.setPositiveButton("Name the timer!", new DialogInterface.OnClickListener() {
-                    //@Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                        Editable value = timerText.getText();
-                        timerName = value.toString();
-
-                    }
-                });
-
-
-                //send timer command
-                String json = "{\n\t\"name\" : \"" + timerName + "\"\n\t\"timeUntilTrigger\" : " + "60" + "\n}";
-
 
 
                 break;
@@ -150,6 +126,7 @@ public class CommandHelper {
                 break;
 
             case "del np-event":
+
                 break;
 
             case "led on":
