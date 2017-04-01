@@ -26,6 +26,7 @@ import javax.swing.JFrame;
 
 //import packages
 import server.datatypes.WeatherData;
+import java.awt.Toolkit;
 
 
 
@@ -47,8 +48,9 @@ public class MirrorDisplay extends JFrame
 	{
 		//set up frame
 		super(windowTitle);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(0, 0, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
+		this.setIconImage(Toolkit.getDefaultToolkit().getImage(MirrorDisplay.class.getResource("/javax/swing/plaf/metal/icons/ocean/computer.gif")));
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setBounds(0, 0, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.getContentPane().setLayout(new BorderLayout(0, 0));
 		this.getContentPane().setBackground(DEFAULT_BACKGROUND_COLOR);
 		

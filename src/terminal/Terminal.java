@@ -2,15 +2,19 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    29/03/2017                                              
-*Version:           0.7.0
+*Date of Update:    01/04/2017                                              
+*Version:           0.7.1
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.7.0
+*Update Log			v0.7.1
+*						- implements runnable (proper threading)
+*						- getter added for closeMode
+*						- close from window [x] or menu-bar dialog actually closes now (issue #28)
+*					v0.7.0
 *						- refactoring on older event-related code
 *						- prototypes added for npe and pe interaction (redesigned so common code can be reused)
 *						- old commands removed (timer-get and timer-remove)
@@ -110,7 +114,7 @@ import server.datatypes.WeatherData;
 
 
 
-public class Terminal extends JFrame implements ActionListener
+public class Terminal extends JFrame implements ActionListener, Runnable
 {
 	//declaring local class constants
 	public static final int CLOSE_OPTION_RESET = 0;
@@ -118,7 +122,7 @@ public class Terminal extends JFrame implements ActionListener
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.7.0";
+	private static final String VERSION = "v0.7.1";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
@@ -191,8 +195,16 @@ public class Terminal extends JFrame implements ActionListener
 	}
 	
 	
+	//generic getter
+	public int getCloseMode()
+	{
+		return closeReason;
+	}
+	
+	
+	@Override
 	//main run-loop of the terminal
-	public int run()
+	public void run()
 	{
 		//initial handshake
 		establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
@@ -204,7 +216,7 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			//get input and check for data on socket
 			in = null;
-			while(in == null)
+			while(in == null && runFlag)
 			{
 				//get input
 				in = ui.getInput(SWITCH_SPEED);
@@ -233,11 +245,12 @@ public class Terminal extends JFrame implements ActionListener
 				}
 			}
 			
-			handleConsoleInput(in);
+			//handle input
+			if(runFlag)
+			{
+				handleConsoleInput(in);
+			}
 		}
-		
-		//exit and return
-		return closeReason;
 	}
 	
 	
@@ -1604,7 +1617,8 @@ public class Terminal extends JFrame implements ActionListener
 		{
 			//start terminal, enter main loop
 			Terminal terminal = new Terminal(false);		//true=fullscreen, false=windowed
-			int close = terminal.run();
+			terminal.run();
+			int close = terminal.getCloseMode();
 			
 			//determine and handle reason for close
 			switch(close)

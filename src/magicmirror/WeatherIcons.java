@@ -6,10 +6,10 @@
 *Version:           1.0.0
 *                                                                                   
 *Purpose:           A bunch of ASCII art.
-*					All art is from github user "   szantaii"    
+*					All art is from github user "szantaii"    
 *					@ URL https://raw.githubusercontent.com/szantaii/bash-weather/master/init.sh
 *
-*					This class is merely a compelation of that art
+*					This class is merely a compilation of that art
 *					
 * 
 *Update Log			v1.0.0

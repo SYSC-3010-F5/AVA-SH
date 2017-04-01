@@ -12,7 +12,7 @@
 *					Attempts connection to server (varies name if already taken).
 *					Periodically checks the weather.
 *
-*					Build in <4 hours to mess with the F1 group.
+*					Build in about 4 hours to mess with the F1 group.
 *
 *					Will try to connect to server indefinitely, if it cannot due to another device
 *					being registered under its name, it will try again with a new name. Wash rinse
@@ -50,7 +50,7 @@ public class MirrorController implements Runnable
 	//declaring class constants
 	private static final String SERVER_ADDRESS_INIT = "192.168.2.34";
 	private static final int SERVER_PORT_INIT = 3010;
-	private static final String WINDOW_TITLE = "Magic Mirror";
+	private static final String WINDOW_TITLE = "Magic Mirror v1.0.0";
 	private static final String REGISTRY_NAME = "g\\magic mirror";
 	private static final int RETRY_QUANTUM = 5;
 	private static final int BLOCK_TIME_MS = 5*1000;
