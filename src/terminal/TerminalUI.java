@@ -2,14 +2,20 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    09/03/2017                                              
-*Version:           1.2.1                                         
+*Date of Update:    01/04/2017                                              
+*Version:           1.3.0    
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.2.1
+*Update Log			v1.3.0
+*						- added menu option for server config
+*						- added menu option for live swap between window/fullscreen
+*						- new dialog added to display and change server settings
+*						- method reqClose generalized to method dialogGetBoolean
+*						- start size reduced / start position set to 0,0
+*					v1.2.1
 *						- dialog-related methods renamed for clairity
 *						- dialog for selecting 1 of n options added
 *					v1.2.0
@@ -78,11 +84,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
+import java.net.InetAddress;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeMap;
@@ -99,7 +104,9 @@ import javax.swing.JTextField;
 //import packages
 import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
+import terminal.dialogs.ServerSettingsDialog;
 import terminal.dialogs.TextView;
+import terminal.dialogs.wrappers.SettingsWrapper;
 
 
 
@@ -115,16 +122,18 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 
 	
 	//declaring class constants
+	private static final String VERSION = "v1.3.0";
 	public static final String CONSOLE_IN = "txt/in";
 	public static final String MENU_CLOSE = "m/file/close";
 	public static final String MENU_CMD_LIST = "m/file/cmdlist";
 	private static final String MENU_COLOR_SCHEME = "m/options/colorscheme";
-	private static final String MENU_FULLSCREEN = "m/options/fullscreen";
+	public static final String MENU_FULLSCREEN = "m/options/fullscreen";
+	public static final String MENU_SERVER_SETTINGS = "m/options/serversettings";
 	private static final Font DEFAULT_CONSOLE_FONT = new Font("Monospaced", Font.PLAIN, 13);
 	private static final String DEFAULT_COLOR_SCHEME = "aperture";
 	private static final int CMD_HISTORY_SIZE = 25;
-	private static final int DEFAULT_WINDOW_X = 1400;
-	private static final int DEFAULT_WINDOW_Y = 750;
+	private static final int DEFAULT_WINDOW_X = 1300;
+	private static final int DEFAULT_WINDOW_Y = 725;
 	private static final int AUX_PANEL_WIDTH = 275;
 	private static final int STATUS_PANE_HEIGHT = 250;
 	
@@ -160,11 +169,14 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		this(title, listener, cmdNotFound, isFullScreen, null);
 	}
 	//generic constructor
+	/**
+	 * @wbp.parser.constructor
+	 */
 	public TerminalUI(String title, ActionListener listener, String cmdNotFound, boolean isFullScreen, WindowAdapter closeOverride)
 	{
 		//set up main window frame
 		super(title);
-		this.setBounds(100, 100, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
+		this.setBounds(0, 0, DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setIconImage(Toolkit.getDefaultToolkit().getImage(TerminalUI.class.getResource("/com/sun/java/swing/plaf/windows/icons/Computer.gif")));
 
@@ -209,6 +221,19 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		mntmColor.setActionCommand(MENU_COLOR_SCHEME);
 		mntmColor.addActionListener(this);
 		mnOptions.add(mntmColor);
+		
+		JMenuItem mntmConfig = new JMenuItem("Server Settings");
+		mntmConfig.setActionCommand(MENU_SERVER_SETTINGS);
+		mntmConfig.addActionListener(listener);
+		mnOptions.add(mntmConfig);
+		
+		String label;
+		if(isFullScreen)	label = "Windowed";
+		else				label = "Fullscreen";
+		JMenuItem mntmScreenMode = new JMenuItem(label);
+		mntmScreenMode.setActionCommand(MENU_FULLSCREEN);
+		mntmScreenMode.addActionListener(listener);
+		mnOptions.add(mntmScreenMode);
 		
 		
 		//add to "Help" category
@@ -301,7 +326,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 				flavor = "fullscreen mode...";
 			}
 			this.setVisible(true);
-			this.println("Starting TerminalUI v1.2.1 on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
+			this.println("Starting TerminalUI " + VERSION + " on Thread <" + Thread.currentThread().getId() + "> in " + flavor);
 		} 
 		catch (Exception e) 
 		{
@@ -687,11 +712,11 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
-	//request to close terminal
-	public boolean reqClose()
+	//get a boolean from user
+	public boolean dialogGetBoolean(String msg)
 	{
 		//get user yes or no
-		int i = JOptionPane.showConfirmDialog(this, "Are you sure you wish to exit this terminal\n(The main AVA Server will continue to run)", TERMINAL_NAME, JOptionPane.YES_NO_OPTION);
+		int i = JOptionPane.showConfirmDialog(this, msg, TERMINAL_NAME, JOptionPane.YES_NO_OPTION);
 		if (i == JOptionPane.YES_OPTION)
 		{
 			this.close();
@@ -725,6 +750,24 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		if(dialog.getCloseMode() == DayAndTimeDialog.OK_OPTION)
 		{
 			return dialog.getAlarm();
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	
+	//get server settings from user via dialog
+	public SettingsWrapper dialogGetServerSettings(InetAddress address, int port, String name)
+	{
+		//get info from user
+		ServerSettingsDialog dialog = new ServerSettingsDialog(this, TERMINAL_NAME, address, port, name);
+		{
+			return new SettingsWrapper(
+					dialog.getAddress(),
+					dialog.getPort(),
+					dialog.getCloseMode());
 		}
 		else
 		{

@@ -2,15 +2,19 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    01/04/2017                                              
-*Version:           0.7.1
+*Date of Update:    02/04/2017                                              
+*Version:           0.7.2
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.7.1
+*Update Log			v0.7.2
+*						- dialog for changing server settings added (menu bar)
+*						- command "settings" added
+*						- connect command modified for optional dialog use
+*					v0.7.1
 *						- implements runnable (proper threading)
 *						- getter added for closeMode
 *						- close from window [x] or menu-bar dialog actually closes now (issue #28)
@@ -109,7 +113,9 @@ import network.PacketWrapper;
 import server.MainServer;
 import server.datatypes.Alarm;
 import server.datatypes.TimeAndDate;
+import terminal.dialogs.ServerSettingsDialog;
 import terminal.dialogs.TimeDialog;
+import terminal.dialogs.wrappers.SettingsWrapper;
 import server.datatypes.WeatherData;
 
 
@@ -122,7 +128,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.7.1";
+	private static final String VERSION = "v0.7.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
@@ -151,7 +157,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		    {
 		    	if(!connecting)							//workaround to fix issue #15
 		    	{
-			    	boolean closed = ui.reqClose();
+			    	boolean closed = ui.dialogGetBoolean("Are you sure you wish to exit this terminal\n(The main AVA Server will continue to run)");
 					if(closed)
 					{
 						close(CLOSE_OPTION_USER);
@@ -297,6 +303,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		
 		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
 					+ "\tparam1= n/a             || Connect to server using default IPv4 address\n"
+					+ "\tparam1= config          || Configure and connect to server using system dialog\n"
 					+ "\tparam1= default         || Connect to server using default IPv4 address\n"
 					+ "\tparam1= local           || Connect to server using the local IPv4 address\n"
 					+ "\tparam1= xxx.xxx.xxx.xxx || Connect to server using this IPv4 address\n"
@@ -409,6 +416,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		cmdMap.put("coffee", "Turn the coffee maker on or off\n"
 				+ "\tparam1: on  || Turn the coffee maker on\n"
 				+ "\tparam1: off || Turn the coffee maker off");
+		
+		cmdMap.put("settings", "Launch system dialog to change/view server settings");
 		
 		return cmdMap;
 	}
@@ -826,6 +835,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					//non-default values -- parse and set address and port
 					if (input.length >= 2)
 					{
+						//special case using dialogs
+						if(input[1].equals("config"))
+						{
+							settingsDialog();
+							break;
+						}
+
 						//set address
 						if (input[1].equals("default"))
 						{
@@ -1021,7 +1037,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			case("timer-new"):
 				if(input.length == 1)
 				{
-					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);
+					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);		//TODO this should be in TerminalUI
 					if (d.getCloseMode() == TimeDialog.OK_OPTION)
 					{
 						//send timer command
@@ -1374,6 +1390,19 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					}
 				}
 				break;
+				
+				
+			//launch settings dialog
+			case("settings"):
+				if(length == 1)
+				{
+					settingsDialog();
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
 
 				
 			//cmd not found
@@ -1548,6 +1577,43 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	}
 	
 	
+	//launch and use dialog for settings
+	private void settingsDialog()
+	{
+		//get settings from dialog
+		SettingsWrapper s = ui.dialogGetServerSettings(defaultServerAddress, defaultServerPort, defaultDeviceName);
+		
+		//user selected anything but cancel/window close
+		if (s != null)
+		{
+			//change default settings
+			if(s.closeMode == ServerSettingsDialog.CLOSE_MODE_ACCEPT || s.closeMode == ServerSettingsDialog.CLOSE_MODE_CONNECT)
+			{
+				//change settings
+				defaultServerAddress = s.address;
+				defaultServerPort = s.port;
+				defaultDeviceName = s.name;
+				
+				//print to screen
+				ui.println("Default Server Address: " + defaultServerAddress.toString());
+				ui.println("Default Server Port:    " + defaultServerPort);
+				ui.println("Default Device Name:    " + defaultDeviceName);
+				
+				//attempt to connect/reconnect			//TODO this freezes the display temporarily if server cant be found
+				if(s.closeMode == ServerSettingsDialog.CLOSE_MODE_CONNECT)
+				{
+					//disconnect if already connected
+					if(dataChannel.getConnected())
+					{
+						disconnect("user");
+					}
+					establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
+				}
+			}
+		}
+	}
+	
+	
 	//the status as a string
 	private String statusToString()
 	{
@@ -1596,13 +1662,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		{
 			switch(src)
 			{
-				//"file-close" button pressed
+				//file-close menu item pressed
 				case(TerminalUI.MENU_CLOSE):
-					boolean closed = ui.reqClose();
+					boolean closed = ui.dialogGetBoolean("Are you sure you wish to exit this terminal\n(The main AVA Server will continue to run)");
 					if(closed)
 					{
 						this.close(CLOSE_OPTION_USER);
 					}
+					break;
+					
+				//options-server settings menu item pressed
+				case(TerminalUI.MENU_SERVER_SETTINGS):
+					settingsDialog();
+					break;
+				
+				//options-screen menu item pressed
+				case(TerminalUI.MENU_FULLSCREEN):
 					break;
 			}
 		}
