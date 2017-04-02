@@ -140,6 +140,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	//declaring local instance constants
 	private final String TERMINAL_NAME;
 	private final String CMD_NOT_FOUND;
+	public final boolean IS_FULLSCREEN;
 	
 	//declaring local instance variables
 	private CappedBuffer inputBuffer;
@@ -184,6 +185,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		//initialize non-gui elements
 		TERMINAL_NAME = title;
 		CMD_NOT_FOUND = cmdNotFound;
+		IS_FULLSCREEN = isFullScreen;
 		inputBuffer = new CappedBuffer(CMD_HISTORY_SIZE);
 		cmdMap = new TreeMap<String, String>();
 		echo = false;
@@ -763,10 +765,12 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	{
 		//get info from user
 		ServerSettingsDialog dialog = new ServerSettingsDialog(this, TERMINAL_NAME, address, port, name);
+		if(dialog.getCloseMode() != ServerSettingsDialog.CLOSE_MODE_CANCEL)
 		{
 			return new SettingsWrapper(
 					dialog.getAddress(),
 					dialog.getPort(),
+					dialog.getNameInput(),
 					dialog.getCloseMode());
 		}
 		else

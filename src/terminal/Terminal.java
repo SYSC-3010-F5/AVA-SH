@@ -14,6 +14,8 @@
 *						- dialog for changing server settings added (menu bar)
 *						- command "settings" added
 *						- connect command modified for optional dialog use
+*						- command "screensize" added
+*						- dialog for screensize change added (menu bar)
 *					v0.7.1
 *						- implements runnable (proper threading)
 *						- getter added for closeMode
@@ -141,6 +143,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private boolean runFlag;
 	private boolean connecting;
 	private boolean normalMode;
+	private boolean fullscreenFlag;
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
@@ -180,6 +183,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			defaultServerPort = 3010;
 			connecting = false;
 			normalMode = true;
+			fullscreenFlag = isFullScreen;
 		} 
 		catch (SocketException e) 
 		{
@@ -201,10 +205,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	}
 	
 	
-	//generic getter
+	//generic getters
 	public int getCloseMode()
 	{
 		return closeReason;
+	}
+	public boolean getFullscreenFlag()
+	{
+		return fullscreenFlag;
 	}
 	
 	
@@ -288,7 +296,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	
 	
 	//initialize command map
-	private TreeMap<String,String> initCmdMap()
+	private TreeMap<String,String> initCmdMap()				//TODO this should really be in an external .config file
 	{
 		TreeMap<String,String> cmdMap = new TreeMap<String,String>();
 		
@@ -418,6 +426,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				+ "\tparam1: off || Turn the coffee maker off");
 		
 		cmdMap.put("settings", "Launch system dialog to change/view server settings");
+		
+		cmdMap.put("screensize", "Toggle terminal between fullscreen and windowed modes");
 		
 		return cmdMap;
 	}
@@ -1403,6 +1413,12 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
+				
+				
+			//swap display from fullscreen to windowed or vise-versa
+			case("screensize"):
+				screenSwap(false);
+				break;
 
 				
 			//cmd not found
@@ -1614,6 +1630,36 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	}
 	
 	
+	//change to fullscreen
+	private void screenSwap(boolean dialog)
+	{
+		//assemble flavor message
+		String msg = "Switching terminal to ";
+		if(ui.IS_FULLSCREEN)	msg += "windowed ";
+		else					msg += "fullscreen ";
+		msg += "requires a terminal reboot\nReboot terminal?";
+		
+		//get reboot confirmation
+		boolean reboot;
+		if(dialog)
+		{
+			reboot = ui.dialogGetBoolean(msg);
+		}
+		else
+		{
+			ui.println(msg+" (y/n)");
+			reboot = "y".equals(ui.getInput()[0]);
+		}
+		
+		//set flag and reboot (or not)
+		if(reboot)
+		{
+			fullscreenFlag = !fullscreenFlag;
+			close(CLOSE_OPTION_RESET);
+		}
+	}
+	
+	
 	//the status as a string
 	private String statusToString()
 	{
@@ -1678,6 +1724,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				
 				//options-screen menu item pressed
 				case(TerminalUI.MENU_FULLSCREEN):
+					screenSwap(true);
 					break;
 			}
 		}
@@ -1688,10 +1735,11 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public static void main(String[] e)
 	{	
 		boolean relaunch = true;
+		boolean fullscreen = false;			//true=fullscreen, false=windowed
 		while(relaunch)
 		{
 			//start terminal, enter main loop
-			Terminal terminal = new Terminal(false);		//true=fullscreen, false=windowed
+			Terminal terminal = new Terminal(fullscreen);
 			terminal.run();
 			int close = terminal.getCloseMode();
 			
@@ -1708,6 +1756,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				//closed from reset
 				case(Terminal.CLOSE_OPTION_RESET):
 					relaunch = true;
+					fullscreen = terminal.getFullscreenFlag();
 					break;
 					
 				default:
