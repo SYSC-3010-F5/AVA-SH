@@ -25,20 +25,11 @@ import f5.ava_sh.Listeners.OnTimeSetListener;
  *
  *
  *
- *Update Log			v.0.0.0
- *                          -Initial class creation
- *
- *
  */
 
 public class MainActivity extends AppCompatActivity implements OnTimeSetListener, OnTextSetListener {
 
 
-
-
-    private AlertDialog.Builder alertDialogBuilder;
-    private TextView et;
-    private AlertDialog alertDialog;
     private DataChannelSetup setup;
     private ConnectionHelper connectionHelper;
     private int[] timeWrapper;
@@ -101,11 +92,28 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
                     timeWrapper = null;
                     break;
                 case 1:
+                    connectionHelper.sendCmd("set location",name);
                     break;
+                case 2:
+                    connectionHelper.reqIP(name);
+                    break;
+                case 3:
+                    connectionHelper.delEvent("del np-event",name);
+                    break;
+                case 4:
+                    connectionHelper.delEvent("del p-event",name);
+                    break;
+                case 5:
+                    connectionHelper.getEventDetails("details np-event",name);
+                    break;
+                case 6:
+                    connectionHelper.getEventDetails("details p-event",name);
+                    break;
+
             }
         } else {
             //ToDo: Handle improper user input
-            Log.d("TIMER ERROR","Timer not set");
+            Log.d("ERROR","Invalid onTextSet.type set");
         }
 
     }

@@ -8,8 +8,12 @@ package f5.ava_sh.Listeners;
  *
  * TYPE protocol:
  *  0: -defines a timerName
- *  1: -defines an alarmName
- *
+ *  1: -defines an location
+ *  2: -defines an IP request
+ *  3: -defines del NP-event
+ *  4: -defines del P-event
+ *  5: -defines details NP-event
+ *  6: -defines details P-event
  *
  */
 

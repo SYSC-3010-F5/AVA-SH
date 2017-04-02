@@ -15,6 +15,7 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 
+import static android.R.attr.name;
 
 
 /**
@@ -28,6 +29,9 @@ import network.PacketWrapper;
  *Purpose:           A thread that handles connection details and displays results in a custom
  *                      alertDialog. An instance of `ConnectionHelper` his held by `CommandHelper`
  *                      which delegates tasks based on the command provided.
+ *
+ *                   While there does appear to be "duplicate code" each method requires unique
+ *                      error handling and particular details
  *
  *
  *
@@ -176,6 +180,20 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.clear();
         try{
             dataChannel.sendCmd(cmd);
+            et.append("`"+cmd+"`"+" sent!\n");
+        } catch(NetworkException e){
+            et.append(e.getMessage());
+            alertBuilder.showAlert();
+
+        }
+        alertBuilder.showAlert();
+    }
+
+    public void sendCmd(String cmd,String str){
+        alertBuilder.clear();
+        try{
+            dataChannel.sendCmd(cmd,str);
+            et.append("`"+cmd+": " + str +"`"+" sent!\n");
         } catch(NetworkException e){
             et.append(e.getMessage());
             alertBuilder.showAlert();
@@ -203,11 +221,11 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.showAlert();
     }
 
-    public void getNpEvents(){
+    public void getEvents(String cmd){
         alertBuilder.clear();
         try
         {
-            dataChannel.sendCmd("req np-events");
+            dataChannel.sendCmd(cmd);
             PacketWrapper wrapper = dataChannel.receivePacket();
             et.append(wrapper.extraInfo());
         }
@@ -218,12 +236,12 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.showAlert();
     }
 
-    public void delNPEvent(String name){
+    public void delEvent(String cmd,String name){
         alertBuilder.clear();
         try
         {
             //send and wait for response
-            dataChannel.sendCmd("del np-event", name);
+            dataChannel.sendCmd(cmd, name);
             PacketWrapper response = dataChannel.receivePacket();
 
             //parse response
@@ -249,8 +267,6 @@ public class ConnectionHelper implements Runnable {
 
     public void sendTimer(int hour, int minute, String name){
         alertBuilder.clear();
-        //ToDo: remove
-        Log.d("We've reached","sendTimer");
 
         String jsonBuild = buildTimerJson(hour,minute,name);
 
@@ -274,8 +290,52 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.showAlert();
     }
 
+    public void reqIP(String name){
+        alertBuilder.clear();
+        try
+        {
+            //send and wait for response
+            dataChannel.sendCmd("del np-event", name);
+            PacketWrapper response = dataChannel.receivePacket();
 
-    //ToDo: build the Json time format
+            //parse response
+            if(response.type == DataChannel.TYPE_INFO)
+            {
+                et.append(name+": " + response.toString() +"\n");
+            }
+            else if (response.type == DataChannel.TYPE_ERR)
+            {
+                et.append(response.errorMessage() + "\n");
+            }
+            else
+            {
+                et.append("Unknown response from server!\n"+response.toString() + "\n");
+            }
+        }
+        catch (NetworkException e)
+        {
+            et.append(e.getMessage() + "\n");
+        }
+        alertBuilder.showAlert();
+    }
+
+    public void getEventDetails(String cmd,String name){
+        alertBuilder.clear();
+        try
+        {
+            dataChannel.sendCmd(cmd,name);
+            PacketWrapper wrapper = dataChannel.receivePacket();
+            et.append(wrapper.extraInfo());
+        }
+        catch (NetworkException e)
+        {
+            et.append(e.getMessage());
+        }
+        alertBuilder.showAlert();
+    }
+
+
+
     private String buildTimerJson(int hour, int minute,String name){
         return "{\n\t\"name\" : \"" + name + "\"\n\t\"timeUntilTrigger\" : " + getTimeInSeconds(hour,minute) + "\n}";
     }

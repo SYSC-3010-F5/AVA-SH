@@ -10,7 +10,23 @@ import android.widget.TimePicker;
 import f5.ava_sh.Listeners.OnTimeSetListener;
 
 /**
- * Created by Slate on 2017-03-19.
+ *Class:             TextInputFragment.java
+ *Project:           AVA Smart Home
+ *Author:            Nathaniel Charlebois
+ *Date of Update:    23/02/2017
+ *Version:           1.0.1
+ *Git:               https://github.com/SYSC-3010-F5/AVA-SH
+ *
+ *Purpose:          -A fragment that prompts user input in the form of time
+ *                  -Implements a call-back interface to pass those values to the suited activity
+ *
+ *
+ *
+ *Update Log		v1.0.1
+ *						- Adding parsed method functions
+ *					v1.0.0
+ *				        -Default template created
+ *
  */
 
 public class TimePickerFragment extends DialogFragment implements TimePickerDialog.OnTimeSetListener {
@@ -41,9 +57,6 @@ public class TimePickerFragment extends DialogFragment implements TimePickerDial
         } catch (ClassCastException e) {
             throw new ClassCastException(getActivity().toString() + " must implement OnTimeSetListener");
         }
-
-
-
 
 
         return tpDialog;
