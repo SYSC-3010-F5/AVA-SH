@@ -159,6 +159,7 @@ TYPE-DEPENANT FORMATS
 				|  i\      |  any interface such as an app or terminal  |
 				|  c\      |  a coffee maker                            |
 				|  a\      |  an alarm controller                       |
+				|  m\      |  a media driver
 				|  g\      |  a generic module                          |
 				|----------|--------------------------------------------|
 		
