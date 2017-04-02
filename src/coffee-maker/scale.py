@@ -3,6 +3,13 @@ from time import sleep
 
 import subprocess
 
+#CIRCUIT SETUP
+#Connect GP11 to SCLK
+#Connect GP10 to MOSI
+#Connect GP9 to MISO
+#Connect GP8 to CSnA
+#Connect voltage to read to AD1
+
 #to prevent SPI failures, reload spi drivers at the beginning
 #only needed for Rpi2
 #unload_spi = subprocess.Popen('sudo rmmod spi_bcm2708', shell=True, stdout=subprocess.PIPE)
