@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference android:title="Interface Name"
+        android:key="interface"
+        android:summary="Please provide the desired interface name"></EditTextPreference>
+    <EditTextPreference android:title="Location"
+        android:key="location"
+        android:summary="Please provide your location"></EditTextPreference>
+    <EditTextPreference android:title="Server IPv4 IP"
+        android:key="serverIP"
+        android:summary="Please provide the Server IPv4 IP"></EditTextPreference>
+    <EditTextPreference android:title="Server Port"
+        android:key="serverPort"
+        android:summary="Please provide the Server Port"></EditTextPreference>
+
+</PreferenceScreen>

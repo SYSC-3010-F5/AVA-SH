@@ -5,16 +5,13 @@ import android.graphics.drawable.Drawable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.view.KeyEvent;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
 
-import static java.security.AccessController.getContext;
+import f5.ava_sh.Listeners.TerminalActionListener;
 
 /**
  *Class:                TerminalActivity.java

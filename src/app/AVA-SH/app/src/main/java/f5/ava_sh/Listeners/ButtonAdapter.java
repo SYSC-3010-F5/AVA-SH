@@ -1,4 +1,4 @@
-package f5.ava_sh;
+package f5.ava_sh.Listeners;
 
 import android.content.Context;
 import android.view.View;
@@ -7,6 +7,12 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.Button;
 import android.graphics.Color;
+
+import f5.ava_sh.CommandHelper;
+import f5.ava_sh.MainActivity;
+import f5.ava_sh.Listeners.MainActivityButtonListener;
+
+
 
 /**
  * Created by Slate on 2017-02-21.
@@ -31,42 +37,21 @@ import android.graphics.Color;
 public class ButtonAdapter extends BaseAdapter {
 
     private Context mContext;
-    public String[] buttonNames = {
-            "Terminal",
-            "Play Song",
-            "Check Weather",
-            "Start Morning",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function",
-            "Sample Function"
-    };
+    private CommandHelper commandHelper;
+    private String[] commands;
+    MainActivity main;
 
-
-    public ButtonAdapter(Context c) {
+    public ButtonAdapter(Context c, MainActivity main) {
         mContext = c;
+        this.main = main;
+        commandHelper = new CommandHelper(c, main);
+        commands = commandHelper.getCommands();
+
     }
 
 
     public int getCount() {
-        return buttonNames.length;
+        return commands.length;
     }
 
     public Object getItem(int position) {
@@ -82,7 +67,7 @@ public class ButtonAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         Button btn;
         if (convertView == null) {
-            // if it's not recycled, initialize some attributes
+            // if the view is not recycled, initialize some attributes
             btn = new Button(mContext);
             btn.setLayoutParams(new GridView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT*2));
             btn.setPadding(25, 25, 25, 25);
@@ -91,11 +76,11 @@ public class ButtonAdapter extends BaseAdapter {
             btn = (Button) convertView;
         }
 
-        btn.setText(buttonNames[position]);
+        btn.setText(commands[position]);
         btn.setTextColor(Color.BLACK);
         btn.setBackgroundColor(Color.LTGRAY);
         btn.setId(position);
-        btn.setOnClickListener(new MainActivityButtonListener(buttonNames[position]));
+        btn.setOnClickListener(new MainActivityButtonListener(commands[position], mContext, main));
 
 
         return btn;
