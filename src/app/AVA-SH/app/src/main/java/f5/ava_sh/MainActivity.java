@@ -95,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     public void onTextSet(int type, String name){
         Log.d("Type/Name",type+"/"+name);
 
-        if(timeWrapper != null) {
             switch (type) {
                 case 0:
                     connectionHelper.sendTimer(timeWrapper[0], timeWrapper[1], name);
@@ -119,12 +118,12 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
                 case 6:
                     connectionHelper.getEventDetails("details p-event",name);
                     break;
+                default:
+                    //ToDo: Handle improper user input
+                    Log.d("ERROR","Invalid onTextSet.type set");
+                    break;
 
             }
-        } else {
-            //ToDo: Handle improper user input
-            Log.d("ERROR","Invalid onTextSet.type set");
-        }
 
     }
 

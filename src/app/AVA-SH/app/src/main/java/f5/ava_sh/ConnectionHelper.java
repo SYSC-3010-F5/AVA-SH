@@ -2,9 +2,8 @@ package f5.ava_sh;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.Network;
+
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.TextView;
 
 
@@ -17,7 +16,6 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 
-import static android.R.attr.name;
 
 
 /**
@@ -232,7 +230,7 @@ public class ConnectionHelper implements Runnable {
         {
             dataChannel.sendCmd(cmd);
             PacketWrapper wrapper = dataChannel.receivePacket();
-            et.append(wrapper.extraInfo());
+            et.append(wrapper.info());
         }
         catch (NetworkException e)
         {
@@ -300,7 +298,7 @@ public class ConnectionHelper implements Runnable {
         try
         {
             //send and wait for response
-            dataChannel.sendCmd("del np-event", name);
+            dataChannel.sendCmd("req ip", name);
             PacketWrapper response = dataChannel.receivePacket();
 
             //parse response
@@ -330,7 +328,7 @@ public class ConnectionHelper implements Runnable {
         {
             dataChannel.sendCmd(cmd,name);
             PacketWrapper wrapper = dataChannel.receivePacket();
-            et.append(wrapper.extraInfo());
+            et.append(wrapper.info());
         }
         catch (NetworkException e)
         {

@@ -39,7 +39,6 @@ public class CommandHelper {
     public String[] buttonNames = {
             "terminal",
             "ping",
-            "sch event",
             "new timer",
             "req current weather",
             "set location",
@@ -125,6 +124,7 @@ public class CommandHelper {
                 DialogFragment locationTextInput = new TextInputFragment();
                 locationTextInput.setArguments(bundle);
                 locationTextInput.show(fragmentManager,"locationTextInput");
+                break;
 
 
             case "req time":
