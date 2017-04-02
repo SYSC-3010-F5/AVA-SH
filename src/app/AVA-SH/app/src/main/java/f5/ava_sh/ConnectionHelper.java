@@ -1,7 +1,9 @@
 package f5.ava_sh;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Network;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -59,9 +61,12 @@ public class ConnectionHelper implements Runnable {
         alertBuilder = new AlertBuilder(c);
         et = alertBuilder.getTextView();
 
-        defaultDeviceName = "i\\app";
-        defaultServerPort = 3010;
-        serverIP = "192.168.0.101";
+        SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(c);
+
+
+        defaultDeviceName = "i\\"+ SP.getString("interface", "i\\app");
+        defaultServerPort = Integer.parseInt(SP.getString("serverPort", "3010"));
+        serverIP = SP.getString("serverIP", "192.168.0.101");
 
         try {
             defaultServerAddress = InetAddress.getByName(serverIP);

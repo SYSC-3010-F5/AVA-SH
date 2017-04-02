@@ -1,12 +1,17 @@
 package f5.ava_sh;
 
 import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
 import android.os.StrictMode;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.GridView;
 import android.widget.TextView;
 
@@ -35,6 +40,11 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     private int[] timeWrapper;
 
     private AlertBuilder alertBuilder;
+
+    private String interfaceName;
+    private String location;
+    private String serverIP;
+    private String serverPort;
 
 
 
@@ -118,6 +128,35 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
 
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_settings:
+                Intent i = new Intent(this, PreferencesActivity.class);
+                startActivity(i);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        interfaceName = SP.getString("interface", "NA");
+        location = SP.getString("location", "NA");
+        serverIP = SP.getString("serverIP", "NA");
+        serverPort = SP.getString("serverPort", "NA");
+
+    }
 
 
     private class DataChannelSetup extends AsyncTask<Void,Void,Void>{

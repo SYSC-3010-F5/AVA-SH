@@ -75,7 +75,12 @@
     <string name="pref_title_vibrate">Vibrate</string>
     <string name="title_activity_main">MainActivity</string>
     <string name = "terminal_activity">TerminalActivity</string>
+    <string name = "preferences_activity">PreferencesActivity</string>
     <string name = "search">Search</string>
     <string name = "app_label">AVA-SH</string>
+    <string name = "default_interface_name">i\\app</string>
+    <string name = "default_location">Ottawa</string>
+    <string name = "default_serverIP">192.168.0.101</string>
+    <string name = "default_server_port">3010</string>
 
 </resources>
