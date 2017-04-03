@@ -4,16 +4,19 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *Support Patches: 	Nathaniel Charlebois
-*Date of Update:    31/03/2017
-*Version:           0.7.2
+*Date of Update:    03/04/2017
+*Version:           0.7.4
 *
 *Purpose:           The main controller of the AVA system
 *
 *Update Log
-*
+*					v0.7.5
+*            - added media driver forwarding
 *					v0.7.4
-*						-added media forwarding
-*
+*						- command sch-event responds in empty info packet if event scheduled
+*						  error packet if event cannot be done
+*						- new command added "req current weather -i" for notifying all interfaces of
+*						  weather
 *					v0.7.3
 *						- patch for server crash due to garbage
 *					v0.7.2
@@ -110,6 +113,7 @@ import network.PacketWrapper;
 import server.database.CrudeDatabase;
 import server.datatypes.ServerEvent;
 import server.datatypes.ServerTimer;
+import server.datatypes.WeatherData;
 import io.Writer;
 import io.json.JsonException;
 import network.DataChannel;
@@ -119,7 +123,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.7.1";
+	public static final String SERVER_NAME = "AVA Server v0.7.4";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = DataChannel.TYPE_HANDSHAKE;
 	public static final byte TYPE_CMD = DataChannel.TYPE_CMD;
@@ -211,21 +215,27 @@ public class MainServer extends Thread implements ActionListener
 
 		//schedule
 		display.println("Scheduling event: " + event.toString());
+		
 		//returns false if the event name already exists
-		if(!scheduler.schedule(event))
+		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+		try
 		{
-			//send an error message that the event was not scheduled
-			String err = "Error: event with the name " + event.getEventName() + " exists.";
-			display.println(err);
-			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			try
+			if(!scheduler.schedule(event))
 			{
+				//send an error message that the event was not scheduled
+				String err = "Error: event with the name " + event.getEventName() + " exists.";
+				display.println(err);
 				multiChannel.sendErr(err);
 			}
-			catch (NetworkException e)
+			else
 			{
-				e.printStackTrace();
+				display.println("Event \"" + event.getEventName() + "\" created! Sending empty info...");
+				multiChannel.sendInfo("");
 			}
+		}
+		catch (NetworkException e)
+		{
+			e.printStackTrace();
 		}
 		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 	}
@@ -364,7 +374,9 @@ public class MainServer extends Thread implements ActionListener
 
 		//look for alarm controller(s)
 		display.println("Attempting packet forward...\nScanning registry for prefix \"" + targetPrefix + "\\\"...");
-		Set<String> keys = registry.keySet();
+		Set<String
+		
+keys = registry.keySet();
 		for(String key : keys)
 		{
 			if(key.contains("\\"))
@@ -497,6 +509,39 @@ public class MainServer extends Thread implements ActionListener
 	}
 
 
+	//send the current weather data to all interfaces as formated string
+	private void forwardCurrentWeather()			//TODO this and sendCurrentWeather can be refactored to share common code!
+	{
+		//get weather data
+		Weather weatherRequest = new Weather();
+		JSONObject json = null;
+		try
+		{
+			json = weatherRequest.currentWeatherAtCity(locationID);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		catch(JSONException je)
+		{
+			je.printStackTrace();
+		}
+		
+		//parse into useful string and format
+		String toSend = "";
+		WeatherData weather = new WeatherData(json.toString());
+		String[] weatherData = weather.getWeatherData();
+		toSend += ("Weather data for " + weatherData[WeatherData.CITY] + ", " + weatherData[WeatherData.COUNTRY] + ".\n");
+		toSend += ("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius\n");
+		toSend += ("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%\n");
+		toSend += ("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+		
+		//forward to interfaces
+		forwardPacket(new PacketWrapper(TYPE_INFO, toSend, "", null), PREFIX_INTERFACE);
+	}
+	
+	
 	//send the current weather data as unformatted JSON
 	private void sendCurrentWeather(InetSocketAddress dest)
 	{
@@ -773,6 +818,13 @@ public class MainServer extends Thread implements ActionListener
 							case("req current weather"):
 								sendCurrentWeather(packet.source());
 								break;
+
+
+							//the current weather needs to be forwarded to all interfaces
+							case("req current weather -i"):
+								forwardCurrentWeather();
+								break;
+
 
 							//change the current server location
 							case("set location"):
