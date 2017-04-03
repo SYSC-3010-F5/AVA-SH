@@ -1401,6 +1401,20 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				}
 				break;
 
+			case("play song"):
+				if(length == 3){
+					try{
+						dataChannel.sendCmd("play song", input[2]);
+					} catch(NetworkException e){
+						ui.printError(e.getMessage());
+					}
+
+				}
+				else{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+
 
 			//launch settings dialog
 			case("settings"):
