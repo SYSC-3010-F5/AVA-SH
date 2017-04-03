@@ -2,15 +2,17 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    02/04/2017                                              
-*Version:           0.7.2
+*Date of Update:    03/04/2017                                              
+*Version:           0.7.3
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.7.2
+*Update Log			v0.7.3
+*						- alarm scheduling timeout added
+*					v0.7.2
 *						- dialog for changing server settings added (menu bar)
 *						- command "settings" added
 *						- connect command modified for optional dialog use
@@ -115,6 +117,7 @@ import network.NetworkException;
 import network.PacketWrapper;
 import server.MainServer;
 import server.datatypes.Alarm;
+import server.datatypes.ServerEvent;
 import server.datatypes.TimeAndDate;
 import terminal.dialogs.ServerSettingsDialog;
 import terminal.dialogs.TimeDialog;
@@ -135,6 +138,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
+	private static final int SOCKET_TIMEOUT = 5000;
 	
 	//declaring local instance variables
 	private String 		defaultDeviceName;
@@ -149,6 +153,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private TerminalUI ui;
 	private DataChannel dataChannel;
 	private LinkedList<PacketWrapper> eventBuffer;
+	private ServerEvent event;
 	
 	
 	//generic constructor
@@ -737,10 +742,24 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					Alarm alarm = ui.dialogGetAlarm();
 					if(alarm != null)
 					{
-						//send alarm
+						//send alarm and wait on response
 						try 
 						{
 							dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
+							
+							//parse response
+							PacketWrapper r = dataChannel.receivePacket(SOCKET_TIMEOUT);
+							switch(r.type())
+							{
+								case(PacketWrapper.TYPE_INFO):
+									ui.println("Alarm scheduled!");
+									break;
+								case(PacketWrapper.TYPE_ERR):
+									ui.printError(r.errorMessage());
+									break;
+								default:
+									ui.printError("Unknown server response!\n" + r.toString());
+							}
 						} 
 						catch (NetworkException e) 
 						{
@@ -806,11 +825,25 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						name = (input[3]);
 					}
 					
-					//send alarm
 					try 
 					{
+						//send alarm
 						Alarm alarm = new Alarm(name, new TimeAndDate(hour, min, daysArr));
 						dataChannel.sendCmd("sch p-event", alarm.toJSON(""));
+						
+						//parse response
+						PacketWrapper r = dataChannel.receivePacket(SOCKET_TIMEOUT);
+						switch(r.type())
+						{
+							case(PacketWrapper.TYPE_INFO):
+								ui.println("Alarm scheduled!");
+								break;
+							case(PacketWrapper.TYPE_ERR):
+								ui.printError(r.errorMessage());
+								break;
+							default:
+								ui.printError("Unknown server response!\n" + r.toString());
+						}
 					} 
 					catch (NetworkException|DateTimeException e) 
 					{
@@ -959,15 +992,24 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			
 			//get time from server
 			case("time"):
-				try 
+				//regular operating mode
+				if(normalMode)
 				{
-					dataChannel.sendCmd("req time");
-					PacketWrapper wrapper = dataChannel.receivePacket(5000);
-					ui.println(wrapper.info());
-				} 
-				catch (NetworkException e) 
+					try 
+					{
+						dataChannel.sendCmd("req time");
+						PacketWrapper wrapper = dataChannel.receivePacket(5000);
+						ui.println(wrapper.info());
+					} 
+					catch (NetworkException e) 
+					{
+						ui.printError(e.getMessage());
+					}
+				}
+				//add command to buffer
+				else
 				{
-					ui.printError(e.getMessage());
+					eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD,"req time","",null));
 				}
 				break;
 				
@@ -1444,6 +1486,9 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					Alarm alarm =ui.dialogGetAlarm();
 					if(alarm != null)
 					{
+						//save trigger and name information
+						event = new ServerEvent(alarm.getEventName(), null, alarm.getTrigger());
+						
 						//set flag and prompt
 						setNormalMode(false);
 						ui.println("Enter \"finalize\" to complete event scheduling\n"
@@ -1455,6 +1500,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				
 			//switch mode to scheduling non-periodic event
 			case("npe-new"):						//TODO
+				ui.println("TODO");
 				break;
 			
 			
@@ -1466,7 +1512,17 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				}
 				else
 				{
-					//TODO
+					//set event commands from buffer
+					event.setCommands(eventBuffer.toArray(new PacketWrapper[0]));
+					try
+					{
+						//send event out and wait for response
+						dataChannel.sendCmd("sch p-event", event.toJSON(""));
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
 				}
 			
 				//reset flag and clear event buffer

@@ -7,7 +7,10 @@
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log			v0.7.3
+*Update Log			v0.7.4
+*						- command sch-event responds in empty info packet if event scheduled
+*						  error packet is event cannot be done
+*					v0.7.3
 *						- patch for server crash due to garbage
 *					v0.7.2
 *						- getting details on periodic/non-periodic events added
@@ -203,21 +206,27 @@ public class MainServer extends Thread implements ActionListener
 
 		//schedule
 		display.println("Scheduling event: " + event.toString());
+		
 		//returns false if the event name already exists
-		if(!scheduler.schedule(event))
+		multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
+		try
 		{
-			//send an error message that the event was not scheduled
-			String err = "Error: event with the name " + event.getEventName() + " exists.";
-			display.println(err);
-			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			try 
+			if(!scheduler.schedule(event))
 			{
+				//send an error message that the event was not scheduled
+				String err = "Error: event with the name " + event.getEventName() + " exists.";
+				display.println(err);
 				multiChannel.sendErr(err);
 			}
-			catch (NetworkException e)
+			else
 			{
-				e.printStackTrace();
+				display.println("Event \"" + event.getEventName() + "\" created! Sending empty info...");
+				multiChannel.sendInfo("");
 			}
+		}
+		catch (NetworkException e)
+		{
+			e.printStackTrace();
 		}
 		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 	}

@@ -89,7 +89,8 @@ COMMAND MANIFEST
 					}
 	PURPOSE:		Schedule a new event to trigger at a certain time on certain days of the week.
 					On trigger the event will wake a daemon thread and fire the commands to the server (more generally to whatever address the Scheduler is running on, on port 3010).
-	RESPONSE		N/A
+	RESPONSE		Empty info-type packet if event can be scheduled
+					Error-type packet if error in event scheduling
 	
 	
 	----------------------------
