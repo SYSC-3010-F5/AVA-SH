@@ -114,19 +114,4 @@ public class CrudeDatabase
 	    catch (IOException e){}
 		return code;
 	}
-	
-	
-	/*
-	//tests
-	public static void main(String[] args)
-	{
-		CrudeDatabase db = new CrudeDatabase();
-		System.out.println(DB_LOC.toString());
-		System.out.println("start...");
-		System.out.println(db.query("Ottawa"));
-		System.out.println(db.query("jasonville", "jasonland"));
-		System.out.println(db.query("Toronto", "CA"));
-		System.out.println(db.query("New York", "US"));
-	}
-	*/
 }
