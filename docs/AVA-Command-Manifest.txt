@@ -116,7 +116,7 @@ COMMAND MANIFEST
 	
 	----------------------------
 	
-	COMMAND_KEY:	"notify current weather"
+	COMMAND_KEY:	"req current weather -i"
 	EXTRA_INFO:		false
 	PURPOSE:		Request the current weather from server, notify every registered interface
 	RESPONSE:		info-type packet JSON formated current weather to every interface
