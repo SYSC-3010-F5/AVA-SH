@@ -52,7 +52,7 @@ def coffeeOn():
             samples = 0
         weight1 = weight2
         weight2 = getWeight()
-        #if the analog value is less than 200, it was probably an error
+        #if the analog value is less than 200, it was probably an error or there is no cup
         if(weight2 < 200):
             continue
         sleep(1)
