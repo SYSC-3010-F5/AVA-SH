@@ -56,7 +56,7 @@ public class ConnectionHelper implements Runnable {
     private String deviceName;
     private InetAddress serverAddress;
     private int serverPort;
-    
+
     private TextView et;
 
 

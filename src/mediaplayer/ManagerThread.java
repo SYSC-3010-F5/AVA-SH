@@ -1,6 +1,7 @@
 package mediaplayer;
 
 import java.io.IOException;
+
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -18,9 +19,10 @@ public class ManagerThread extends Thread{
 	private boolean verbose = true;
 	private String serverIP = "10.0.0.101";
 	private int listeningPort = 3010;
-	private String deviceName = "m\\mediaDriver";
-	private String playCmdKey = "play song";
-	private String pauseCmdKey = "pause song";
+	private static final String DEVICE_NAME = "m\\mediaDriver";
+	private static final String PLAY_CMD_KEY = "play song";
+	private static final String PAUSE_CMD_KEY = "pause song";
+	private static final String STOP_CMD_KEY = "stop song";
 	private InetAddress serverInet;
 
 	private MediaPlayer mediaPlayer;
@@ -48,7 +50,7 @@ public class ManagerThread extends Thread{
 		}
 
 		try {
-			dataChannel.connect(serverInet, listeningPort, deviceName);
+			dataChannel.connect(serverInet, listeningPort, DEVICE_NAME);
 		} catch (NetworkException e) {
 			print(e.getMessage());
 			e.printStackTrace();
@@ -64,21 +66,28 @@ public class ManagerThread extends Thread{
 				PacketWrapper packet = dataChannel.receivePacket();
 
 				if(packet.type() == DataChannel.TYPE_CMD){
-					if(packet.commandKey().equals(playCmdKey)){
+					if(packet.commandKey().equals(PLAY_CMD_KEY)){
 						mediaPlayer = new MediaPlayer(packet.info(),verbose);
 						if(mediaPlayer.checkValid()){
 							mediaPlayer.start();
 							print("mediaPlayer instantiated and started");
 						}
 					}
-					else if(packet.commandKey().equals(pauseCmdKey)){
-						if(mediaPlayer != null){
-
+					else if(packet.commandKey().equals(PAUSE_CMD_KEY)){
+						if(mediaPlayer == null){
+							respondNoCurrentSong();
 						}
 						else{
-
+							mediaPlayer.pause();
 						}
-
+					}
+					else if(packet.commandKey().equals(STOP_CMD_KEY)){
+						if(mediaPlayer == null){
+							respondNoCurrentSong();
+						} else {
+							mediaPlayer.pause();
+							mediaPlayer = null;
+						}
 					}
 
 				}
@@ -91,9 +100,16 @@ public class ManagerThread extends Thread{
 				e.printStackTrace();
 			}
 		}
+	}
 
-
-
+	private void respondNoCurrentSong(){
+		String error = "There is no song currently playing.";
+		try {
+			dataChannel.sendErr(error);
+		} catch (NetworkException e) {
+			print(e.getMessage());
+		}
+		print("Sending Error packet: " + error);
 	}
 
 	private void print(String msg){
