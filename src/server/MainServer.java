@@ -1,18 +1,14 @@
 /**
 *Class:             MainServer.java
-
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Support Patches: 	Nathaniel Charlebois
 *Date of Update:    03/04/2017
-*Version:           0.7.4
+*Version:           0.7.5
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log
-*					v0.7.5
-*            - added media driver forwarding
-*					v0.7.4
+*Update Log			v0.7.5
+*           			- added media driver forwarding			(done by Nate)
 *						- command sch-event responds in empty info packet if event scheduled
 *						  error packet if event cannot be done
 *						- new command added "req current weather -i" for notifying all interfaces of
@@ -98,7 +94,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import javax.swing.JFrame;

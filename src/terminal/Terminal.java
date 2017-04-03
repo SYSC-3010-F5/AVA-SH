@@ -1527,7 +1527,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				{
 					try
 					{
-						dataChannel.sendCmd("play song", input[2]);
+						dataChannel.sendCmd("play song", input[1]);
 					}
 					catch(NetworkException e)
 					{
