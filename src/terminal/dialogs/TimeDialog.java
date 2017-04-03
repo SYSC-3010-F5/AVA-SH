@@ -51,7 +51,7 @@ public class TimeDialog extends JDialog implements ActionListener
 	
 	//declaring local instance variables
 	private int closeMode;
-	private int[] time;
+	private int[] time;			//0=hour, 1=min, 2=sec
 	private String name;
 	private JSpinner spMin,spSec, spHour;
 	private JButton btnOk, btnCancel; 

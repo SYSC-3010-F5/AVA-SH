@@ -3,14 +3,19 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    03/04/2017                                              
-*Version:           0.8.0
+*Version:           1.0.0
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.8.1
+*Update Log			v1.0.0
+*						- periodic event scheduling finalized
+*						- dialog logic for timer moved into TerminalUI.java
+*						- patch for not updating operating mode
+*						- shows commands you've scheduled during scheduling mode
+*					v0.8.1
 *						- patch for info dialog being generated displaying nothing
 *						- added weather scheduling
 *					v0.8.0
@@ -123,12 +128,14 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 import server.MainServer;
+import server.Scheduler;
 import server.datatypes.Alarm;
 import server.datatypes.ServerEvent;
 import server.datatypes.TimeAndDate;
 import terminal.dialogs.ServerSettingsDialog;
 import terminal.dialogs.TimeDialog;
 import terminal.dialogs.wrappers.SettingsWrapper;
+import terminal.dialogs.wrappers.TimeWrapper;
 import server.datatypes.WeatherData;
 
 
@@ -159,7 +166,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
-	private LinkedList<PacketWrapper> eventBuffer;
+	private LinkedList<PacketWrapper> commandBuffer;
 	private ServerEvent event;
 	
 	
@@ -198,7 +205,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			connecting = false;
 			normalMode = true;
 			fullscreenFlag = isFullScreen;
-			eventBuffer = new LinkedList<PacketWrapper>();
+			commandBuffer = new LinkedList<PacketWrapper>();
 		}
 		catch (SocketException e)
 		{
@@ -240,6 +247,9 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			else		ui.println("\n************************* SCHEDULING OPERATING MODE *************************");
 		}
 		normalMode = mode;
+		ui.setCmdHelpFlag(normalMode);
+		updateStatus();
+		updateEvents();
 	}
 	
 	
@@ -442,7 +452,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				+ "\tparam1: n/a   || Request a list of all periodic events currently scheduled\n"
 				+ "\tparam1: <STR> || Request detailed information on periodic event <STR>");
 		
-		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
+		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO allow use of commands instead of forcing the use of dialogs
 		
 		cmdMap.put("pe-remove", "Remove a currently scheduled non-periodic event\n"
 				+ "\tparam1: n/a   || Launch system dialog to select a periodic event to remove\n"
@@ -999,24 +1009,15 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			
 			//get time from server
 			case("time"):
-				//regular operating mode
-				if(normalMode)
+				try 
 				{
-					try 
-					{
-						dataChannel.sendCmd("req time");
-						PacketWrapper wrapper = dataChannel.receivePacket(5000);
-						ui.println(wrapper.info());
-					} 
-					catch (NetworkException e) 
-					{
-						ui.printError(e.getMessage());
-					}
-				}
-				//add command to buffer
-				else
+					dataChannel.sendCmd("req time");
+					PacketWrapper wrapper = dataChannel.receivePacket(SOCKET_TIMEOUT);
+					ui.println(wrapper.info());
+				} 
+				catch (NetworkException e) 
 				{
-					eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD,"req time","",null));
+					ui.printError(e.getMessage());
 				}
 				break;
 				
@@ -1111,15 +1112,15 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			case("timer-new"):
 				if(input.length == 1)
 				{
-					TimeDialog d = new TimeDialog(ui, TERMINAL_NAME);		//TODO this should be in TerminalUI
-					if (d.getCloseMode() == TimeDialog.OK_OPTION)
+					TimeWrapper t = ui.dialogGetTimer();
+					if (t != null)
 					{
 						//send timer command
-						String json = "{\n\t\"name\" : \"" + d.getTimerName() + "\"\n\t\"timeUntilTrigger\" : " + d.getTimeInSeconds() + "\n}";
+						String json = "{\n\t\"name\" : \"" + t.name + "\"\n\t\"timeUntilTrigger\" : " + t.getTimeInSec() + "\n}";
 						try 
 						{
 							dataChannel.sendCmd("set timer", json);
-							PacketWrapper response = dataChannel.receivePacket();
+							PacketWrapper response = dataChannel.receivePacket(SOCKET_TIMEOUT);
 							
 							//parse response
 							if(response.type() == DataChannel.TYPE_INFO)
@@ -1150,7 +1151,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						//send timer command
 						String json = "{\n\t\"name\" : \"" + input[2] + "\"\n\t\"timeUntilTrigger\" : " + seconds + "\n}";
 						dataChannel.sendCmd("set timer", json);
-						PacketWrapper response = dataChannel.receivePacket();
+						PacketWrapper response = dataChannel.receivePacket(SOCKET_TIMEOUT);
 						
 						//parse response
 						if(response.type() == DataChannel.TYPE_INFO)
@@ -1202,7 +1203,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						}
 						else
 						{
-							eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "req current weather -i", "", null));
+							commandBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "req current weather -i", "", null));
+							updateEvents();
 						}
 					} 
 					catch (NetworkException e) 
@@ -1233,7 +1235,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						}
 						
 						//wait for response
-						PacketWrapper wrapper = dataChannel.receivePacket();
+						PacketWrapper wrapper = dataChannel.receivePacket(SOCKET_TIMEOUT);
 						if(wrapper.type() != DataChannel.TYPE_INFO)
 						{
 							if(wrapper.type() == DataChannel.TYPE_ERR)
@@ -1266,22 +1268,37 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						//turn on light
 						if(input[1].equals("on") || input[1].equals("1"))
 						{
-							if (normalMode)	dataChannel.sendCmd("led on");
-							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led on", "", null));
+							if (normalMode)	
+								dataChannel.sendCmd("led on");
+							else
+							{
+								commandBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led on", "", null));
+								updateEvents();
+							}
 						}
 						//turn light off
 						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							if (normalMode)	dataChannel.sendCmd("led off");
-							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led off", "", null));
+							if (normalMode)	
+								dataChannel.sendCmd("led off");
+							else
+							{
+								commandBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led off", "", null));
+								updateEvents();
+							}
 						}
 						//set PWM
 						else
 						{
 							//check PWM period is valid number
 							Integer.parseInt(input[1]);
-							if (normalMode)	dataChannel.sendCmd("led pwm", input[1]);
-							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led pw,", input[1], null));
+							if (normalMode)	
+								dataChannel.sendCmd("led pwm", input[1]);
+							else
+							{
+								commandBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led pw,", input[1], null)); 
+								updateEvents();
+							}
 						}
 					}
 					catch (NetworkException e)
@@ -1307,13 +1324,23 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						if(input[1].equals("on") || input[1].equals("1"))
 						{
-							if (normalMode)	dataChannel.sendCmd("alarm on", "");
-							else			eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null));
+							if (normalMode)	
+								dataChannel.sendCmd("alarm on", "");
+							else
+							{
+								commandBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null));
+								updateEvents();
+							}
 						}
 						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							if (normalMode)	dataChannel.sendCmd("alarm off", "");
-							else			eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm off", "", null));
+							if (normalMode)
+								dataChannel.sendCmd("alarm off", "");
+							else
+							{
+								commandBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm off", "", null));
+								updateEvents();
+							}
 						}
 						else
 						{
@@ -1459,13 +1486,23 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						if (input[1].equals("on") || input[1].equals("1"))
 						{
-							if (normalMode)		dataChannel.sendCmd("coffee on");
-							else				eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee on", "", null));
+							if (normalMode)		
+								dataChannel.sendCmd("coffee on");
+							else				
+							{
+								commandBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee on", "", null));
+								updateEvents();
+							}
 						}
 						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							if (normalMode)		dataChannel.sendCmd("coffee off");
-							else				eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee off", "", null));
+							if (normalMode)		
+								dataChannel.sendCmd("coffee off");
+							else				
+							{
+								commandBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee off", "", null));
+								updateEvents();
+							}
 						}
 						else
 						{
@@ -1516,12 +1553,23 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 								 + "Enter \"cancel\" to cancel event scheduling\n");
 					}
 				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 			
 				
 			//switch mode to scheduling non-periodic event
 			case("npe-new"):						//TODO
-				ui.println("TODO");
+				if (length == 1)
+				{
+					ui.dialogInfo("TODO");
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
 				break;
 			
 			
@@ -1531,14 +1579,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				{
 					ui.printError("Cannot finalize event scheduling\nNot in event scheduling mode");
 				}
-				else if (eventBuffer.size() < 1)
+				else if (commandBuffer.size() < 1)
 				{
 					ui.printError("Cannot finalize event scheduling\nNo commands currently scheduled");
 				}
 				else
 				{
 					//set event commands from buffer
-					event.setCommands(eventBuffer.toArray(new PacketWrapper[0]));
+					event.setCommands(commandBuffer.toArray(new PacketWrapper[0]));
 					try
 					{
 						//send event out and wait for response
@@ -1566,7 +1614,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				}
 			
 				//reset flag and clear event buffer
-				eventBuffer.clear();
+				commandBuffer.clear();
 				setNormalMode(true);
 				break;
 				
@@ -1580,7 +1628,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				else
 				{
 					//reset flag and clear event buffer
-					eventBuffer.clear();
+					commandBuffer.clear();
 					setNormalMode(true);	
 				}
 				break;
@@ -1825,7 +1873,29 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	}
 	
 	
-	//the status as a string
+	//update the south-east aux pane
+	private void updateEvents()
+	{
+		if(!normalMode)
+		{
+			//set string
+			String s = "SCHEDULED EVENTS\n---------------------\n\n";
+			for(PacketWrapper wrapper : commandBuffer)
+			{
+				s += wrapper.toString() +"\n\n";
+			}
+			
+			//set aux pane to string
+			ui.setAuxPane(s);
+		}
+		else
+		{
+			ui.setAuxPane("");
+		}
+	}
+	
+	
+	//update status pane
 	private void updateStatus()
 	{
 		//returnable string
