@@ -374,9 +374,9 @@ public class MainServer extends Thread implements ActionListener
 
 		//look for alarm controller(s)
 		display.println("Attempting packet forward...\nScanning registry for prefix \"" + targetPrefix + "\\\"...");
-		Set<String
+		Set<String> keys = registry.keySet();
 		
-keys = registry.keySet();
+		keys = registry.keySet();
 		for(String key : keys)
 		{
 			if(key.contains("\\"))

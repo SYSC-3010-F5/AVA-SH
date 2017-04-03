@@ -466,6 +466,9 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		cmdMap.put("settings", "Launch system dialog to change/view server settings");
 
 		cmdMap.put("screensize", "Toggle terminal between fullscreen and windowed modes");
+		
+		cmdMap.put("music", "Play a song on the media player\n"
+				+ "\tparam1: <STR> || Play music with name <STR>");
 
 		return cmdMap;
 	}
@@ -1517,16 +1520,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				}
 				break;
 
-			case("play song"):
-				if(length == 3){
-					try{
+				
+			//play music on media driver
+			case("music"):
+				if(length == 2)
+				{
+					try
+					{
 						dataChannel.sendCmd("play song", input[2]);
-					} catch(NetworkException e){
+					}
+					catch(NetworkException e)
+					{
 						ui.printError(e.getMessage());
 					}
-
 				}
-				else{
+				else
+				{
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
