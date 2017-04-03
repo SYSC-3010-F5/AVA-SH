@@ -15,6 +15,7 @@
 *						- dialog logic for timer moved into TerminalUI.java
 *						- patch for not updating operating mode
 *						- shows commands you've scheduled during scheduling mode
+*						- media driver commands added
 *					v0.8.1
 *						- patch for info dialog being generated displaying nothing
 *						- added weather scheduling
@@ -150,7 +151,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private static final String TERMINAL_NAME = "AVA Terminal";
 	private static final String VERSION = "v0.8.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
-	private static final int RETRY_QUANTUM = 5;	
+	private static final int RETRY_QUANTUM = 5;
 	private static final int SWITCH_SPEED = 100;
 	private static final int SOCKET_TIMEOUT = 5000;
 	
@@ -158,7 +159,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private String 		defaultDeviceName;
 	private InetAddress defaultServerAddress;
 	private int 		defaultServerPort;
-	
+
 	private boolean runFlag;
 	private boolean connecting;
 	private boolean normalMode;
@@ -168,16 +169,16 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private DataChannel dataChannel;
 	private LinkedList<PacketWrapper> commandBuffer;
 	private ServerEvent event;
-	
-	
+
+
 	//generic constructor
 	public Terminal(boolean isFullScreen)
-	{	
+	{
 		//init ui
-		WindowAdapter adapter = new WindowAdapter() 
+		WindowAdapter adapter = new WindowAdapter()
 		{
 		    @Override
-		    public void windowClosing(WindowEvent windowEvent) 
+		    public void windowClosing(WindowEvent windowEvent)
 		    {
 		    	if(!connecting)							//workaround to fix issue #15
 		    	{
@@ -192,7 +193,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		ui = new TerminalUI(TERMINAL_NAME+" "+VERSION, this, CMD_NOT_FOUND, isFullScreen, adapter);
 		ui.println("Initializing command map...");
 		ui.initCmdMap(this.initCmdMap());
-		
+
 		//init variables
 		try
 		{
@@ -220,13 +221,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			System.exit(ERROR);
 		}
 		runFlag = true;
-		
+
 		//update ui
 		updateStatus();
 		ui.println("Starting control on Thread <" + Thread.currentThread().getId() + ">...");
 	}
-	
-	
+
+
 	//generic getters
 	public int getCloseMode()
 	{
@@ -236,8 +237,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	{
 		return fullscreenFlag;
 	}
-	
-	
+
+
 	//generic setters
 	private void setNormalMode(boolean mode)
 	{
@@ -252,14 +253,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		updateEvents();
 	}
 	
-	
+
 	@Override
 	//main run-loop of the terminal
 	public void run()
 	{
 		//initial handshake
 		establishConnection(defaultServerAddress, defaultServerPort, defaultDeviceName);
-		
+
 		//main input-parse loop
 		ui.println("\n************************* INIT COMPLETE *************************\nWaiting for input...");
 		String[] in;
@@ -277,14 +278,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						//get packet
 						PacketWrapper packet = dataChannel.receivePacket(SWITCH_SPEED);
-						
+
 						switch(packet.type())
 						{
 							//atomic info received
 							case(PacketWrapper.TYPE_INFO):
 								ui.dialogInfo(packet.info());
 								break;
-							
+
 							//atomic error received
 							case(PacketWrapper.TYPE_ERR):
 								ui.printError(packet.info());
@@ -295,7 +296,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					catch (NetworkException e){}
 				}
 			}
-			
+
 			//handle input
 			if(runFlag)
 			{
@@ -303,8 +304,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			}
 		}
 	}
-	
-	
+
+
 	//added to keep older code running, default close is via user
 	public void close()
 	{
@@ -314,14 +315,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public void close(int reason)
 	{
 		ui.println("Closing terminal...");
-		try 
+		try
 		{
 			if(dataChannel.getConnected())
 			{
 				dataChannel.disconnect("user");
 			}
-		} 
-		catch (NetworkException e) 
+		}
+		catch (NetworkException e)
 		{
 			ui.printError("Error disconnecting from server\n" + e.getMessage());
 		}
@@ -330,22 +331,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		ui.close();
 		runFlag = false;
 	}
-	
-	
+
+
 	//initialize command map
 	private TreeMap<String,String> initCmdMap()				//TODO this should really be in an external .config file
 	{
 		TreeMap<String,String> cmdMap = new TreeMap<String,String>();
-		
+
 		cmdMap.put("help", "Print help/details on command usage\n"
 					+ "\tparam1= n/a   || Print all commands to screen\n"
 					+ "\tparam1= all   || Print details on all commands\n"
 					+ "\tparam1= <CMD> || Print details on command <CMD>");
-		
+
 		cmdMap.put("clear", "Removes all text from the console output pane");
-		
+
 		cmdMap.put("close", "Exit the local terminal");
-		
+
 		cmdMap.put("connect", "Establish/Reestablish a connection to the main server\n"
 					+ "\tparam1= n/a             || Connect to server using default IPv4 address\n"
 					+ "\tparam1= config          || Configure and connect to server using system dialog\n"
@@ -357,31 +358,31 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					+ "\tparam2= <INT>           || Use port <INT>\n"
 					+ "\tparam3= n/a             || Connect under name \""+defaultDeviceName+"\"\n"
 					+ "\tparam3= <STR>           || Connect under name <STR>");
-		
+
 		cmdMap.put("disconnect", "Disconnect from main server");
-		
-		cmdMap.put("ip", "Request and return the IP of a module\n"	
+
+		cmdMap.put("ip", "Request and return the IP of a module\n"
 					+ "\tparam1= n/a    || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= local  || Print the IPv4 address of the local machine\n"
 					+ "\tparam1= server || Print the IPv4 address of the connected server\n"
 					+ "\tparam1= <STR>  || Sends a request to the server for the IPv4 address of module with String identifier <STR>");
-		
+
 		cmdMap.put("color", "Change the color theme of the terminal\n"
 					+ "\tparam1= n/a   || Set the color scheme via dialog\n"
 					+ "\tparam1= all   || Demo all color schemes\n"
 					+ "\tparam1= <STR> || Set the color scheme to <STR>\n"
-					+ "\tTHEMES:          aperture, bluescreen, bumblebee, dark,\n" 
+					+ "\tTHEMES:          aperture, bluescreen, bumblebee, dark,\n"
 					+ "\t                 light, matrix, ocean, prettyinpink, xmas");
-		
+
 		cmdMap.put("update", "Manually force update for the status overview");
-		
+
 		cmdMap.put("echo", "Test/toggle the voice synthesis of the system\n"												//TODO implement this
 					+ "\tparam1= na     || Show the current state of voice echo\n"
 					+ "\tparam1= true   || Set the terminal to synthesize all text as voice\n"
 					+ "\tparam1= false  || Set the terminal to stop synthesis of all text as voice\n"
 					+ "\tparam1 = <STR> || Synthesize the entered String <STR> to voice");
-		
-		cmdMap.put("alarm-new", "Schedual an alarm at a certain time\n"															
+
+		cmdMap.put("alarm-new", "Schedual an alarm at a certain time\n"
 					+ "\tparam1: n/a      || Launch dialog to schedual alarm\n"
 					+ "\tparam1: ddd      || Set the alarm to go off on day ddd\n"
 					+ "\t                    multiple days should be seperated by a comma such that ddd,ddd\n"
@@ -389,87 +390,87 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					+ "\tparam2: hh:mm    || Set the alarm to go at time hh:mm (24h format)\n"
 					+ "\tparam3: <STR>    || Set the alarm label to String <STR>\n"
 					+ "\tparam3: n/a      || Set the alarm label to default \"Generic Alarm\"");
-		
+
 		cmdMap.put("reboot", "Reboot the main server or this terminal\n"
 					+ "\tparam1: n/a    || Reboot this instance of terminal\n"
 					+ "\tparam1: local  || Reboot this instance of terminal\n"
 					+ "\tparam1: server || Reboot the main server\n"
 					+ "\tparam1: <STR>  || Reboot the device assosiated with <STR>");
-		
+
 		cmdMap.put("ping", "Ping the server\n"
 					+ "\tparam1: n/a   || Ping the server 5 times\n"
 					+ "\tparam1: <INT> || Ping the server <INT> times");
-		
+
 		cmdMap.put("time", "Get and print the current time from the server");
-		
+
 		cmdMap.put("d-serverport", "Get or set the default server port\n"
 					+ "\tparam1: n/a   || Print the default server port\n"
 					+ "\tparam1: <INT> || Set the default server port to <INT>");
-		
+
 		cmdMap.put("d-serverip", "Get or set the default server IPv4 address\n"
 				+ "\tparam1: n/a             || Print the default server IPv4 address\n"
 				+ "\tparam1: xxx.xxx.xxx.xxx || Set the default server IPv4 address to xxx.xxx.xxx.xxx");
-		
+
 		cmdMap.put("d-name", "Get or set the default module-registry name of terminal\n"
 				+ "\tparam1: n/a   || Print the default module-registry name of terminal\n"
 				+ "\tparam1: <STR> || Set the default module-registry name of terminal to <STR>");
-		
+
 		cmdMap.put("timer-new", "Set a new timer to go off in a set amount of minutes\n"
 				+ "\tparam1: n/a   || Launch system dialog to set a new timer\n"
 				+ "\tparam1: <INT> || The number of minutes you want the timer to trigger in\n"
 				+ "\tparam2: <STR> || The name for the timer");
 
 		cmdMap.put("weather", "Request the current weather");
-		
+
 		cmdMap.put("location", "Set the current location to a particular city\n"
 				+ "\tparam1: <STR> || The city you want to set location to\n"
 				+ "\tparam2: n/a   || Use default 2 character country code (Canada)\n"
 				+ "\tparam2: <STR> || The country-code you want to set locaiton to (2 character)\n"
 				+ "\t                 CA=Canada, USA=US, Australia=AU, Britain=GB, New Zealand=NZ, etc.");
-		
+
 		cmdMap.put("lights", "Set the lights ON, OFF, or to gradually increase luminance\n"
 				+ "\tparam1: on    || Turn the lights fully on\n"
 				+ "\tparam1: off   || Turn the lights fully off\n"
 				+ "\tparam1: <INT> || Linearly increase the lights luminance over a period of <INT> second");
-		
+
 		cmdMap.put("alarm-set", "Turn the alarm ON or OFF\n"
 				+ "\tparam1: on  || Turn the alarm on\n"
 				+ "\tparam1: off || Turn the alarm off");
-		
+
 		cmdMap.put("shutdown", "Shutdown the main AVA Server\n");
-		
+
 		cmdMap.put("npe-get", "Request information on scheduled non-peiodic event(s)\n"
 				+ "\tparam1: n/a   || Request a list of all non-periodic events currently scheduled\n"
 				+ "\tparam1: <STR> || Request detailed information on non-periodic event <STR>");
-		
-		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands\n");		//TODO
+
+		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
 		
 		cmdMap.put("npe-remove", "Remove a non-periodic event currently scheduled\n"
 				+ "\tparam1: n/a   || Launch system dialog to select a non-periodic event to remove\n"
 				+ "\tparam1: <STR> || Remove np-event with name <STR> from scheduling");
-		
+
 		cmdMap.put("pe-get", "Request information on scheduled peiodic event(s)\n"
 				+ "\tparam1: n/a   || Request a list of all periodic events currently scheduled\n"
 				+ "\tparam1: <STR> || Request detailed information on periodic event <STR>");
-		
-		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO allow use of commands instead of forcing the use of dialogs
-		
+
+		cmdMap.put("pe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
+
 		cmdMap.put("pe-remove", "Remove a currently scheduled non-periodic event\n"
 				+ "\tparam1: n/a   || Launch system dialog to select a periodic event to remove\n"
 				+ "\tparam1: <STR> || Remove p-event with name <STR> from scheduler");
-		
+
 		cmdMap.put("coffee", "Turn the coffee maker on or off\n"
 				+ "\tparam1: on  || Turn the coffee maker on\n"
 				+ "\tparam1: off || Turn the coffee maker off");
-		
+
 		cmdMap.put("settings", "Launch system dialog to change/view server settings");
-		
+
 		cmdMap.put("screensize", "Toggle terminal between fullscreen and windowed modes");
-		
+
 		return cmdMap;
 	}
-	
-	
+
+
 	//connect to server
 	private void establishConnection(InetAddress address, int port, String name)
 	{
@@ -481,16 +482,16 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				for(int i=0; i<RETRY_QUANTUM && !dataChannel.getConnected(); i++)
 				{
 					ui.println("Establishing connection...");
-					try 
+					try
 					{
 						dataChannel.connect(address, port, PREFIX+name);
-					} 
-					catch (IOException e1) 
+					}
+					catch (IOException e1)
 					{
 						//timeout has occurred
 					}
 				}
-				
+
 				if(dataChannel.getConnected())
 				{
 					ui.println("Connection established @ " + address.toString() + ":" + port + " under name \"" + name + "\"");
@@ -512,30 +513,30 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		}
 		updateStatus();
 	}
-	
-	
+
+
 	//disconnect from server
 	private void disconnect(String msg)
 	{
-		try 
+		try
 		{
 			dataChannel.disconnect(msg);
 			updateStatus();
 			ui.println("Sucessfully disconnected from main AVA Server!");
-		} 
-		catch (NetworkException e) 
+		}
+		catch (NetworkException e)
 		{
 			ui.printError(e.getMessage());
 		}
 	}
-	
-	
+
+
 	//handle the input
 	private void handleConsoleInput(String[] input)
 	{
 		int length = input.length;
 		boolean pFlag;
-		
+
 		//handle based on prime noun
 		switch(input[0])
 		{
@@ -550,8 +551,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-				
+
+
 			//print help menu
 			case("help"):
 				if(length == 1)
@@ -567,8 +568,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-				
+
+
 			//close
 			case("close"):
 				if (length == 1)
@@ -599,8 +600,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//change color scheme
 			case("color"):
 				if (length == 1)
@@ -616,8 +617,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-				
+
+
 			//force status overview update
 			case("update"):
 				if (length == 1)
@@ -629,8 +630,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-			
+
+
 			//toggle and/or turn on synthesis
 			case("echo"):
 				if(length == 1)
@@ -657,16 +658,16 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//print and/or request info on the ip address of various connected devices
 			case("ip"):
 				if(input.length == 1)
 				{
-					try 
+					try
 					{
 						ui.println(InetAddress.getLocalHost().toString());
-					} 
+					}
 					catch (UnknownHostException e) {e.printStackTrace();}
 				}
 				else if (input.length == 2)
@@ -674,10 +675,10 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					//print local ip
 					if(input[1].equals("local") || input[1].equals("this"))
 					{
-						try 
+						try
 						{
 							ui.println(InetAddress.getLocalHost().toString());
-						} 
+						}
 						catch (UnknownHostException e) {e.printStackTrace();}
 					}
 					//print server ip
@@ -690,7 +691,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						String moduleString = input[1];
 						//send and receive info
-						try 
+						try
 						{
 							dataChannel.sendCmd("req ip", moduleString);
 							PacketWrapper packet = dataChannel.receivePacket();
@@ -703,7 +704,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 								ui.println(packet.errorMessage());
 							}
 						}
-						catch (NetworkException e) 
+						catch (NetworkException e)
 						{
 							ui.printError(e.getMessage());
 						}
@@ -715,8 +716,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.print(CMD_NOT_FOUND);
 				}
 				break;
-				
-			
+
+
 			//reboot the server/this/module
 			case("reboot"):
 				//implicate reboot of this terminal
@@ -748,8 +749,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.print(CMD_NOT_FOUND);
 				}
 				break;
-			
-				
+
+
 			//Schedule an alarm
 			case("alarm-new"):
 				//no params, launch dialog
@@ -791,7 +792,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					int hour, min;
 					boolean[] daysArr = new boolean[7];
 					String name = "Generic Alarm";
-					
+
 					//parse day into
 					String[] daysInput = input[1].split(",");
 					for(String day : daysInput)
@@ -841,7 +842,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						name = (input[3]);
 					}
-					
+
 					try 
 					{
 						//send alarm
@@ -872,8 +873,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//ping server
 			case("ping"):
 				if(input.length == 1)
@@ -896,8 +897,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-			
+
+
 			//attempt to connect to the server
 			case("connect"):
 				if (input.length <= 4)
@@ -906,7 +907,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					InetAddress address = defaultServerAddress;
 					int port = defaultServerPort;
 					String name = defaultDeviceName;
-					
+
 					//non-default values -- parse and set address and port
 					if (input.length >= 2)
 					{
@@ -944,13 +945,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 
 								//parse addr
 								subStrBytes = (input[1]).split("\\.");
-								
+
 								addr = new byte[subStrBytes.length];
 								for(int i=0; i<subStrBytes.length; i++)
 								{
 									addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
 								}
-								
+
 								//save as ip
 								address = InetAddress.getByAddress(addr);
 							}
@@ -958,9 +959,9 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 							{
 								ui.printError("Invalid IPAddress\nMust be of form \"xxx.xxx.xxx.xxx\"");
 								return;
-							}	
+							}
 						}
-						
+
 						//set port
 						if (input.length >= 3)
 						{
@@ -980,7 +981,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 									return;
 								}
 							}
-							
+
 							//set name
 							if(input.length == 4)
 							{
@@ -995,7 +996,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 							}
 						}
 					}
-					
+
 					//try to connect
 					establishConnection(address, port, name);
 					updateStatus();
@@ -1005,29 +1006,29 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-			
+
+
 			//get time from server
 			case("time"):
-				try 
+				try
 				{
 					dataChannel.sendCmd("req time");
 					PacketWrapper wrapper = dataChannel.receivePacket(SOCKET_TIMEOUT);
 					ui.println(wrapper.info());
-				} 
-				catch (NetworkException e) 
+				}
+				catch (NetworkException e)
 				{
 					ui.printError(e.getMessage());
 				}
 				break;
-				
-				
+
+
 			//disconnect
 			case("disconnect"):
 				disconnect("user request");
 				break;
-				
-				
+
+
 			//get/set default server port
 			case("d-serverport"):
 				if(input.length == 1)
@@ -1051,8 +1052,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-			
+
+
 			//get/set the default server IPv4
 			case("d-serverip"):
 				if(input.length == 1)
@@ -1069,13 +1070,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 
 						//parse address
 						subStrBytes = (input[1]).split("\\.");
-						
+
 						addr = new byte[subStrBytes.length];
 						for(int i=0; i<subStrBytes.length; i++)
 						{
 							addr[i] = (byte)Integer.parseInt(subStrBytes[i]);
 						}
-						
+
 						//save as ip
 						defaultServerAddress = InetAddress.getByAddress(addr);
 					}
@@ -1089,8 +1090,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-			
+
+
 			//get/set the default module-registry name
 			case("d-name"):
 				if(input.length == 1)
@@ -1106,8 +1107,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//set up a timer					TODO a bit smelly, could use clean up
 			case("timer-new"):
 				if(input.length == 1)
@@ -1121,7 +1122,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						{
 							dataChannel.sendCmd("set timer", json);
 							PacketWrapper response = dataChannel.receivePacket(SOCKET_TIMEOUT);
-							
+
 							//parse response
 							if(response.type() == DataChannel.TYPE_INFO)
 							{
@@ -1135,8 +1136,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 							{
 								ui.printError("Unknown response from server!\n"+response.toString());
 							}
-						} 
-						catch (NetworkException e) 
+						}
+						catch (NetworkException e)
 						{
 							ui.printError(e.getMessage());
 						}
@@ -1144,7 +1145,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				}
 				else if(input.length == 3)
 				{
-					try 
+					try
 					{
 						//check that minute param is valid int
 						int seconds = 60*Integer.parseInt(input[1]);
@@ -1166,8 +1167,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						{
 							ui.printError("Unknown response from server!\n"+response.toString());
 						}
-					} 
-					catch (NetworkException e) 
+					}
+					catch (NetworkException e)
 					{
 						ui.printError(e.getMessage());
 					}
@@ -1181,13 +1182,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-				
+
+
 			//get current weather
 			case("weather"):
 				if(input.length == 1)
 				{
-					try 
+					try
 					{
 						if(normalMode)
 						{
@@ -1217,8 +1218,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
-			
+
+
 			case("location"):
 				if(input.length == 2 || input.length == 3)
 				{
@@ -1233,7 +1234,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						{
 							dataChannel.sendCmd("set location", input[1] + "," + input[2]);
 						}
-						
+
 						//wait for response
 						PacketWrapper wrapper = dataChannel.receivePacket(SOCKET_TIMEOUT);
 						if(wrapper.type() != DataChannel.TYPE_INFO)
@@ -1258,7 +1259,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-			
+
 			//change the light status
 			case("lights"):
 				if(input.length == 2)
@@ -1315,7 +1316,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
+
 			//turn alarm on or off
 			case("alarm-set"):
 				if(input.length == 2)
@@ -1357,7 +1358,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
+
 			case("shutdown"):
 				if (length == 1)
 				{
@@ -1368,15 +1369,15 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						if(in[0].equals("y"))
 						{
-							
-							try 
+
+							try
 							{
 								//shutdown server and disconnect
 								dataChannel.sendCmd("shutdown");
 								ui.println("Server shutdown complete!");
 								this.disconnect("user");
-							} 
-							catch (NetworkException e) 
+							}
+							catch (NetworkException e)
 							{
 								ui.printError(e.getMessage());
 							}
@@ -1386,7 +1387,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 							ui.println("Canceling shutdown...");
 						}
 					}
-					
+
 					else
 					{
 						ui.println("Canceling shutdown...");
@@ -1397,21 +1398,21 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//get list of active periodic/non-periodic events
 			case("npe-get"):
 			case("pe-get"):
-				
+
 				//set periodic flag
 				if(input[0].equals("npe-get"))	pFlag = false;
 				else							pFlag = true;
-				
+
 				//get generic list of events
 				try
 				{
 					if(length == 1)
-					{	
+					{
 						//get and print all events
 						String[] events = reqAllEvents(pFlag);
 						if(events != null)
@@ -1445,15 +1446,15 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.printError(e.getMessage());
 				}
 				break;
-				
-				
+
+
 			//remove a periodic event
 			case("pe-remove"):
 			case("npe-remove"):
 				//set periodic flat
 				if(input[0].equals("pe-remove"))	pFlag = true;
 				else								pFlag = false;
-				
+
 				try
 				{
 					//remove event with dialog prompt
@@ -1476,8 +1477,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.printError(e.getMessage());
 				}
 				break;
-				
-				
+
+
 			//interact with coffee maker
 			case("coffee"):
 				if(length == 2)
@@ -1515,8 +1516,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					}
 				}
 				break;
-				
-				
+
+			case("play song"):
+				if(length == 3){
+					try{
+						dataChannel.sendCmd("play song", input[2]);
+					} catch(NetworkException e){
+						ui.printError(e.getMessage());
+					}
+
+				}
+				else{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+
+
 			//launch settings dialog
 			case("settings"):
 				if(length == 1)
@@ -1528,14 +1543,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					ui.println(CMD_NOT_FOUND);
 				}
 				break;
-				
-				
+
+
 			//swap display from fullscreen to windowed or vise-versa
 			case("screensize"):
 				screenSwap(false);
 				break;
-				
-				
+
+
 			//switch mode to scheduling periodic event
 			case("pe-new"):
 				if (length == 1)
@@ -1632,17 +1647,17 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					setNormalMode(true);	
 				}
 				break;
-			
-				
+
+
 			//cmd not found
 			default:
 				ui.println(CMD_NOT_FOUND);
 				break;
 		}
-		
+
 	}
-	
-	
+
+
 	//delete an event
 	private void reqEventDelete(boolean periodic, String eventName) throws NetworkException
 	{
@@ -1650,7 +1665,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		String cmd;
 		if(periodic)	cmd = "del p-event";
 		else			cmd = "del np-event";
-		
+
 		//use dialog to get event name
 		if(eventName == null)
 		{
@@ -1676,11 +1691,11 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				return;
 			}
 		}
-		
+
 		//send command packet and wait on response
 		dataChannel.sendCmd(cmd, eventName);
 		PacketWrapper response = dataChannel.receivePacket();
-		
+
 		//parse response
 		if(response.type() == DataChannel.TYPE_INFO)
 		{
@@ -1695,8 +1710,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			ui.printError("Unknown response from server!\n"+response.toString());
 		}
 	}
-	
-	
+
+
 	//get details on an event
 	private String reqEventDetails(boolean periodic, String eventName) throws NetworkException
 	{
@@ -1706,11 +1721,11 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			cmdKey = "details p-event";
 		else
 			cmdKey = "details np-event";
-		
+
 		//send packet and wait for response
 		dataChannel.sendCmd(cmdKey, eventName);
 		PacketWrapper w = dataChannel.receivePacket();
-		
+
 		//check response and parse accordingly
 		if(w.type() == w.TYPE_INFO)
 		{
@@ -1727,8 +1742,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			return null;
 		}
 	}
-	
-	
+
+
 	//
 	private String[] reqAllEvents(boolean periodic) throws NetworkException
 	{
@@ -1738,11 +1753,11 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			cmdKey = "req p-events";
 		else
 			cmdKey = "req np-events";
-		
+
 		//get event JSON
 		dataChannel.sendCmd(cmdKey);
 		String eventsJson = dataChannel.receivePacket().info();
-		
+
 		//check format of data returned
 		int l = eventsJson.length();
 		if(eventsJson.charAt(0) == '{' && eventsJson.charAt(1) == '\n' && eventsJson.charAt(l-2) == '\n' && eventsJson.charAt(l-1) == '}')
@@ -1765,27 +1780,27 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			return null;
 		}
 	}
-	
-	
+
+
 	//ping the server
 	private void pingServer(int amount)
 	{
 		//declaring method variables
 		long pre, post;
-		
+
 		//ping 5 times
 		for(int i=0; i<amount; i++)
 		{
 			//pause between pinging
 			try {Thread.sleep(50);}
 			catch (InterruptedException e1) {e1.printStackTrace();}
-			
-			try 
+
+			try
 			{
 				//send ping
 				pre = System.currentTimeMillis();
 				dataChannel.sendCmd("ping");
-				
+
 				//wait for response
 				PacketWrapper wrapper = dataChannel.receivePacket(5000);
 				if(wrapper.type() == DataChannel.TYPE_INFO)
@@ -1804,14 +1819,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			}
 		}
 	}
-	
-	
+
+
 	//launch and use dialog for settings
 	private void settingsDialog()
 	{
 		//get settings from dialog
 		SettingsWrapper s = ui.dialogGetServerSettings(defaultServerAddress, defaultServerPort, defaultDeviceName);
-		
+
 		//user selected anything but cancel/window close
 		if (s != null)
 		{
@@ -1822,12 +1837,12 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				defaultServerAddress = s.address;
 				defaultServerPort = s.port;
 				defaultDeviceName = s.name;
-				
+
 				//print to screen
 				ui.println("Default Server Address: " + defaultServerAddress.toString());
 				ui.println("Default Server Port:    " + defaultServerPort);
 				ui.println("Default Device Name:    " + defaultDeviceName);
-				
+
 				//attempt to connect/reconnect			//TODO this freezes the display temporarily if server cant be found
 				if(s.closeMode == ServerSettingsDialog.CLOSE_MODE_CONNECT)
 				{
@@ -1841,8 +1856,8 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			}
 		}
 	}
-	
-	
+
+
 	//change to fullscreen
 	private void screenSwap(boolean dialog)
 	{
@@ -1851,7 +1866,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		if(ui.IS_FULLSCREEN)	msg += "windowed ";
 		else					msg += "fullscreen ";
 		msg += "requires a terminal reboot\nReboot terminal?";
-		
+
 		//get reboot confirmation
 		boolean reboot;
 		if(dialog)
@@ -1863,7 +1878,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			ui.println(msg+" (y/n)");
 			reboot = "y".equals(ui.getInput()[0]);
 		}
-		
+
 		//set flag and reboot (or not)
 		if(reboot)
 		{
@@ -1900,7 +1915,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	{
 		//returnable string
 		String status = "";
-		
+
 		if(dataChannel.getConnected())
 		{
 			status += "Server: CONNECTED\n"
@@ -1911,7 +1926,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		{
 			status += "Server: DISCONNECTED\n\n\n\n";
 		}
-		
+
 		if(normalMode)
 		{
 			status += "Operating Mode: " + "NORMAL";
@@ -1924,17 +1939,17 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		ui.updateStatus(status);
 	}
 
-	
-	
+
+
 
 
 	@Override
 	//handle input
-	public void actionPerformed(ActionEvent e) 
+	public void actionPerformed(ActionEvent e)
 	{
 		//determine source via cmd parse
 		String src = e.getActionCommand();
-		
+
 		/* only respond to action events if not attempting to connect (leads to unknown and bad states)
 		 * due to the fact that action events basically act like interrupts
 		 * (bug patch for git issue #15)
@@ -1951,12 +1966,12 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						this.close(CLOSE_OPTION_USER);
 					}
 					break;
-					
+
 				//options-server settings menu item pressed
 				case(TerminalUI.MENU_SERVER_SETTINGS):
 					settingsDialog();
 					break;
-				
+
 				//options-screen menu item pressed
 				case(TerminalUI.MENU_FULLSCREEN):
 					screenSwap(true);
@@ -1964,11 +1979,11 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			}
 		}
 	}
-	
-	
+
+
 	//instantiate a Terminal
 	public static void main(String[] e)
-	{	
+	{
 		boolean relaunch = true;
 		boolean fullscreen = false;			//true=fullscreen, false=windowed
 		while(relaunch)
@@ -1977,23 +1992,23 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			Terminal terminal = new Terminal(fullscreen);
 			terminal.run();
 			int close = terminal.getCloseMode();
-			
+
 			//determine and handle reason for close
 			switch(close)
 			{
 				//closed from error
-			
+
 				case(Terminal.CLOSE_OPTION_ERROR):
 					System.out.println("An error has occured");
 					relaunch = false;
 					break;
-				
+
 				//closed from reset
 				case(Terminal.CLOSE_OPTION_RESET):
 					relaunch = true;
 					fullscreen = terminal.getFullscreenFlag();
 					break;
-					
+
 				default:
 					relaunch = false;
 			}

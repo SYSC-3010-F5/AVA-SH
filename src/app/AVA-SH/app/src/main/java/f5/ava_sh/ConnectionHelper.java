@@ -49,11 +49,16 @@ public class ConnectionHelper implements Runnable {
     private DataChannel dataChannel;
     private static final int RETRY_QUANTUM = 5;
 
-    private String 		defaultDeviceName;
-    private InetAddress defaultServerAddress;
-    private int 		defaultServerPort;
-    private String serverIP;
+    private String defaultDeviceName = "app";
+    private String defaultServerAddress = "192.168.0.101";
+    private String defaultServerPort = "3010";
+
+    private String deviceName;
+    private InetAddress serverAddress;
+    private int serverPort;
+
     private TextView et;
+
 
     public ConnectionHelper(Context c){
         alertBuilder = new AlertBuilder(c);
@@ -62,13 +67,13 @@ public class ConnectionHelper implements Runnable {
         SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(c);
 
 
-        defaultDeviceName = "i\\"+ SP.getString("interface", "i\\app");
-        defaultServerPort = Integer.parseInt(SP.getString("serverPort", "3010"));
-        serverIP = SP.getString("serverIP", "192.168.0.101");
+        deviceName = "i\\"+ SP.getString("interface", defaultDeviceName);
+        serverPort = Integer.parseInt(SP.getString("serverPort", defaultServerPort));
 
         try {
-            defaultServerAddress = InetAddress.getByName(serverIP);
+
             dataChannel = new DataChannel();
+            serverAddress = InetAddress.getByName(SP.getString("serverIP", defaultServerAddress));
         } catch(Exception e){
 
         }
@@ -77,7 +82,7 @@ public class ConnectionHelper implements Runnable {
 
     @Override
     public void run(){
-        establishConnection(defaultServerAddress, defaultServerPort,defaultDeviceName);
+        establishConnection(serverAddress, serverPort,deviceName);
     }
 
     //connect to server

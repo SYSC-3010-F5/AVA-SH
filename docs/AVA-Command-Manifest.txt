@@ -260,5 +260,18 @@ COMMAND MANIFEST
 	
 	
 	----------------------------
+		
+	COMMAND_KEY:	“play song”
+	EXTRA_INFO:		true
+					The title of the song in question. Encoded as a UTF-8 character string.
+					*caveat* the song title must not contain spaces
+					An example of playing “Mr.Brightside” would be the UTF-8 characters:
+					Mr.Brightside
+	PURPOSE:		prompts a media driver to play the selected song(currently only supports mp3)
+	RESPONSE:		empty info-type packet if title is valid and file is found
+					error-type packet otherwise
+	
+	
+	----------------------------
 
 					

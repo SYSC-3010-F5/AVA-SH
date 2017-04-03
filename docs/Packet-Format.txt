@@ -132,17 +132,17 @@ TYPE-DEPENANT FORMATS
 			
 		The TYPE (static 1 byte size) denotes the type of packet being sent. Since this is a "Handshake" packet, the TYPE field will always be 0x00.
 		
-		The HANDSHAKE_KEY denotes the well-known byte pattern used to establish an initial connection and registration. As of verion 2.1.0 of this format, the key is a 98 byte long character string (8bit ASCII, UTF-8), equal to:
+		The HANDSHAKE_KEY denotes the well-known byte pattern used to establish an initial connection and registration. As of version 2.1.0 of this format, the key is a 98 byte long character string (8bit ASCII, UTF-8), equal to:
 		"1: A robot may not injure a human being or, through inaction, allow a human being to come to harm."
 		It is of worth to note the HANDSHAKE_KEY cannot contain a 0x00 byte (null character in UTF-8), as this will result a premature termination of the HANDSHAKE_KEY.
 		The HANDSHAKE_KEY takes up a variable <k> bytes.
-		HANDSHAKE_KEY cannot not contain a "\" character (with the exception of in the prefix discuessed later in the document).
+		HANDSHAKE_KEY cannot not contain a "\" character (with the exception of in the prefix discussed later in the document).
 		
 		The HANDSHAKE_KEY is followed by a terminating zero byte (0x00). The sole purpose of this byte is to denote a termination of the HANDSHAKE_KEY. This allows the HANDSHAKE_KEY to be freely changed (so long as both client and server are aware of what the active key is), and not be limited to a static byte size.
 		
 		Following the terminating 0x00 byte, there is a variable <n> bytes long DEVICE_NAME field. The DEVICE_NAME is a string identifier for the device being paired. It is encoded as 8bit ASCII characters. The length of the DEVICE_NAME field spans to the end of the packet.
 		
-		The server responce to a valid handshake packet is an empty handshake packet, that is, a packet where the HANDSHAKE_KEY and DEVICE_NAME fields are empty, such that:
+		The server response to a valid handshake packet is an empty handshake packet, that is, a packet where the HANDSHAKE_KEY and DEVICE_NAME fields are empty, such that:
 		
 				|------|------|
 				| 0x00 | 0x00 |
@@ -159,6 +159,7 @@ TYPE-DEPENANT FORMATS
 				|  i\      |  any interface such as an app or terminal  |
 				|  c\      |  a coffee maker                            |
 				|  a\      |  an alarm controller                       |
+				|  m\      |  a media driver
 				|  g\      |  a generic module                          |
 				|----------|--------------------------------------------|
 		
