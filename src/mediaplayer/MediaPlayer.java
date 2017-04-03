@@ -1,6 +1,7 @@
 package mediaplayer;
 
 import javazoom.jl.decoder.JavaLayerException;
+
 import javazoom.jl.player.*;
 import javazoom.jl.player.advanced.AdvancedPlayer;
 
@@ -21,7 +22,7 @@ public class MediaPlayer extends Thread{
 
 	public boolean checkValid(){
 		try{
-		    FileInputStream fis = new FileInputStream(getClass().getResource("songLibrary/"+"Tester"+".mp3").toString());
+		    FileInputStream fis = new FileInputStream(getClass().getResource("songLibrary/"+songName+".mp3").toString());
 		    playMP3 = new AdvancedPlayer(fis);
 		    return true;
 
@@ -45,6 +46,8 @@ public class MediaPlayer extends Thread{
 	}
 
 	public void print(String msg){
-		System.out.println(msg);
+		if(verbose){
+			System.out.println(msg);
+		}
 	}
 }

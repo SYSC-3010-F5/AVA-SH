@@ -75,6 +75,9 @@ public class ManagerThread extends Thread{
 						if(mediaPlayer != null){
 
 						}
+						else{
+
+						}
 
 					}
 
