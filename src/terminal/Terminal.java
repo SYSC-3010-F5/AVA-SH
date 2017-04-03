@@ -105,6 +105,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.DateTimeException;
+import java.util.LinkedList;
 import java.util.TreeMap;
 import javax.swing.JFrame;
 
@@ -147,6 +148,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	private int closeReason;
 	private TerminalUI ui;
 	private DataChannel dataChannel;
+	private LinkedList<PacketWrapper> eventBuffer;
 	
 	
 	//generic constructor
@@ -173,7 +175,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		ui.initCmdMap(this.initCmdMap());
 		
 		//init variables
-		try 
+		try
 		{
 			ui.println("Binding Socket...");
 			dataChannel = new DataChannel();
@@ -184,8 +186,9 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			connecting = false;
 			normalMode = true;
 			fullscreenFlag = isFullScreen;
-		} 
-		catch (SocketException e) 
+			eventBuffer = new LinkedList<PacketWrapper>();
+		}
+		catch (SocketException e)
 		{
 			ui.printError("Socket could not be bound\n" + e.getMessage() + "\n\nExiting...");
 			e.printStackTrace();
@@ -200,7 +203,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		runFlag = true;
 		
 		//update ui
-		ui.updateStatus(this.statusToString());
+		updateStatus();
 		ui.println("Starting control on Thread <" + Thread.currentThread().getId() + ">...");
 	}
 	
@@ -213,6 +216,18 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public boolean getFullscreenFlag()
 	{
 		return fullscreenFlag;
+	}
+	
+	
+	//generic setters
+	private void setNormalMode(boolean mode)
+	{
+		if(mode != normalMode)
+		{
+			if(mode)	ui.println("\n*************************** NORMAL OPERATING MODE ***************************");
+			else		ui.println("\n************************* SCHEDULING OPERATING MODE *************************");
+		}
+		normalMode = mode;
 	}
 	
 	
@@ -405,7 +420,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				+ "\tparam1: n/a   || Request a list of all non-periodic events currently scheduled\n"
 				+ "\tparam1: <STR> || Request detailed information on non-periodic event <STR>");
 		
-		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands");		//TODO
+		cmdMap.put("npe-new", "Create a new non-periodic event to occur by chaining commands\n");		//TODO
 		
 		cmdMap.put("npe-remove", "Remove a non-periodic event currently scheduled\n"
 				+ "\tparam1: n/a   || Launch system dialog to select a non-periodic event to remove\n"
@@ -473,7 +488,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		{
 			ui.printError("Already connected!\nPlease disconnect first");
 		}
-		ui.updateStatus(statusToString());
+		updateStatus();
 	}
 	
 	
@@ -483,7 +498,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		try 
 		{
 			dataChannel.disconnect(msg);
-			ui.updateStatus(this.statusToString());
+			updateStatus();
 			ui.println("Sucessfully disconnected from main AVA Server!");
 		} 
 		catch (NetworkException e) 
@@ -585,7 +600,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			case("update"):
 				if (length == 1)
 				{
-					ui.updateStatus(this.statusToString());
+					updateStatus();
 				}
 				else
 				{
@@ -933,7 +948,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					
 					//try to connect
 					establishConnection(address, port, name);
-					ui.updateStatus(this.statusToString());
+					updateStatus();
 				}
 				else
 				{
@@ -1419,7 +1434,59 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			case("screensize"):
 				screenSwap(false);
 				break;
-
+				
+				
+			//switch mode to scheduling periodic event
+			case("pe-new"):
+				if (length == 1)
+				{
+					//get trigger information
+					Alarm alarm =ui.dialogGetAlarm();
+					if(alarm != null)
+					{
+						//set flag and prompt
+						setNormalMode(false);
+						ui.println("Enter \"finalize\" to complete event scheduling\n"
+								 + "Enter \"cancel\" to cancel event scheduling\n");
+					}
+				}
+				break;
+			
+				
+			//switch mode to scheduling non-periodic event
+			case("npe-new"):						//TODO
+				break;
+			
+			
+			//exit scheduling mode, schedule event with server
+			case("finalize"):
+				if(normalMode || eventBuffer.size() < 1)
+				{
+					ui.printError("Cannot finalize event scheduling\nNot in event scheduling mode");
+				}
+				else
+				{
+					//TODO
+				}
+			
+				//reset flag and clear event buffer
+				eventBuffer.clear();
+				setNormalMode(true);
+				break;
+				
+				
+			//exit scheduling mode, do not schedule
+			case("cancel"):
+				if(normalMode)
+				{
+					ui.printError("Cannot cancel event scheduling\nNot in event scheduling mode");
+				}
+			
+				//reset flag and clear event buffer
+				eventBuffer.clear();
+				setNormalMode(true);
+				break;
+			
 				
 			//cmd not found
 			default:
@@ -1661,7 +1728,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	
 	
 	//the status as a string
-	private String statusToString()
+	private void updateStatus()
 	{
 		//returnable string
 		String status = "";
@@ -1686,7 +1753,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			status += "Operating Mode: " + "SCHEDULING";
 		}
 		
-		return status;
+		ui.updateStatus(status);
 	}
 
 	
