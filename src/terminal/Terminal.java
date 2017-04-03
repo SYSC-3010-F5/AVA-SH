@@ -3,15 +3,19 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    03/04/2017                                              
-*Version:           0.7.3
+*Version:           0.8.0
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.7.3
+*Update Log			v0.8.0
+*						- periodic event scheduling works
 *						- alarm scheduling timeout added
+*						- can schedule alarm/light based events
+*						- can schedule alarm/alarm based events
+*						- can schedule coffee machine based commands
 *					v0.7.2
 *						- dialog for changing server settings added (menu bar)
 *						- command "settings" added
@@ -134,7 +138,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.7.2";
+	private static final String VERSION = "v0.8.0";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;	
 	private static final int SWITCH_SPEED = 100;
@@ -1252,19 +1256,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 						//turn on light
 						if(input[1].equals("on") || input[1].equals("1"))
 						{
-							dataChannel.sendCmd("led on");
+							if (normalMode)	dataChannel.sendCmd("led on");
+							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led on", "", null));
 						}
 						//turn light off
 						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							dataChannel.sendCmd("led off");
+							if (normalMode)	dataChannel.sendCmd("led off");
+							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led off", "", null));
 						}
 						//set PWM
 						else
 						{
 							//check PWM period is valid number
 							Integer.parseInt(input[1]);
-							dataChannel.sendCmd("led pwm", input[1]);
+							if (normalMode)	dataChannel.sendCmd("led pwm", input[1]);
+							else			eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "led pw,", input[1], null));
 						}
 					}
 					catch (NetworkException e)
@@ -1290,11 +1297,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						if(input[1].equals("on") || input[1].equals("1"))
 						{
-							dataChannel.sendCmd("alarm on", "");
+							if (normalMode)	dataChannel.sendCmd("alarm on", "");
+							else			eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm on", "", null));
 						}
-						else if (input[1].equals("on") || input[1].equals("0"))
+						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							dataChannel.sendCmd("alarm off", "");
+							if (normalMode)	dataChannel.sendCmd("alarm off", "");
+							else			eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "alarm off", "", null));
 						}
 						else
 						{
@@ -1440,11 +1449,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						if (input[1].equals("on") || input[1].equals("1"))
 						{
-							dataChannel.sendCmd("coffee on");
+							if (normalMode)		dataChannel.sendCmd("coffee on");
+							else				eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee on", "", null));
 						}
 						else if (input[1].equals("off") || input[1].equals("0"))
 						{
-							dataChannel.sendCmd("coffee off");
+							if (normalMode)		dataChannel.sendCmd("coffee off");
+							else				eventBuffer.add(new PacketWrapper(PacketWrapper.TYPE_CMD, "coffee off", "", null));
 						}
 						else
 						{
