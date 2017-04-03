@@ -113,6 +113,15 @@ COMMAND MANIFEST
 	PURPOSE:		Request the current weather from server
 	RESPONSE:		info-type packet JSON formated current weather
 	
+	
+	----------------------------
+	
+	COMMAND_KEY:	"notify current weather"
+	EXTRA_INFO:		false
+	PURPOSE:		Request the current weather from server, notify every registered interface
+	RESPONSE:		info-type packet JSON formated current weather to every interface
+	
+	
 	----------------------------
 	
 	COMMAND_KEY	:	"set location"

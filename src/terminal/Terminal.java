@@ -10,7 +10,10 @@
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v0.8.0
+*Update Log			v0.8.1
+*						- patch for info dialog being generated displaying nothing
+*						- added weather scheduling
+*					v0.8.0
 *						- periodic event scheduling works
 *						- alarm scheduling timeout added
 *						- can schedule alarm/light based events
@@ -1185,15 +1188,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				{
 					try 
 					{
-						dataChannel.sendCmd("req current weather");
-						PacketWrapper wrapper = dataChannel.receivePacket();
-						WeatherData weather = new WeatherData(wrapper.info());
-						
-						String[] weatherData = weather.getWeatherData();
-						ui.println("Weather data for " + weatherData[WeatherData.CITY] + ", " + weatherData[WeatherData.COUNTRY] + ".");
-						ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
-						ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
-						ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+						if(normalMode)
+						{
+							dataChannel.sendCmd("req current weather");
+							PacketWrapper wrapper = dataChannel.receivePacket(SOCKET_TIMEOUT);
+							WeatherData weather = new WeatherData(wrapper.info());
+							
+							String[] weatherData = weather.getWeatherData();
+							ui.println("Weather data for " + weatherData[WeatherData.CITY] + ", " + weatherData[WeatherData.COUNTRY] + ".");
+							ui.println("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius");
+							ui.println("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%");
+							ui.println("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+						}
+						else
+						{
+							eventBuffer.add(new PacketWrapper(DataChannel.TYPE_CMD, "req current weather -i", "", null));
+						}
 					} 
 					catch (NetworkException e) 
 					{
@@ -1517,9 +1527,13 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 			
 			//exit scheduling mode, schedule event with server
 			case("finalize"):
-				if(normalMode || eventBuffer.size() < 1)
+				if(normalMode)
 				{
 					ui.printError("Cannot finalize event scheduling\nNot in event scheduling mode");
+				}
+				else if (eventBuffer.size() < 1)
+				{
+					ui.printError("Cannot finalize event scheduling\nNo commands currently scheduled");
 				}
 				else
 				{
@@ -1529,6 +1543,21 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 					{
 						//send event out and wait for response
 						dataChannel.sendCmd("sch p-event", event.toJSON(""));
+						PacketWrapper r = dataChannel.receivePacket(SOCKET_TIMEOUT);
+						
+						//parse response
+						switch (r.type())
+						{
+							case(DataChannel.TYPE_INFO):
+								ui.println("Event scheduled under name \"" + event.getEventName() + "\"!");
+								break;
+							case(DataChannel.TYPE_ERR):
+								ui.printError(r.errorMessage());
+								break;
+							default:
+								ui.printError("Unexpected server response!\n" + r.toString());
+								break;
+						}
 					}
 					catch (NetworkException e)
 					{
@@ -1548,10 +1577,12 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				{
 					ui.printError("Cannot cancel event scheduling\nNot in event scheduling mode");
 				}
-			
-				//reset flag and clear event buffer
-				eventBuffer.clear();
-				setNormalMode(true);
+				else
+				{
+					//reset flag and clear event buffer
+					eventBuffer.clear();
+					setNormalMode(true);	
+				}
 				break;
 			
 				
