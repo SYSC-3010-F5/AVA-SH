@@ -94,7 +94,7 @@ public class ManagerThread extends Thread{
 						if(mediaPlayer == null){
 							respondNoCurrentSong();
 						} else {
-							mediaPlayer.play();
+							mediaPlayer.resumeS();
 						}
 					}
 
