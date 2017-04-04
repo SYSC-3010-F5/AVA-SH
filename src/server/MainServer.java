@@ -11,6 +11,7 @@
 *
 *Update Log			v0.7.6
 *						- server forwarding for thermo and media driver
+*						- error packet forwarding
 *					v0.7.5
 *           			- added media driver forwarding			(done by Nate)
 *						- command sch-event responds in empty info packet if event scheduled
@@ -112,6 +113,7 @@ import network.PacketWrapper;
 import server.database.CrudeDatabase;
 import server.datatypes.ServerEvent;
 import server.datatypes.ServerTimer;
+import server.datatypes.WeatherData;
 import io.Writer;
 import io.json.JsonException;
 import network.DataChannel;
@@ -501,6 +503,40 @@ public class MainServer extends Thread implements ActionListener
 		}
 		catch (NetworkException e) {e.printStackTrace();}
 	}
+	
+	
+	//send the current weather data to all interfaces as formated string
+	private void forwardCurrentWeather()			//TODO this and sendCurrentWeather can be refactored to share common code!
+	{
+		//get weather data
+		Weather weatherRequest = new Weather();
+		JSONObject json = null;
+		try
+		{
+			json = weatherRequest.currentWeatherAtCity(locationID);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		catch(JSONException je)
+		{
+			je.printStackTrace();
+		}
+		
+		//parse into useful string and format
+		String toSend = "";
+		WeatherData weather = new WeatherData(json.toString());
+		String[] weatherData = weather.getWeatherData();
+		toSend += ("Weather data for " + weatherData[WeatherData.CITY] + ", " + weatherData[WeatherData.COUNTRY] + ".\n");
+		toSend += ("Current temperature: " + weatherData[WeatherData.TEMPERATURE] + " degrees Celsius\n");
+		toSend += ("Current humidity: " + weatherData[WeatherData.HUMIDITY] + "%\n");
+		toSend += ("Current weather: " + weatherData[WeatherData.WEATHER_TYPE] + ": " + weatherData[WeatherData.WEATHER_DESCRIPTION]);
+		
+		//forward to interfaces
+		forwardPacket(new PacketWrapper(TYPE_INFO, toSend, "", null), PREFIX_INTERFACE);
+	}
+	
 
 
 	//send the current weather data as unformatted JSON
@@ -779,6 +815,11 @@ public class MainServer extends Thread implements ActionListener
 							case("req current weather"):
 								sendCurrentWeather(packet.source());
 								break;
+								
+							//forward weather to all interfaces
+							case("req current weather -i"):
+								forwardCurrentWeather();
+								break;
 
 							//change the current server location
 							case("set location"):
@@ -879,6 +920,11 @@ public class MainServer extends Thread implements ActionListener
 							case("system off"):
 								forwardPacket(packet, PREFIX_THERMOSTAT);
 								break;	
+								
+							//unknown command key
+							default:
+								display.printError("Unknown command key");
+								break;
 						}
 						break;
 
@@ -891,8 +937,9 @@ public class MainServer extends Thread implements ActionListener
 
 
 
-					//an error from one of the devices
+					//an error from one of the devices, fwd to interfaces
 					case(DataChannel.TYPE_ERR):
+						forwardPacket(packet, PREFIX_INTERFACE);
 						break;
 				}
 			}

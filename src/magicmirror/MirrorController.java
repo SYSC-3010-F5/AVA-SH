@@ -48,7 +48,7 @@ import server.datatypes.WeatherData;
 public class MirrorController implements Runnable
 {
 	//declaring class constants
-	private static final String SERVER_ADDRESS_INIT = "192.168.2.34";
+	private static final String SERVER_ADDRESS_INIT = "192.168.2.100";
 	private static final int SERVER_PORT_INIT = 3010;
 	private static final String WINDOW_TITLE = "Magic Mirror v1.0.0";
 	private static final String REGISTRY_NAME = "g\\magic mirror";
