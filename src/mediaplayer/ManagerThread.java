@@ -17,12 +17,13 @@ public class ManagerThread extends Thread{
 
 	private DataChannel dataChannel;
 	private boolean verbose = true;
-	private String serverIP = "10.0.0.101";
+	private String serverIP = "192.168.2.100";
 	private int listeningPort = 3010;
 	private static final String DEVICE_NAME = "m\\mediaDriver";
 	private static final String PLAY_CMD_KEY = "play song";
-	private static final String PAUSE_CMD_KEY = "pause song";
-	private static final String STOP_CMD_KEY = "stop song";
+	private static final String PAUSE_CMD_KEY = "pause music";
+	private static final String STOP_CMD_KEY = "stop music";
+	private static final String RESUME_CMD_KEY = "resume music";
 	private InetAddress serverInet;
 
 	private MediaPlayer mediaPlayer;
@@ -67,7 +68,7 @@ public class ManagerThread extends Thread{
 
 				if(packet.type() == DataChannel.TYPE_CMD){
 					if(packet.commandKey().equals(PLAY_CMD_KEY)){
-						mediaPlayer = new MediaPlayer(packet.info(),verbose);
+						mediaPlayer = new MediaPlayer(packet.extraInfo(),verbose);
 						if(mediaPlayer.checkValid()){
 							mediaPlayer.start();
 							print("mediaPlayer instantiated and started");
@@ -87,6 +88,13 @@ public class ManagerThread extends Thread{
 						} else {
 							mediaPlayer.pause();
 							mediaPlayer = null;
+						}
+					}
+					else if(packet.commandKey().equals(RESUME_CMD_KEY)){
+						if(mediaPlayer == null){
+							respondNoCurrentSong();
+						} else {
+							mediaPlayer.play();
 						}
 					}
 
@@ -109,6 +117,7 @@ public class ManagerThread extends Thread{
 		} catch (NetworkException e) {
 			print(e.getMessage());
 		}
+		
 		print("Sending Error packet: " + error);
 	}
 

@@ -25,7 +25,10 @@ public class MediaPlayer extends Thread {
 
 	public boolean checkValid(){
 		try{
-		    FileInputStream fis = new FileInputStream(getClass().getResource("songLibrary/"+songName+".mp3").toString());
+			//TODO remove
+			System.out.println("Checking valid");
+		    FileInputStream fis = new FileInputStream("C:\\Users\\nathanielcharlebois.LABS\\Desktop\\tempProject\\AVA-SH\\src\\mediaplayer\\songLibrary\\"+songName+".mp3");
+		    System.out.println(fis.toString());
 		    playMP3 = new AdvancedPlayer(fis);
 		    playMP3.setPlayBackListener(new PlaybackListener(){
 		        @Override
