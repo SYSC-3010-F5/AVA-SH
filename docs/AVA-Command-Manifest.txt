@@ -268,8 +268,7 @@ COMMAND MANIFEST
 					An example of playing “Mr.Brightside” would be the UTF-8 characters:
 					Mr.Brightside
 	PURPOSE:		prompts a media driver to play the selected song(currently only supports mp3)
-	RESPONSE:		empty info-type packet if title is valid and file is found
-					error-type packet otherwise
+	RESPONSE:		false
 	
 	----------------------------
 	COMMAND_KEY:	“new temp”
