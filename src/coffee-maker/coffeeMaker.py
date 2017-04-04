@@ -26,12 +26,12 @@ channel = 1
 
 #CIRCUIT SETUP: WEIGHT SENSOR
 #Connect the following pins: GP11-SCLK, GP10-MOSI, GP9-MISO, GP8-CSnA
-#Connect power (red lead) to 5v pin on Gertboard
+#Connect power (red lead) to 3V3 pin on Gertboard's top left corner
 #Connect ground (grey lead) to any GND on Gertboard
 #Connect purple lead to AD1
 
 #this constant was found through testing
-COFFEE_WEIGHT = 45
+COFFEE_WEIGHT = 50
 
 #values from the ADC tend to fluctuate by this length
 ADC_FLUCTUATION = 15
@@ -68,10 +68,11 @@ def coffeeOn():
     #begin polling the weight sensor
     try:
         #wait until the cup is full
-        #wait until a valid full weight is read 3 times in a row
+        #wait until a valid full weight is read 6 times in a row
         fullSamples = 0
-        while(fullSamples < 3):
-            sleep(2)
+        while(fullSamples < 6):
+            #poll every half second
+            sleep(0.5)
             weight = getWeight()
             print(weight)
             if(weight > initialWeight + COFFEE_WEIGHT):
@@ -102,8 +103,6 @@ def sortPack(info, extra):
                 coffeeOn()
         elif(info=='coffee off'):
                 coffeeOff()
-
-GPIO.cleanup()
 
 name='c\Coffee Maker'
 myChannel = DataChannel.DataChannel(name)

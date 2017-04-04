@@ -1,18 +1,20 @@
 /**
 *Class:             MainServer.java
-
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
-*Date of Update:    31/03/2017
-*Version:           0.7.4
+*
+*Date of Update:    03/04/2017
+*Version:           0.7.5
 *
 *Purpose:           The main controller of the AVA system
 *
-*Update Log
 *
-*					v0.7.4
-*						-added media forwarding
-*
+*Update Log			v0.7.5
+*           			- added media driver forwarding			(done by Nate)
+*						- command sch-event responds in empty info packet if event scheduled
+*						  error packet if event cannot be done
+*						- new command added "req current weather -i" for notifying all interfaces of
+*						  weather
 *					v0.7.3
 *						- patch for server crash due to garbage
 *					v0.7.2
@@ -94,7 +96,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import javax.swing.JFrame;
@@ -364,6 +365,9 @@ public class MainServer extends Thread implements ActionListener
 		//look for alarm controller(s)
 		display.println("Attempting packet forward...\nScanning registry for prefix \"" + targetPrefix + "\\\"...");
 		Set<String> keys = registry.keySet();
+
+		keys = registry.keySet();
+
 		for(String key : keys)
 		{
 			if(key.contains("\\"))
