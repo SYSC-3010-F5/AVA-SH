@@ -216,23 +216,28 @@ public class MainServer extends Thread implements ActionListener
 
 		//schedule
 		display.println("Scheduling event: " + event.toString());
-		//returns false if the event name already exists
-		if(!scheduler.schedule(event))
+		
+		//try to schedule event
+		try
 		{
-			//send an error message that the event was not scheduled
-			String err = "Error: event with the name " + event.getEventName() + " exists.";
-			display.println(err);
 			multiChannel.hijackChannel(dest.getAddress(), dest.getPort());
-			try
+			if(!scheduler.schedule(event))
 			{
+				//send an error message that the event was not scheduled
+				String err = "Error: event with the name " + event.getEventName() + " exists.";
+				display.println(err);
 				multiChannel.sendErr(err);
 			}
-			catch (NetworkException e)
+			else
 			{
-				e.printStackTrace();
+				multiChannel.sendInfo("");
+				display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
 			}
 		}
-		display.updateEvent(scheduler.getNonPeriodicEvents(), scheduler.getPeriodicEvents());
+		catch (NetworkException e)
+		{
+			
+		}
 	}
 
 	//receive packet
