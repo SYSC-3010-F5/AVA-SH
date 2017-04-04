@@ -16,6 +16,7 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 
+import static android.R.attr.name;
 
 
 /**
@@ -49,9 +50,11 @@ public class ConnectionHelper implements Runnable {
     private DataChannel dataChannel;
     private static final int RETRY_QUANTUM = 5;
 
-    private String defaultDeviceName = "app";
-    private String defaultServerAddress = "192.168.0.101";
-    private String defaultServerPort = "3010";
+    private static final String DEFAULT_DEVICE_NAME = "app";
+    private static final String DEFAULT_SERVER_ADDRESS = "192.168.0.101";
+    private static final String DEFAULT_SERVER_PORT = "3010";
+
+    private static final int TIMEOUT = 5000;
 
     private String deviceName;
     private InetAddress serverAddress;
@@ -67,15 +70,15 @@ public class ConnectionHelper implements Runnable {
         SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(c);
 
 
-        deviceName = "i\\"+ SP.getString("interface", defaultDeviceName);
-        serverPort = Integer.parseInt(SP.getString("serverPort", defaultServerPort));
+        deviceName = "i\\"+ SP.getString("interface", DEFAULT_DEVICE_NAME);
+        serverPort = Integer.parseInt(SP.getString("serverPort", DEFAULT_SERVER_PORT));
 
         try {
 
             dataChannel = new DataChannel();
-            serverAddress = InetAddress.getByName(SP.getString("serverIP", defaultServerAddress));
+            serverAddress = InetAddress.getByName(SP.getString("serverIP", DEFAULT_SERVER_ADDRESS));
         } catch(Exception e){
-
+            e.printStackTrace();
         }
 
     }
@@ -102,7 +105,8 @@ public class ConnectionHelper implements Runnable {
                     }
                     catch (IOException e1)
                     {
-                        //timeout has occurred
+                        e1.printStackTrace();
+                        et.append("Connection Failed, retrying");
                     }
                 }
 
@@ -138,7 +142,7 @@ public class ConnectionHelper implements Runnable {
             dataChannel.sendCmd("ping");
 
             //wait for response
-            PacketWrapper wrapper = dataChannel.receivePacket(5000);
+            PacketWrapper wrapper = dataChannel.receivePacket(TIMEOUT);
             if(wrapper.type == DataChannel.TYPE_INFO)
             {
                 post = System.currentTimeMillis();
@@ -210,12 +214,29 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.showAlert();
     }
 
+    public void sendCmdReceive(String cmd, String str){
+        alertBuilder.clear();
+        try{
+            dataChannel.sendCmd(cmd,str);
+            et.append("`"+cmd+": " + str +"`"+" sent!\n");
+            alertBuilder.showAlert();
+            PacketWrapper wrapper = dataChannel.receivePacket(TIMEOUT);
+            et.append(wrapper.info());
+        } catch(NetworkException e){
+            et.append(e.getMessage());
+        } catch(SocketException e){
+            et.append(e.getMessage());
+        }
+        alertBuilder.showAlert();
+
+    }
+
     public void getTime(){
         alertBuilder.clear();
         try
         {
             dataChannel.sendCmd("req time");
-            PacketWrapper wrapper = dataChannel.receivePacket(5000);
+            PacketWrapper wrapper = dataChannel.receivePacket(TIMEOUT);
             et.append(wrapper.info());
         }
         catch (NetworkException e)
@@ -341,6 +362,7 @@ public class ConnectionHelper implements Runnable {
         }
         alertBuilder.showAlert();
     }
+
 
 
 
