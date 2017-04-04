@@ -103,6 +103,21 @@ public class ServerEvent extends TimerTask implements ToJSONFile
 	}
 	
 	
+	//generic mutators
+	public void setCommands(PacketWrapper[] commands)
+	{
+		this.commands = commands;
+	}
+	public void setTrigger(TimeAndDate trigger)
+	{
+		this.trigger = trigger;
+	}
+	public void setEventName(String eventName)
+	{
+		this.eventName = eventName;
+	}
+	
+	
 	//print the display
 	private void println(String printable)
 	{

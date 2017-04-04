@@ -2,14 +2,18 @@
 *Class:             TerminalUI.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    01/04/2017                                              
-*Version:           1.3.0    
+*Date of Update:    03/04/2017                                              
+*Version:           1.3.1    
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					
 * 
-*Update Log			v1.3.0
+*Update Log			v1.3.1
+*						- dialog added for getting timer info (time and name)
+*						- can disable command help screen
+*						- manual setting of command help screen added
+*					v1.3.0
 *						- added menu option for server config
 *						- added menu option for live swap between window/fullscreen
 *						- new dialog added to display and change server settings
@@ -106,7 +110,9 @@ import server.datatypes.Alarm;
 import terminal.dialogs.DayAndTimeDialog;
 import terminal.dialogs.ServerSettingsDialog;
 import terminal.dialogs.TextView;
+import terminal.dialogs.TimeDialog;
 import terminal.dialogs.wrappers.SettingsWrapper;
+import terminal.dialogs.wrappers.TimeWrapper;
 
 
 
@@ -122,7 +128,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 
 	
 	//declaring class constants
-	private static final String VERSION = "v1.3.0";
+	private static final String VERSION = "v1.3.1";
 	public static final String CONSOLE_IN = "txt/in";
 	public static final String MENU_CLOSE = "m/file/close";
 	public static final String MENU_CMD_LIST = "m/file/cmdlist";
@@ -151,13 +157,14 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	private boolean inputReady;
 	private String[] input;
 	private boolean echo;
+	private boolean cmdHelpFlag;
 	private TextView textViewer;
 	
 	//declaring local ui elements
 	private JTextField consoleInput;
 	private JTextArea consoleOutput;
 	private JTextArea statusOverview;
-	private JTextArea cmdHelp;
+	private JTextArea auxTextPane;
 
 	//v1.0.0 constructor
 	public TerminalUI(String title, ActionListener listener, String cmdNotFound)
@@ -190,6 +197,7 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		cmdMap = new TreeMap<String, String>();
 		echo = false;
 		lastCmd = "";
+		cmdHelpFlag = true;
 		textViewer = null;
 		initColorMap();
 		
@@ -299,13 +307,13 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 		JScrollPane cmdPane = new JScrollPane();
 		cmdPane.setPreferredSize(new Dimension(AUX_PANEL_WIDTH,0));
 		auxPanel.add(cmdPane, BorderLayout.CENTER);
-		cmdHelp = new JTextArea();
-		cmdHelp.setEditable(false);
-		cmdHelp.setTabSize(2);
-		cmdHelp.setLineWrap(true);
-		cmdHelp.setWrapStyleWord(true);
-		cmdHelp.setFont(DEFAULT_CONSOLE_FONT);
-		cmdPane.setViewportView(cmdHelp);
+		auxTextPane = new JTextArea();
+		auxTextPane.setEditable(false);
+		auxTextPane.setTabSize(2);
+		auxTextPane.setLineWrap(true);
+		auxTextPane.setWrapStyleWord(true);
+		auxTextPane.setFont(DEFAULT_CONSOLE_FONT);
+		cmdPane.setViewportView(auxTextPane);
 		
 		
 		//set up close button custom
@@ -349,6 +357,15 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void setEcho(boolean echo)
 	{
 		this.echo = echo;
+	}
+	public void setCmdHelpFlag(boolean flag)
+	{
+		this.cmdHelpFlag = flag;
+		auxTextPane.setText("");
+	}
+	public void setAuxPane(String text)
+	{
+		auxTextPane.setText(text);
 	}
 	
 
@@ -416,9 +433,9 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 			statusOverview.setCaretColor(colors[1]);
 			
 			//set command help
-			cmdHelp.setBackground(colors[0]);
-			cmdHelp.setForeground(colors[1]);
-			cmdHelp.setCaretColor(colors[1]);
+			auxTextPane.setBackground(colors[0]);
+			auxTextPane.setForeground(colors[1]);
+			auxTextPane.setCaretColor(colors[1]);
 		}
 		else
 		{
@@ -760,6 +777,21 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	}
 	
 	
+	//get a timer and name from user via dialog (for timers mostly
+	public TimeWrapper dialogGetTimer()
+	{
+		TimeDialog dialog = new TimeDialog(this, TERMINAL_NAME);
+		if(dialog.getCloseMode() == TimeDialog.OK_OPTION)
+		{
+			return new TimeWrapper(dialog.getTime(), dialog.getTimerName());
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	
 	//get server settings from user via dialog
 	public SettingsWrapper dialogGetServerSettings(InetAddress address, int port, String name)
 	{
@@ -846,26 +878,29 @@ public class TerminalUI extends JFrame implements ActionListener, KeyListener
 	public void keyReleased(KeyEvent arg0) 							//TODO needs formating!
 	{
 		//check if input matchs any commands
-		try
+		if(cmdHelpFlag)
 		{
-			String currentCmd = consoleInput.getText().split(" ")[0];
-			if(!lastCmd.equals(currentCmd))
+			try
 			{
-				String output = allCommands;
-		    	Set<String> keys = cmdMap.keySet();
-		    	for(String key : keys)
-		    	{
-		    		if(key.equals(currentCmd))
-		    		{
-		    			output = key + "\n" + cmdMap.get(key);
-		    			break;
-		    		}
-		    	}
-		    	cmdHelp.setText("\n".concat(output));
+				String currentCmd = consoleInput.getText().split(" ")[0];
+				if(!lastCmd.equals(currentCmd))
+				{
+					String output = allCommands;
+			    	Set<String> keys = cmdMap.keySet();
+			    	for(String key : keys)
+			    	{
+			    		if(key.equals(currentCmd))
+			    		{
+			    			output = key + "\n" + cmdMap.get(key);
+			    			break;
+			    		}
+			    	}
+			    	auxTextPane.setText("\n".concat(output));
+				}
+				lastCmd = currentCmd;
 			}
-			lastCmd = currentCmd;
+			catch (ArrayIndexOutOfBoundsException e){};		//squash this
 		}
-		catch (ArrayIndexOutOfBoundsException e){};
 	}
 
 
