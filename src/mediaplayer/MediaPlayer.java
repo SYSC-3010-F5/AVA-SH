@@ -16,11 +16,15 @@ public class MediaPlayer extends Thread {
 	private boolean verbose;
 	private AdvancedPlayer playMP3;
 	private int currentFrame = 0;
+	private MDPlaybackListener playbackListener;
+
 
 
 	public MediaPlayer(String title,boolean vflag){
 		songName = title;
 		verbose = vflag;
+
+		playbackListener = new MDPlaybackListener(this);
 
 	}
 
@@ -37,46 +41,32 @@ public class MediaPlayer extends Thread {
 	}
 
 	public void run(){
-		play();
-	}
-
-	public void play(){
-
-		try {
-			playMP3.play();
-		} catch (JavaLayerException e) {
-			print(e.getMessage());
-		}
-
+		resumeS();
 	}
 	
 	public void resumeS(){
 		try {
 			init();
-			playMP3.play(currentFrame);
+			print("Resume, current frame: "+currentFrame);
+			playMP3.play(currentFrame, Integer.MAX_VALUE);
 			
 		} catch (JavaLayerException e) {
 			e.printStackTrace();
-		} catch (FileNotFoundException e){
+		} catch(FileNotFoundException e){
 			e.printStackTrace();
 		}
 	}
 	
 	private void init() throws FileNotFoundException, JavaLayerException{
 		FileInputStream fis = new FileInputStream("C:\\Users\\nathanielcharlebois.LABS\\Desktop\\tempProject\\AVA-SH\\src\\mediaplayer\\songLibrary\\"+songName+".mp3");
-	    System.out.println(fis.toString());
 	    playMP3 = new AdvancedPlayer(fis);
-	    playMP3.setPlayBackListener(new PlaybackListener(){
-	        @Override
-	        public void playbackFinished(PlaybackEvent event) {
-	            currentFrame = event.getFrame();
-	        }
-	    });
-
+	    playMP3.setPlayBackListener(playbackListener);
 	}
 
 	public void pause(){
+		
 		playMP3.stop();
+		print("Pause, current frame: "+currentFrame);
 	}
 
 
@@ -84,5 +74,12 @@ public class MediaPlayer extends Thread {
 		if(verbose){
 			System.out.println(msg);
 		}
+	}
+	
+	public void setCurrentFrame(int frame){
+		currentFrame = frame;
+	}
+	public int getCurrentFrame(){
+		return currentFrame;
 	}
 }
