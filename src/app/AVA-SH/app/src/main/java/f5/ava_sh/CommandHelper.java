@@ -52,6 +52,9 @@ public class CommandHelper {
             "led on",
             "led off",
             "led pwm",
+            "play song",
+            "pause",
+            "stop",
             "alarm on",
             "alarm off",
             "shutdown server"
@@ -192,6 +195,22 @@ public class CommandHelper {
 
             case "led pwm":
                 connectionHelper.sendCmd("led pwm");
+                break;
+
+            case "play song":
+                bundle.putInt("type",7);
+
+                DialogFragment songInput = new TextInputFragment();
+                songInput.setArguments(bundle);
+                songInput.show(fragmentManager,"songInput");
+                break;
+
+            case "pause":
+                connectionHelper.sendCmdReceive("pause","");
+                break;
+
+            case "stop":
+                connectionHelper.sendCmdReceive("stop","");
                 break;
 
             case "alarm on":

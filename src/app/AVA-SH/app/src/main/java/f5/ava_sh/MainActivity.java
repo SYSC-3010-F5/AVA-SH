@@ -1,6 +1,5 @@
 package f5.ava_sh;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -13,7 +12,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.GridView;
-import android.widget.TextView;
+
+import java.net.InetAddress;
 
 import f5.ava_sh.Listeners.ButtonAdapter;
 import f5.ava_sh.Listeners.OnTextSetListener;
@@ -43,8 +43,15 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
 
     private String interfaceName;
     private String location;
-    private String serverIP;
-    private String serverPort;
+    private InetAddress serverIP;
+    private int serverPort;
+
+    private static final String DEFAULT_DEVICE_NAME = "app";
+    private static final String DEFAULT_SERVER_ADDRESS = "192.168.0.101";
+    private static final String DEFAULT_SERVER_PORT = "3010";
+    private static final String DEFAULT_LOCATION = "Ottawa";
+
+
 
 
 
@@ -88,11 +95,13 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     @Override
     public void onTimeSet(int[] time) {
         timeWrapper = time;
+        //TODO remove
         Log.d("Hour/Minute",time[0]+"/"+time[1]);
     }
 
     @Override
     public void onTextSet(int type, String name){
+        //TODO remove
         Log.d("Type/Name",type+"/"+name);
 
             switch (type) {
@@ -118,6 +127,8 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
                 case 6:
                     connectionHelper.getEventDetails("details p-event",name);
                     break;
+                case 7:
+                    connectionHelper.sendCmdReceive("play song",name);
                 default:
                     //ToDo: Handle improper user input
                     Log.d("ERROR","Invalid onTextSet.type set");
@@ -150,10 +161,16 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     public void onResume() {
         super.onResume();
         SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        interfaceName = "i\\"+ SP.getString("interface", DEFAULT_DEVICE_NAME);
+        serverPort = Integer.parseInt(SP.getString("serverPort", DEFAULT_SERVER_PORT));
         interfaceName = SP.getString("interface", "NA");
-        location = SP.getString("location", "NA");
-        serverIP = SP.getString("serverIP", "NA");
-        serverPort = SP.getString("serverPort", "NA");
+        location = SP.getString("location", DEFAULT_LOCATION);
+        try {
+            serverIP = InetAddress.getByName(SP.getString("serverIP", DEFAULT_SERVER_ADDRESS));
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+
 
     }
 
@@ -168,7 +185,6 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
 
         @Override
         protected Void doInBackground(Void... params){
-
             runOnUiThread(connectionHelper);
 
             return null;
