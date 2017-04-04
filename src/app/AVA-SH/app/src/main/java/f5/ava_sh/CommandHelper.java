@@ -53,10 +53,13 @@ public class CommandHelper {
             "led off",
             "led pwm",
             "play song",
-            "pause",
-            "stop",
+            "resume music",
+            "pause music",
+            "stop music",
             "alarm on",
             "alarm off",
+            "set temperature",
+            "disable thermostat",
             "shutdown server"
     };
 
@@ -205,12 +208,16 @@ public class CommandHelper {
                 songInput.show(fragmentManager,"songInput");
                 break;
 
-            case "pause":
-                connectionHelper.sendCmdReceive("pause","");
+            case "resume music":
+                connectionHelper.sendCmd("resume music");
                 break;
 
-            case "stop":
-                connectionHelper.sendCmdReceive("stop","");
+            case "pause music":
+                connectionHelper.sendCmd("pause music");
+                break;
+
+            case "stop music":
+                connectionHelper.sendCmd("stop music");
                 break;
 
             case "alarm on":
@@ -219,6 +226,18 @@ public class CommandHelper {
 
             case "alarm off":
                 connectionHelper.sendCmd("alarm off");
+                break;
+
+            case "set temperature":
+                bundle.putInt("type",8);
+
+                DialogFragment tempInput = new TextInputFragment();
+                tempInput.setArguments(bundle);
+                tempInput.show(fragmentManager,"tempInput");
+                break;
+
+            case "disable thermostat":
+                connectionHelper.sendCmd("system off");
                 break;
 
             case "shutdown server":

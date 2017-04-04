@@ -15,6 +15,7 @@ package f5.ava_sh.Listeners;
  *  5: -defines details NP-event
  *  6: -defines details P-event
  *  7: -defines play song
+ *  8: -defines new temp
  *
  */
 
