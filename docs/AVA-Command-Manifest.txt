@@ -273,5 +273,27 @@ COMMAND MANIFEST
 	
 	
 	----------------------------
-
+	COMMAND_KEY:	“get temp”
+	EXTRA_INFO:		false
+	PURPOSE:		returns ambient temperature from Thermostate Stub
+	RESPONSE:		info-type packet containing temperature as a float
+	
+	
+	----------------------------
+	COMMAND_KEY:	“new temp”
+	EXTRA_INFO:		true
+					float of new desired temperature
+	PURPOSE:		set thermostate to a new temperature, also turns system back on if off
+	RESPONSE:		false
+	
+	
+	----------------------------
+	COMMAND_KEY:	“system off”
+	EXTRA_INFO:		false
+	PURPOSE:		turns off temperature changing of house, module still listens for future commands
+	RESPONSE:		false
+	
+	
+	----------------------------
+	
 					
