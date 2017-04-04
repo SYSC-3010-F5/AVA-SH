@@ -271,14 +271,6 @@ COMMAND MANIFEST
 	RESPONSE:		empty info-type packet if title is valid and file is found
 					error-type packet otherwise
 	
-	
-	----------------------------
-	COMMAND_KEY:	“get temp”
-	EXTRA_INFO:		false
-	PURPOSE:		returns ambient temperature from Thermostate Stub
-	RESPONSE:		info-type packet containing temperature as a float
-	
-	
 	----------------------------
 	COMMAND_KEY:	“new temp”
 	EXTRA_INFO:		true
