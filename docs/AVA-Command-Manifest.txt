@@ -269,6 +269,24 @@ COMMAND MANIFEST
 					Mr.Brightside
 	PURPOSE:		prompts a media driver to play the selected song(currently only supports mp3)
 	RESPONSE:		false
+	----------------------------
+	COMMAND_KEY:	“resume music”
+	EXTRA_INFO:		false
+					
+	PURPOSE:		resumes the music on the media driver if paused
+	RESPONSE:		false
+	----------------------------
+	COMMAND_KEY:	“stop music”
+	EXTRA_INFO:		false
+
+	PURPOSE:		disconnects the MediaPlayer so that a new song may be played
+	RESPONSE:		false
+	----------------------------
+	COMMAND_KEY:	“pause music”
+	EXTRA_INFO:		false
+
+	PURPOSE:		pauses the current song playing on the MediaDriver
+	RESPONSE:		false
 	
 	----------------------------
 	COMMAND_KEY:	“new temp”

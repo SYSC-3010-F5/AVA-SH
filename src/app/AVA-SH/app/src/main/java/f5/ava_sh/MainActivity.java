@@ -128,7 +128,10 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
                     connectionHelper.getEventDetails("details p-event",name);
                     break;
                 case 7:
-                    connectionHelper.sendCmdReceive("play song",name);
+                    connectionHelper.sendCmd("play song",name);
+                    break;
+                case 8:
+                    connectionHelper.sendCmd("new temp",name);
                 default:
                     //ToDo: Handle improper user input
                     Log.d("ERROR","Invalid onTextSet.type set");

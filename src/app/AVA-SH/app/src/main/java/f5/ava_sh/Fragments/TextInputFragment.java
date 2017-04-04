@@ -82,6 +82,12 @@ public class TextInputFragment extends DialogFragment implements DialogInterface
             case 6:
                 DEFAULT_HINT = "Morning Coffee";
                 break;
+            case 7:
+                DEFAULT_HINT = "AllStar";
+                break;
+            case 8:
+                DEFAULT_HINT = "25";
+                break;
             default:
                 DEFAULT_HINT = "Your Preferred Name";
                 break;
