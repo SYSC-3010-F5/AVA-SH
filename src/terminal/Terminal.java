@@ -2,15 +2,17 @@
 *Class:             Terminal.java
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
-*Date of Update:    03/04/2017                                              
-*Version:           1.0.0
+*Date of Update:    04/04/2017                                              
+*Version:           1.0.1
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- thermostat and media commands
+*					v1.0.0
 *						- periodic event scheduling finalized
 *						- dialog logic for timer moved into TerminalUI.java
 *						- patch for not updating operating mode
@@ -468,7 +470,14 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 		cmdMap.put("screensize", "Toggle terminal between fullscreen and windowed modes");
 		
 		cmdMap.put("music", "Play a song on the media player\n"
-				+ "\tparam1: <STR> || Play music with name <STR>");
+				+ "\tparam1: pause  || Pause the currently playing music\n"
+				+ "\tparam1: resume || Resume the currently paused music\n"
+				+ "\tparam1: stop   || Stop the current music\n"
+				+ "\tparam1: <STR>  || Play music with name <STR>");
+		
+		cmdMap.put("temp", "Interface with virtual thermostat\n"
+				+ "\tparam1: off   || Disable the virtual thermostat system\n"
+				+ "\tparam1: <INT> || Set the target termostat temperature to <INT> degrees Celcius");
 
 		return cmdMap;
 	}
@@ -1527,11 +1536,45 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 				{
 					try
 					{
-						dataChannel.sendCmd("play song", input[1]);
+						if(input[1].equals("resume"))			dataChannel.sendCmd("resume music");
+						else if (input[1].equals("pause"))		dataChannel.sendCmd("pause music");
+						else if (input[1].equals("stop"))		dataChannel.sendCmd("stop music");
+						else									dataChannel.sendCmd("play song", input[1]);
 					}
 					catch(NetworkException e)
 					{
 						ui.printError(e.getMessage());
+					}
+				}
+				else
+				{
+					ui.println(CMD_NOT_FOUND);
+				}
+				break;
+				
+			
+			//temperature sensor stuff
+			case("temp"):
+				if(length == 2)
+				{
+					try
+					{
+					if(input[1].equals("off"))
+					{
+						dataChannel.sendCmd("system off");
+					}
+					else
+					{
+						dataChannel.sendCmd("new temp", Integer.parseInt(input[1])+"");
+					}
+					}
+					catch (NetworkException e)
+					{
+						ui.printError(e.getMessage());
+					}
+					catch (NumberFormatException e)
+					{
+						ui.printError("Temperature must be valid integer!");
 					}
 				}
 				else

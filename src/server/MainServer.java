@@ -3,13 +3,15 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven
 *
-*Date of Update:    03/04/2017
-*Version:           0.7.5
+*Date of Update:    04/04/2017
+*Version:           0.7.6
 *
 *Purpose:           The main controller of the AVA system
 *
 *
-*Update Log			v0.7.5
+*Update Log			v0.7.6
+*						- server forwarding for thermo and media driver
+*					v0.7.5
 *           			- added media driver forwarding			(done by Nate)
 *						- command sch-event responds in empty info packet if event scheduled
 *						  error packet if event cannot be done
@@ -131,6 +133,7 @@ public class MainServer extends Thread implements ActionListener
 	public static final String PREFIX_COFFEE_MAKER = 	"c";
 	public static final String PREFIX_INTERFACE = 		"i";
 	public static final String PREFIX_MEDIA = 			"m";
+	public static final String PREFIX_THERMOSTAT =      "t";
 
 	//declaring local instance variables
 	private HashMap<String,InetSocketAddress> registry;
@@ -862,9 +865,20 @@ public class MainServer extends Thread implements ActionListener
 							case("coffee off"):
 								forwardPacket(packet, PREFIX_COFFEE_MAKER);
 								break;
+
+							//commands forwarded to the media player
 							case("play song"):
+							case("pause music"):
+							case("stop music"):
+							case("resume music"):
 								forwardPacket(packet, PREFIX_MEDIA);
 								break;
+								
+							//commands forwarded to the thermostat
+							case("new temp"):
+							case("system off"):
+								forwardPacket(packet, PREFIX_THERMOSTAT);
+								break;	
 						}
 						break;
 
