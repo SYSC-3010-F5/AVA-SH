@@ -23,13 +23,7 @@ import f5.ava_sh.Listeners.MainActivityButtonListener;
  *Date of Update:       21/02/2017
  *Version:              0.0.0
  *
- *Purpose:              The bridge between UI components and data sources.
- *
- *
- *
- *
- *Update Log			v.0.0.0
- *                          -Initial class creation
+ *Purpose:              A bridge between an AdapterView and the underlying data for that view
  *
  *
  */

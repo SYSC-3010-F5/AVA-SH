@@ -19,12 +19,14 @@ import f5.ava_sh.Fragments.TimePickerFragment;
  *Version:           4.0.1
  *Git:               https://github.com/SYSC-3010-F5/AVA-SH
  *
- *Purpose:          Dispatches commands and instantiates fragments to receive user data
+ *Purpose:          Dispatches commands to connectionHelper
  *
  *
- *
- *Update Log		v4.0.1
+ *Update Log		v4.0.0
  *						- Adding parsed method functions
+ *
+ *				    v3.0.0
+ *				        -Refactored, yet again, to meet MVC
  *
  *				    v2.0.0
  *				        -Refactored to meet MVC
@@ -56,6 +58,7 @@ public class CommandHelper {
             "resume music",
             "pause music",
             "stop music",
+            "make coffee",
             "alarm on",
             "alarm off",
             "set temperature",
@@ -99,10 +102,6 @@ public class CommandHelper {
 
             case "ping":
                 connectionHelper.ping();
-                break;
-
-            case "sch event":
-
                 break;
 
             case "new timer":
@@ -218,6 +217,10 @@ public class CommandHelper {
 
             case "stop music":
                 connectionHelper.sendCmd("stop music");
+                break;
+
+            case "make coffee":
+                connectionHelper.sendCmd("coffee on");
                 break;
 
             case "alarm on":

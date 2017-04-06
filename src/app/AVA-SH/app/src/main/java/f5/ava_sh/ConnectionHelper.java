@@ -16,7 +16,6 @@ import network.DataChannel;
 import network.NetworkException;
 import network.PacketWrapper;
 
-import static android.R.attr.name;
 
 
 /**
@@ -33,6 +32,13 @@ import static android.R.attr.name;
  *
  *                   While there does appear to be "duplicate code" each method requires unique
  *                      error handling and particular details
+ *
+ *                   *** Regarding CODE review refactoring :***
+ *                      -Most suggestions were not conducive to the overall implementation of the
+ *                          app due to the vast array of functions required of a system interface
+ *                      -Removed the few magic numbers utilized
+ *                      -Redesign some functions to overlap utility
+ *                      -Improved error handling by ensuring that all exceptions are handled.
  *
  *
  *
@@ -214,23 +220,6 @@ public class ConnectionHelper implements Runnable {
         alertBuilder.showAlert();
     }
 
-    public void sendCmdReceive(String cmd, String str){
-        alertBuilder.clear();
-        try{
-            dataChannel.sendCmd(cmd,str);
-            et.append("`"+cmd+": " + str +"`"+" sent!\n");
-            alertBuilder.showAlert();
-            PacketWrapper wrapper = dataChannel.receivePacket(TIMEOUT);
-            et.append(wrapper.info());
-        } catch(NetworkException e){
-            et.append(e.getMessage());
-        } catch(SocketException e){
-            et.append(e.getMessage());
-        }
-        alertBuilder.showAlert();
-
-    }
-
     public void getTime(){
         alertBuilder.clear();
         try
@@ -374,7 +363,4 @@ public class ConnectionHelper implements Runnable {
         return ((hour*60*60) + (minute*60));
     }
 
-    public DataChannel getDataChannel(){
-        return dataChannel;
-    }
 }
