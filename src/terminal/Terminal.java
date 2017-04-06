@@ -3,14 +3,16 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    04/04/2017                                              
-*Version:           1.0.1
+*Version:           1.0.2
 *                                                                                   
 *Purpose:           Local interface to main AVA server.
 *					Basic Terminal form for text commands.
 *					Send/Receive packets from server.
 *					
 * 
-*Update Log			v1.0.1
+*Update Log			v1.0.2
+*						- conifg added to main method for .jar execution
+*					v1.0.1
 *						- thermostat and media commands
 *					v1.0.0
 *						- periodic event scheduling finalized
@@ -151,7 +153,7 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 	public static final int CLOSE_OPTION_USER = 2;
 	private static final String PREFIX = MainServer.PREFIX_INTERFACE + "\\";
 	private static final String TERMINAL_NAME = "AVA Terminal";
-	private static final String VERSION = "v0.8.0";
+	private static final String VERSION = "v1.0.2";
 	private static final String CMD_NOT_FOUND = "Command not recongnized";
 	private static final int RETRY_QUANTUM = 5;
 	private static final int SWITCH_SPEED = 100;
@@ -2034,10 +2036,22 @@ public class Terminal extends JFrame implements ActionListener, Runnable
 
 
 	//instantiate a Terminal
-	public static void main(String[] e)
+	public static void main(String[] config)
 	{
+		//control flags
 		boolean relaunch = true;
 		boolean fullscreen = false;			//true=fullscreen, false=windowed
+		
+		//config fullscreen
+		if(config.length >= 1)
+		{
+			if(config[0].equals("full") || config[0].equals("true") || config[0].equals("1"))
+			{
+				fullscreen = true;
+			}
+		}
+		
+		//main instance relaunch loop
 		while(relaunch)
 		{
 			//start terminal, enter main loop

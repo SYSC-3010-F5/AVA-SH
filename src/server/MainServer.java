@@ -4,12 +4,14 @@
 *Author:            Jason Van Kerkhoven
 *
 *Date of Update:    04/04/2017
-*Version:           0.7.6
+*Version:           1.0.0
 *
 *Purpose:           The main controller of the AVA system
 *
 *
-*Update Log			v0.7.6
+*Update Log			v1.0.0
+*						- server functionality complete (all integration tests pass)
+*						- added fullscreen toggle functionality to main for .jar execution
 *						- server forwarding for thermo and media driver
 *						- error packet forwarding
 *					v0.7.5
@@ -123,7 +125,7 @@ import network.DataChannel;
 public class MainServer extends Thread implements ActionListener
 {
 	//declaring static class constants
-	public static final String SERVER_NAME = "AVA Server v0.7.1";
+	public static final String SERVER_NAME = "AVA Server v1.0.0";
 	public static final int PORT = 3010;
 	public static final byte TYPE_HANDSHAKE = DataChannel.TYPE_HANDSHAKE;
 	public static final byte TYPE_CMD = DataChannel.TYPE_CMD;
@@ -1027,9 +1029,19 @@ public class MainServer extends Thread implements ActionListener
 	//main method
 	public static void main(String[] arg)
 	{
+		//config fullscreen
+		boolean fullscreen = true;
+		if(arg.length >= 1)
+		{
+			if (arg[0].equals("false") || arg[0].equals("0") || arg[0].equals("windowed"))
+			{
+				fullscreen = false;
+			}
+		}		
+		
 		try
 		{
-			MainServer server = new MainServer(false);		//true=fullscreen, false=windowed
+			MainServer server = new MainServer(fullscreen);		//true=fullscreen, false=windowed
 			server.run();
 		}
 		catch (UnknownHostException e)

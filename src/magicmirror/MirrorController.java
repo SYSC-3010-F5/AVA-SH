@@ -3,7 +3,7 @@
 *Project:          	AVA Smart Home
 *Author:            Jason Van Kerkhoven                                             
 *Date of Update:    31/03/2017                                              
-*Version:           1.0.0
+*Version:           1.0.1
 *                                                                                   
 *Purpose:           Controller for the magic mirror
 *					Built to mess with another group who's doing a magic mirror.
@@ -22,7 +22,10 @@
 *					5 timeout cycles (25 seconds). It will then try to reconnect indefinitely.
 *					
 * 
-*Update Log			v1.0.0
+*Update Log			v1.0.1
+*						- config for changing server IP added for use in .jar 
+*						- config for changing fullscreen/window added
+*					v1.0.0
 *						- null
 *
 */
@@ -65,11 +68,17 @@ public class MirrorController implements Runnable
 	private MirrorDisplay mirror;
 	
 	
-	//generic constructor
+	
+	//general use constructor w/o ip config
 	public MirrorController(boolean fullscreen) throws SocketException, UnknownHostException
 	{
+		this(fullscreen, SERVER_ADDRESS_INIT);
+	}
+	//generic constructor
+	public MirrorController(boolean fullscreen, String serverIP) throws SocketException, UnknownHostException
+	{
 		//init
-		SERVER_ADDRESS = InetAddress.getByName(SERVER_ADDRESS_INIT);
+		SERVER_ADDRESS = InetAddress.getByName(serverIP);
 		SERVER_PORT = SERVER_PORT_INIT;
 		dataChannel = new DataChannel();
 		mirror = new MirrorDisplay(fullscreen, WINDOW_TITLE);
@@ -165,12 +174,30 @@ public class MirrorController implements Runnable
 	
 	
 	//main method
-	public static void main(String[] args) 
+	public static void main(String[] config) 
 	{
 		try 
 		{
-			new MirrorController(true).run();			//true for fullscreen (used for an acutal mirror application)
-														//non-fullscreen better for testing, though
+			//config fullscreen
+			boolean fullscreen = true;
+			if (config.length >= 1)
+			{
+				if (config[0].equals("false") || config[0].equals("0") || config[0].equals("windowed"))
+				{
+					fullscreen = false;
+				}
+			}
+			
+			//new mirror with non-standard ip
+			if (config.length >= 2)
+			{
+				new MirrorController(fullscreen, config[1]).run();
+			}
+			//mirror with standard ip
+			else
+			{
+				new MirrorController(fullscreen).run();
+			}
 		} 
 		catch (SocketException | UnknownHostException e) 
 		{
