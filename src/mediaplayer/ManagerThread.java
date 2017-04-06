@@ -11,15 +11,27 @@ import network.NetworkException;
 import network.PacketWrapper;
 
 
-//Currently locked to one MediaPlayer at a time
+/**
+ *Class:                ManagerThread.java
+ *Project:          	AVA Smart Home
+ *Author:               Nathaniel Charlebois
+ *Date of Update:       21/02/2017
+ *Version:              1.0.0
+ *
+ *Purpose:				A control thread that instantiates an MediaPLayer to play the requested song.
+ *						-General flow control is provided by received packets
+ *
+ *
+ */
 
 public class ManagerThread extends Thread{
 
 	private DataChannel dataChannel;
 	private boolean verbose = true;
-	private String serverIP = "192.168.2.100";
+
 	private int listeningPort = 3010;
 
+	private static final String SERVER_IP = "192.168.2.100";
 	private static final String DEVICE_NAME = "m\\mediaDriver";
 	private static final String PLAY_CMD_KEY = "play song";
 	private static final String PAUSE_CMD_KEY = "pause music";
@@ -29,7 +41,7 @@ public class ManagerThread extends Thread{
 	private PacketWrapper packet;
 
 	private MediaPlayer mediaPlayer = null;
-	
+
 
 
 	public ManagerThread(boolean verbose){
@@ -47,7 +59,7 @@ public class ManagerThread extends Thread{
 		}
 
 		try {
-			serverInet = InetAddress.getByName(serverIP);
+			serverInet = InetAddress.getByName(SERVER_IP);
 		} catch (UnknownHostException e) {
 			print(e.getMessage());
 			e.printStackTrace();
@@ -74,10 +86,10 @@ public class ManagerThread extends Thread{
 						if(mediaPlayer == null){
 							print("Manager: Play cmd received");;
 							initMediaPlayer();
-			
+
 						} else{
 							print("Stopping the currently playing song and starting "+packet.extraInfo());
-							
+
 							initMediaPlayer();
 						}
 					}
@@ -91,7 +103,7 @@ public class ManagerThread extends Thread{
 						}
 					}
 					else if(packet.commandKey().equals(STOP_CMD_KEY)){
-						
+
 						print("Manager: Stop cmd received");
 						if(mediaPlayer == null){
 							respondNoCurrentSong();
@@ -101,7 +113,7 @@ public class ManagerThread extends Thread{
 						}
 					}
 					else if(packet.commandKey().equals(RESUME_CMD_KEY)){
-						
+
 						print("Manager: Resume cmd received");
 						if(mediaPlayer == null){
 							respondNoCurrentSong();
@@ -133,13 +145,13 @@ public class ManagerThread extends Thread{
 
 	}
 
-	
+
 	private void initMediaPlayer(){
 		mediaPlayer = new MediaPlayer(packet.extraInfo(),verbose);
 		if(mediaPlayer.checkValid()){
 			mediaPlayer.start();
 			print("mediaPlayer instantiated and started");
-			
+
 		}
 	}
 
@@ -154,7 +166,7 @@ public class ManagerThread extends Thread{
 				vflag = false;
 			}
 		}
-		vflag = true;
+
 		ManagerThread mt = new ManagerThread(vflag);
 		mt.start();
 	}

@@ -12,11 +12,7 @@ import f5.ava_sh.CommandHelper;
 import f5.ava_sh.MainActivity;
 import f5.ava_sh.Listeners.MainActivityButtonListener;
 
-
-
 /**
- * Created by Slate on 2017-02-21.
- *//**
  *Class:                ButtonAdapter.java
  *Project:          	AVA Smart Home
  *Author:               Nathaniel Charlebois
