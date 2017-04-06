@@ -70,20 +70,50 @@ def coffeeOn():
         #wait until the cup is full
         #wait until a valid full weight is read 6 times in a row
         fullSamples = 0
+		errorSamples = 0
+		#set a maximum brew time of 5 minutes, in seconds
+		maxBrewTime = 60 * 5
+		#set the polling period to every half second
+		pollPeriod = 0.5
+	
+		brewTime = 0
         while(fullSamples < 6):
-            #poll every half second
-            sleep(0.5)
-            weight = getWeight()
-            print(weight)
-            if(weight > initialWeight + COFFEE_WEIGHT):
-                fullSamples += 1
-            else:
-                fullSamples = 0
+        	sleep(pollPeriod)
+        	weight = getWeight()
+		print(weight)
+		#if the analog value obtained is 1023, likely an error has occurred
+		#ADC has 10 bits, so 1023 is the maximum value that can be returned
+		if(weight == 1023):
+			errorSamples += 1
+		else:
+			errorSamples = 0
+		if((weight > initialWeight + COFFEE_WEIGHT)):
+			fullSamples += 1
+		else:
+			fullSamples = 0
+		if(brewTime > maxBrewTime):
+			#max brew time reached, stop making coffee
+			fullSamples = 6
+		#add the polling period to brew time, to track brew time
+		brewTime += pollingPeriod
+
+		#check for coffee completion
+		if(fullSamples >= 6):
+		    myChannel.sendInfo("Coffee done!")
+        #check for continued errors in the sensor
+		if(errorSamples >= 6):
+			myChannel.sendErr("Coffee maker error, ending early")
+			fullSamples = 6
         #end while
+        
+        #cup is nearly full, turn off the coffee maker
+        sleep(5)
         coffeeOff()
+        
     except KeyboardInterrupt:
         #acts as an emergency stop using CTRL-C
         coffeeOff()
+        myChannel.disconnect("Coffee Controller interrupted")
         GPIO.cleanup()
 
 def coffeeOff():
@@ -127,5 +157,6 @@ try:
 except KeyboardInterrupt:
     #reset GPIO ports after keyboard interrupt to close (CTRL-C)
     coffeeOff()
+    myChannel.disconnect("Coffee Controller interrupted")
     GPIO.cleanup()
 

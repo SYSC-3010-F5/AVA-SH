@@ -1,9 +1,17 @@
 package f5.ava_sh.Listeners;
 
 /**
- * Created by Slate on 2017-04-01.
+ *Class:             OnTextSetListener.java
+ *Project:           AVA Smart Home
+ *Author:            Nathaniel Charlebois
+ *Date of Update:    23/02/2017
+ *Version:           4.0.1
+ *Git:               https://github.com/SYSC-3010-F5/AVA-SH
  *
- * A callback interface for naming fields
+ *Purpose:           A callback interface for naming fields in fragments
+ *                   Sends data between
+ *                      non-activity class->fragments->container activity
+ *                   The Container Activity must implement this interface
  *
  *
  * TYPE protocol:
@@ -20,5 +28,5 @@ package f5.ava_sh.Listeners;
  */
 
 public interface OnTextSetListener {
-    public void onTextSet(int function,String name);
+    void onTextSet(int function,String name);
 }

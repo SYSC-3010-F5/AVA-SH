@@ -27,7 +27,7 @@ import f5.ava_sh.Listeners.OnTimeSetListener;
  *Version:              0.0.0
  *
  *Purpose:              The main activity from which commands may be launched
- *
+ *                      -Controls UI framework
  *
  *
  */
@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     private int serverPort;
 
     private static final String DEFAULT_DEVICE_NAME = "app";
-    private static final String DEFAULT_SERVER_ADDRESS = "192.168.0.101";
+    private static final String DEFAULT_SERVER_ADDRESS = "192.168.2.100";
     private static final String DEFAULT_SERVER_PORT = "3010";
     private static final String DEFAULT_LOCATION = "Ottawa";
 
@@ -95,14 +95,10 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
     @Override
     public void onTimeSet(int[] time) {
         timeWrapper = time;
-        //TODO remove
-        Log.d("Hour/Minute",time[0]+"/"+time[1]);
     }
 
     @Override
     public void onTextSet(int type, String name){
-        //TODO remove
-        Log.d("Type/Name",type+"/"+name);
 
             switch (type) {
                 case 0:
@@ -133,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements OnTimeSetListener
                 case 8:
                     connectionHelper.sendCmd("new temp",name);
                 default:
-                    //ToDo: Handle improper user input
                     Log.d("ERROR","Invalid onTextSet.type set");
                     break;
 

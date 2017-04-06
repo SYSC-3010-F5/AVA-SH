@@ -7,10 +7,16 @@ import android.graphics.Color;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
 
 /**
- * Created by Slate on 2017-03-19.
+ *Class:             AlertBuilder.java
+ *Project:           AVA Smart Home
+ *Author:            Nathaniel Charlebois
+ *Date of Update:    23/02/2017
+ *Version:           4.0.1
+ *Git:               https://github.com/SYSC-3010-F5/AVA-SH
+ *
+ *Purpose:           Builds a custom alert dialog to provide data to the user.
  */
 
 public class AlertBuilder {
