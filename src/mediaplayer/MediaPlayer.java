@@ -9,6 +9,7 @@ import javazoom.jl.player.advanced.PlaybackListener;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.nio.file.Paths;
 
 public class MediaPlayer extends Thread {
 
@@ -58,7 +59,7 @@ public class MediaPlayer extends Thread {
 	}
 	
 	private void init() throws FileNotFoundException, JavaLayerException{
-		FileInputStream fis = new FileInputStream("C:\\Users\\nathanielcharlebois.LABS\\Desktop\\tempProject\\AVA-SH\\src\\mediaplayer\\songLibrary\\"+songName+".mp3");
+		FileInputStream fis = new FileInputStream(Paths.get("").toAbsolutePath().resolve("resources/songLibrary/"+songName+".mp3").toString());
 	    playMP3 = new AdvancedPlayer(fis);
 	    playMP3.setPlayBackListener(playbackListener);
 	}
