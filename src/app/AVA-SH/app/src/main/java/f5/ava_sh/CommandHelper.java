@@ -244,7 +244,7 @@ public class CommandHelper {
                 break;
 
             case "shutdown server":
-                connectionHelper.sendCmd("shutdown server");
+                connectionHelper.sendCmd("shutdown");
                 break;
 
 
