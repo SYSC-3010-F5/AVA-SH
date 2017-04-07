@@ -244,6 +244,13 @@ COMMAND MANIFEST
 	
 	
 	----------------------------
+	COMMAND_KEY:	"alarm off"
+	EXTRA_INFO:		false
+	PURPOSE:		turn off alarm.
+	RESPONSE:		false
+	
+	
+	----------------------------
 	
 	COMMAND_KEY:	"coffee on"
 	EXTRA_INFO:		false
