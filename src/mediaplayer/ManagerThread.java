@@ -32,7 +32,7 @@ public class ManagerThread extends Thread{
 	private int listeningPort = 3010;
 
 	private static final String SERVER_IP = "192.168.2.100";
-	private static final String DEVICE_NAME = "m\\mediaDriver";
+	private static final String DEVICE_NAME = "m\\Media Driver";
 	private static final String PLAY_CMD_KEY = "play song";
 	private static final String PAUSE_CMD_KEY = "pause music";
 	private static final String STOP_CMD_KEY = "stop music";
