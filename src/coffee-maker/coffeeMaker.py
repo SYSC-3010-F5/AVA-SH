@@ -95,7 +95,7 @@ def coffeeOn():
 			#max brew time reached, stop making coffee
 			fullSamples = 6
 		#add the polling period to brew time, to track brew time
-		brewTime += pollingPeriod
+		brewTime += pollPeriod
 
 		#check for coffee completion
 		if(fullSamples >= 6):
