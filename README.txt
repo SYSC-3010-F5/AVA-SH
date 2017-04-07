@@ -18,7 +18,7 @@ Jason Van Kerkhoven     [100974276]
 Nathaniel Charlebois    [100964496]
 Sarah Garlough          [100965386]
 
-29/01/2017
+04/07/2017
 
 -----------------------------------------------------------
 
@@ -27,11 +27,10 @@ How to Run Terminal, Server, Magic Mirror and Media Driver (Can be run on Pi or 
 2. Download desired jars
 3. Run jars and follow on screen prompts
   **Notes: 
-    -Terminal Jar does not properly receive "Coffee Done" messages from the Coffee Maker 
     -Magic Mirror requires internet in order to operate
-    -Any other issues are marked as such
     -Terminal can run on Linux, however dialog boxes will appear as white boxes
     -Verbose can be run on Media Driver for debugging
+    -Any other issues are marked
 
 How to run Alarm Clock (on Pi with Piface)
 1. Navigate to AVA-SH/src/alarm
@@ -49,8 +48,8 @@ How to run Thermostat (on Pi)
 5. Open terminal and run with "python thermo.py"
 
 How to run Coffee Maker (on Pi with Gurtboard)
-1.  Navigate to AVA-SH/src/coffeee-maker
-2.  Download coffeeMaker.py
+1. Navigate to AVA-SH/src/coffeee-maker
+2. Download coffeeMaker.py
 3. Navigate t AVA-SH/src/network
 4. Download DataChannel.py
 5. Follow wiring instructon located from line 21-31 for connecting Gurtboard and weight sensor
@@ -73,6 +72,8 @@ Recources: No group created documentation  (ie Data Sheet's and songs for Media 
 scr: final versions of code, divided up according to module/ major sub-system
   -io: Most JSON related code
   -network: code for inter module communication
+  
+ The logo files are included in github for Team enjoyment.
  
   
   
