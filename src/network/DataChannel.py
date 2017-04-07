@@ -1,4 +1,3 @@
-
 import socket
 import sys
 
@@ -13,14 +12,14 @@ class DataChannel():
 	HANDSHAKE = "1: A robot may not injure a human being or, through inaction, allow a human being to come to harm."
 	PORT = 3011
 	connected = False
-	pairedAddress ='134.117.58.116'
+	pairedAddress ='134.117.58.116' #update if running as own class
 	pairedPort = 3010
 	registeredName = ""
 	gpSocket = 0
 	
-	def __init__(self, deviceName):
+	def __init__(self, deviceName, port):
 		self.gpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.gpSocket.bind(("", self.PORT))
+		self.gpSocket.bind(("", port))
 		self.gpSocket.setblocking(1)
 		self.registeredName = deviceName
 	
@@ -159,29 +158,28 @@ class DataChannel():
 		sendBytes.extend(self.HANDSHAKE.encode("utf-8"))
 		sendBytes.append(0x00)
 		sendBytes.extend(deviceName.encode("utf-8"))
-		print(sendBytes)
 		#send the handshake packet
 		self.gpSocket.sendto(sendBytes, (sendAddress, sendPort))
 		
 		#wait 10 seconds for a response
 		try:
 			data, addr = self.rcvPacket(10)
+			print('Connection Established')
 		except socket.timeout:
 			return False
                 rawData = bytearray(data)
 		
 		if(rawData[0] == 0x00):
-                        print("Handshake detected")
                         if(rawData[1] == 0x00):
                                 self.pairedPort = addr[1]
-                                print(addr[1])
+                                #print(addr[1])
                                 self.pairedAddress = addr[0]
-                                print(addr[0])
+                                #print(addr[0])
                                 self.connected = True
                                 self.registeredName = deviceName
                                 return True
 		elif(rawData[0] == self.TYPE_ERR):
-                        print(self.Unpack(data)[1])
+                        #print(self.Unpack(data)[1])
 			return False
 		else:
 			print("Invalid response to handshake\n")
@@ -240,24 +238,4 @@ class DataChannel():
 		
 		self.sendPacketByteArr(toSend)
 		
-		
-#MAIN
-#myChannel = DataChannel()
-
-#connect(self, sendAddress, sendPort, deviceName)
-#boolean = myChannel.connect  ("192.168.3.2", 3010, "AlarmClock")
-#print(boolean)
-
-#boolean = myChannel.connect("134.117.58.118", 3010, "AlarmClock")
-#print(boolean)
-
-#myChannel.sendInfo("THE ONLY THING YOU HAVE TO LOSE IS YOUR CHAINS")
-#myChannel.sendCmd("req time", "")
-#data, addr = myChannel.rcvPacket(10)
-#print(data)
-#opcode, info, extra = myChannel.Unpack(data)
-#print(info)
-#myChannel.sendCmd("RISE UP", "")
-#myChannel.sendErr("STALIN DED")
-#myChannel.disconnect("COMMUNISM DED")
 
