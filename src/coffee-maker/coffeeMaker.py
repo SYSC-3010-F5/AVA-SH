@@ -30,6 +30,9 @@ channel = 1
 #Connect ground (grey lead) to any GND on Gertboard
 #Connect purple lead to AD1
 
+#well known server port
+serverPort = 3010
+
 #this constant was found through testing
 COFFEE_WEIGHT = 50
 
@@ -135,11 +138,11 @@ def sortPack(info, extra):
                 coffeeOff()
 
 name='c\Coffee Maker'
-myChannel = DataChannel.DataChannel(name)
+myChannel = DataChannel.DataChannel(name, 55000)
 trys=0
 try:
     while(True):
-            connected = myChannel.connect(serverIP, 3010, name)
+            connected = myChannel.connect(serverIP, serverPort, name)
             time.sleep(1)
             while(connected==True):
                     data, addr = myChannel.rcvPacket(None)
