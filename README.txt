@@ -48,7 +48,7 @@ How to run Thermostat (on Pi)
 5. Open terminal and run with "python thermo.py"
  
 How to run Coffee Maker (on Pi with Gertboard)
-1. Navigate to AVA-SH/src/coffeee-maker
+1. Navigate to AVA-SH/src/coffee-maker
 2. Download coffeeMaker.py
 3. Navigate t AVA-SH/src/network
 4. Download DataChannel.py
